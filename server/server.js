@@ -284,6 +284,29 @@ io.on('connection', (socket) => {
     }
   });
 
+  // In-Game Attack-Move (A-Key) Command
+  socket.on('playerAttackMove', (data) => {
+    try {
+      const d = data || {};
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      room.gameEngine.handleAttackMove(socket.id, d.x, d.y);
+    } catch (err) {
+      console.error('playerAttackMove error:', err);
+    }
+  });
+
+  // In-Game Stop (S-Key) Command
+  socket.on('playerStop', () => {
+    try {
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      room.gameEngine.handleStop(socket.id);
+    } catch (err) {
+      console.error('playerStop error:', err);
+    }
+  });
+
   // In-Game Cast Skill (Q, W, E, R)
   socket.on('castSkill', (data) => {
     try {
