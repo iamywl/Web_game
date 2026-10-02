@@ -75,7 +75,12 @@ class GameRenderer {
     this.camera3D.lookAt(1200, 0, 800);
 
     // 3. WebGL 3D Renderer with Real-Time Soft Shadows
-    this.renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    try {
+      this.renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    } catch (e) {
+      console.warn('WebGLRenderer high-performance initialization failed, falling back:', e);
+      this.renderer3D = new THREE.WebGLRenderer();
+    }
     this.renderer3D.setSize(this.width, this.height);
     this.renderer3D.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer3D.shadowMap.enabled = true;
