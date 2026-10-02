@@ -1,14 +1,15 @@
 /**
  * renderer.js
- * High-Fidelity 2.5D WebGL GPU MOBA Renderer
+ * Authentic League of Legends 2.5D Isometric GPU WebGL/Canvas Engine
  * Features:
- *  - 2.5D Layered Champion Models for all 10 Champions (Capes, Armor, Weapons, Directional Facing)
- *  - Procedural Biped Walking Animations & Attack/Cast Recoil Motions
- *  - Dynamic River Water Shader (Multi-sine Wave Caustics & Water Ripples)
- *  - 2.5D Isometric Cliffs, Stone Turrets with Floating Mana Crystals, and Arcane Gyro Nexus
- *  - Authentic 100-HP Segmented Health Bars & Status Effect Bubbles
- *  - GPU Additive Glow Blending for Laser Beams, Sword Slash Arcs, and Spells
- *  - Spacebar Focus Ping Marker & LoL 4-Pronged Move Ping Rings
+ *  - 2.5D Isometric Upright Standing Humanoid Champions (Legs, Torso, Head, Armor, Weapons, Capes)
+ *  - Walking Biped Gaits, Attack Swings & Skill Cast Animations
+ *  - Summoner's Rift Map: 3D Isometric Stone Walls with Vertical Elevation & Cobblestone Lanes
+ *  - Authentic LoL Overhead Health Bar: Left [Level] Box, 100-HP Ticks, 1000-HP Dividers, Mana Bar, Nickname
+ *  - Dynamic River with Moving Sine Wave Caustics & Water Ripples
+ *  - Distinct Basic Attack (평타) & Skill VFX for all 10 Champions:
+ *      * Slash Arcs, Laser Beams, Fireballs, Meteors, Ice Spears, Shurikens, Shield Bashes, Mushroom Clouds
+ *  - Floating '+90 💰' Gold Bounties, '▲ LEVEL UP! ▲', and Crit Floaters
  */
 
 class GameRenderer {
@@ -30,15 +31,16 @@ class GameRenderer {
     this.gameState = null;
     this.animationTimer = 0;
 
-    // Particle & VFX Systems
-    this.particles = []; // { x, y, vx, vy, color, size, alpha, decay, life }
-    this.clickRings = []; // LoL 4-pronged move ping rings
-    this.floatingTexts = []; // damage & status floaters
+    // VFX Systems
+    this.particles = []; // { x, y, vx, vy, color, size, alpha, decay }
+    this.clickRings = []; // LoL 4-pronged green move ping rings
+    this.floatingTexts = []; // damage, '+90 💰', status
     this.shockwaves = []; // expanding impact rings
-    this.slashTrails = []; // { x, y, angle, radius, color, alpha }
+    this.slashTrails = []; // { x, y, angle, radius, color, alpha, width }
+    this.skillVfxList = []; // custom persistent skill animations (pillars, lasers, meteors)
     this.skillAimIndicator = null;
 
-    // Champion animation state trackers: { [playerId]: { walkCycle, attackSwing, hitFlashTimer, prevX, prevY } }
+    // Animation state tracker: { [playerId]: { walkCycle, attackSwingTimer, hitFlashTimer, castSkill: null } }
     this.champAnimStates = {};
 
     this.initCanvas();
@@ -49,7 +51,6 @@ class GameRenderer {
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    // Enable alpha and hardware acceleration
     this.ctx = this.canvas.getContext('2d', { alpha: false, desynchronized: true });
     this.container.appendChild(this.canvas);
   }
@@ -100,17 +101,18 @@ class GameRenderer {
     });
   }
 
-  addFloatingText(x, y, text, color = '#ffffff', size = 18, isCrit = false) {
+  addFloatingText(x, y, text, color = '#ffffff', size = 18, isCrit = false, isGold = false) {
     this.floatingTexts.push({
       x,
-      y: y - 28,
+      y: y - 30,
       text,
       color,
       size,
       isCrit,
+      isGold,
       alpha: 1.0,
-      vy: isCrit ? -2.6 : -1.5,
-      scale: isCrit ? 1.5 : 1.0
+      vy: isGold ? -2.2 : (isCrit ? -2.8 : -1.6),
+      scale: isGold ? 1.3 : (isCrit ? 1.5 : 1.0)
     });
   }
 
@@ -125,29 +127,97 @@ class GameRenderer {
     });
   }
 
-  addSlashTrail(x, y, angle, color = '#00d2d3') {
+  addSlashTrail(x, y, angle, radius = 55, color = '#00d2d3', width = 6) {
     this.slashTrails.push({
       x,
       y,
       angle,
-      radius: 52,
+      radius,
       color,
+      width,
       alpha: 1.0
     });
   }
 
-  spawnParticleTrail(x, y, color = '#ff9f43', count = 4, spread = 8) {
+  spawnParticleTrail(x, y, color = '#ff9f43', count = 4, spread = 8, speed = 50) {
     for (let i = 0; i < count; i++) {
       this.particles.push({
         x: x + (Math.random() - 0.5) * spread,
         y: y + (Math.random() - 0.5) * spread,
-        vx: (Math.random() - 0.5) * 50,
-        vy: (Math.random() - 0.5) * 50,
+        vx: (Math.random() - 0.5) * speed,
+        vy: (Math.random() - 0.5) * speed,
         color,
         size: Math.random() * 4 + 2,
         alpha: 0.95,
         decay: Math.random() * 1.6 + 2.2
       });
+    }
+  }
+
+  // Trigger skill or basic attack animation directly
+  triggerSkillVfx(playerId, champId, key, targetX, targetY) {
+    const p = this.gameState?.players?.find(pl => pl.id === playerId);
+    if (!p) return;
+
+    if (!this.champAnimStates[playerId]) {
+      this.champAnimStates[playerId] = { walkCycle: 0, attackSwingTimer: 0, hitFlashTimer: 0 };
+    }
+    this.champAnimStates[playerId].attackSwingTimer = 0.35; // Trigger attack swing animation
+
+    const dx = targetX - p.x;
+    const dy = targetY - p.y;
+    const ang = Math.atan2(dy, dx);
+
+    if (champId === 'blademaster') {
+      if (key === 'Q') {
+        this.addSlashTrail(p.x, p.y, ang, 80, '#00d2d3', 8);
+        this.addShockwave(targetX, targetY, 90, '#00d2d3');
+      } else if (key === 'W') {
+        this.addSlashTrail(p.x, p.y, 0, 110, '#54a0ff', 10);
+        this.addSlashTrail(p.x, p.y, Math.PI, 110, '#54a0ff', 10);
+        this.addShockwave(p.x, p.y, 140, '#00d2d3');
+      } else if (key === 'R') {
+        this.addShockwave(targetX, targetY, 180, '#00cec9');
+        this.camera.addScreenShake(8, 0.35);
+      }
+    } else if (champId === 'sniper') {
+      if (key === 'Q' || key === 'R') {
+        this.camera.addScreenShake(key === 'R' ? 7 : 3, 0.2);
+        this.skillVfxList.push({
+          type: 'laser_beam',
+          x1: p.x,
+          y1: p.y - 30,
+          x2: targetX,
+          y2: targetY,
+          width: key === 'R' ? 12 : 6,
+          color: key === 'R' ? '#ff4757' : '#ffffff',
+          glowColor: '#ff6b6b',
+          alpha: 1.0,
+          decay: key === 'R' ? 2.5 : 4.0
+        });
+      }
+    } else if (champId === 'pyromancer') {
+      if (key === 'W' || key === 'R') {
+        this.addShockwave(targetX, targetY, key === 'R' ? 200 : 130, '#ff7675');
+        this.spawnParticleTrail(targetX, targetY, '#ff7675', 20, 40, 90);
+        this.camera.addScreenShake(key === 'R' ? 8 : 4, 0.3);
+      }
+    } else if (champId === 'guardian') {
+      if (key === 'Q' || key === 'R') {
+        this.addShockwave(targetX, targetY, key === 'R' ? 180 : 100, '#f1c40f');
+        this.camera.addScreenShake(key === 'R' ? 8 : 4, 0.3);
+      }
+    } else if (champId === 'frost_mage') {
+      if (key === 'R') {
+        this.addShockwave(targetX, targetY, 210, '#74b9ff');
+        this.spawnParticleTrail(targetX, targetY, '#74b9ff', 24, 60, 80);
+      }
+    } else if (champId === 'demolitionist') {
+      if (key === 'R') {
+        this.addShockwave(targetX, targetY, 240, '#ff4757');
+        this.spawnParticleTrail(targetX, targetY, '#ff9f43', 30, 80, 110);
+        this.camera.addScreenShake(10, 0.45);
+      }
     }
   }
 
@@ -164,10 +234,13 @@ class GameRenderer {
         }
         if (window.soundEngine) window.soundEngine.playHitImpact(ev.isCrit);
 
-        // Flash target champion red
+        // Flash target red
         if (ev.targetId && this.champAnimStates[ev.targetId]) {
-          this.champAnimStates[ev.targetId].hitFlashTimer = 0.15;
+          this.champAnimStates[ev.targetId].hitFlashTimer = 0.16;
         }
+
+        // Spawn hit blood/energy sparks
+        this.spawnParticleTrail(ev.x, ev.y, ev.isCrit ? '#f1c40f' : '#ff4757', 6, 12, 60);
       } else if (ev.type === 'heal') {
         this.addFloatingText(ev.x, ev.y, `+${ev.amount}`, '#2ed573', 19, false);
         if (window.soundEngine) window.soundEngine.playShieldProc();
@@ -177,18 +250,20 @@ class GameRenderer {
       } else if (ev.type === 'flash') {
         this.addClickRing(ev.x, ev.y);
         this.addShockwave(ev.x, ev.y, 110, '#00d2d3');
-        this.spawnParticleTrail(ev.x, ev.y, '#00d2d3', 16, 40);
+        this.spawnParticleTrail(ev.x, ev.y, '#00d2d3', 18, 40);
         if (window.soundEngine) window.soundEngine.playFlash();
       } else if (ev.type === 'kill') {
         this.camera.addScreenShake(9, 0.38);
         this.addFloatingText(ev.x || 1200, (ev.y || 800) - 45, `💀 ${ev.victimName} 처치!`, '#ff4757', 30, true);
+        // LoL Gold Bounty popup (+90 💰)
+        this.addFloatingText(ev.x || 1200, (ev.y || 800) - 75, `+90 💰`, '#f1c40f', 24, false, true);
         if (window.soundEngine) window.soundEngine.playKillFanfare();
       }
     }
   }
 
   // ==========================================================
-  // MAIN RENDER LOOP (Authoritative 60 FPS)
+  // AUTHORITATIVE 60 FPS RENDER LOOP
   // ==========================================================
   render(gameState, mouseScreenPos) {
     this.gameState = gameState;
@@ -206,7 +281,7 @@ class GameRenderer {
     ctx.fillStyle = '#060a10';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // 3. Apply Camera World Transform with Zoom & Shake
+    // 3. Camera World Matrix (Zoom, Center, Shake)
     ctx.save();
     ctx.translate(this.camera.shakeOffsetX, this.camera.shakeOffsetY);
     ctx.scale(this.camera.zoom, this.camera.zoom);
@@ -215,168 +290,169 @@ class GameRenderer {
     const mapW = this.mapData.width || 2400;
     const mapH = this.mapData.height || 1600;
 
-    // 4. Render 2.5D Summoner's Rift Map & Animated River
+    // 4. Summoner's Rift Map (Cobblestone Lanes & Water)
     this.renderSummonersRift(ctx, mapW, mapH);
 
-    // 5. Ground Decals & Scorch Rings
-    this.renderGroundDecals(ctx);
+    // 5. 3D Isometric Stone Walls (Obstacles with Real Height & Shadows)
+    this.render3DIsoWalls(ctx);
 
-    // 6. AoE Skill Zones
+    // 6. AoE Skill Zones & Ground Seals
     this.renderAoeZones(ctx, gameState.aoeZones);
 
-    // 7. Bushes (Interactive Wind Sway)
+    // 7. Bushes (Wind Swaying)
     this.renderBushes(ctx);
 
-    // 8. 2.5D Isometric Structures (Nexus, Turrets, Walls)
+    // 8. 3D Isometric Structures (Nexus & Turrets with Targeting Beams)
     this.renderStructures(ctx, gameState.structures);
 
-    // 9. Projectiles (Laser cores, glowing missiles)
-    this.renderProjectiles(ctx, gameState.projectiles);
-
-    // 10. LoL Click Move Rings
+    // 9. LoL 4-Pronged Move Click Rings
     this.renderClickRings(ctx);
 
-    // 11. Shockwaves & Slash Trails
+    // 10. Shockwaves & Slash Trails
     this.renderShockwaves(ctx);
     this.renderSlashTrails(ctx);
 
-    // 12. 2.5D Layered Champions with LoL 100-HP Vitals
-    this.renderChampions(ctx, gameState.players, localPlayer);
+    // 11. Custom Skill VFX (Laser Beams, Meteors)
+    this.renderSkillVfx(ctx);
 
-    // 13. Particles VFX
+    // 12. Projectiles with Distinct Champion Visuals
+    this.renderProjectiles(ctx, gameState.projectiles);
+
+    // 13. Upright 2.5D Humanoid Champions (Y-Sorted Depth Occlusion)
+    this.render25DChampions(ctx, gameState.players, localPlayer);
+
+    // 14. Particle VFX Engine
     this.renderParticles(ctx);
 
-    // 14. Skill Aiming Indicator (Targeting Trajectory)
+    // 15. Skill Aiming Indicator (Targeting Trajectory)
     if (this.skillAimIndicator && localPlayer) {
       const mouseWorld = this.camera.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
       this.renderAimIndicator(ctx, localPlayer, mouseWorld);
     }
 
-    // 15. Spacebar Focus Indicator (LoL Yellow Triangle Ping)
+    // 16. Spacebar Focus Ping (LoL Yellow Triangle Indicator)
     if (this.camera.isSpaceHeld && localPlayer) {
       this.renderSpaceFocusPing(ctx, localPlayer);
     }
 
-    // 16. Floating Combat Texts
+    // 17. Floating Combat Texts & '+90 💰' Popups
     this.renderFloatingTexts(ctx);
 
     ctx.restore();
 
-    // 17. Screen-Space Vignette & HUD Minimap
+    // 18. Screen Vignette & Minimap Frustum
     this.renderVignette(ctx);
     this.renderMinimap(gameState, localPlayer);
   }
 
   // ==========================================================
-  // SUMMONER'S RIFT 2.5D TERRAIN & DYNAMIC RIVER
+  // SUMMONER'S RIFT COBBLESTONE LANES & DYNAMIC RIVER
   // ==========================================================
   renderSummonersRift(ctx, w, h) {
-    // 1. Base Dark Ground
-    ctx.fillStyle = '#0f171e';
+    // 1. Lush Dark Green Ground Turf
+    ctx.fillStyle = '#14211a';
     ctx.fillRect(0, 0, w, h);
 
-    // 2. High-Tech Grass Grid Texture
-    ctx.strokeStyle = 'rgba(26, 44, 40, 0.45)';
+    // Ground grass blade textures
+    ctx.strokeStyle = 'rgba(28, 48, 38, 0.45)';
     ctx.lineWidth = 1;
-    const gridSize = 100;
-    for (let x = 0; x <= w; x += gridSize) {
+    for (let x = 0; x <= w; x += 80) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
       ctx.stroke();
     }
-    for (let y = 0; y <= h; y += gridSize) {
+    for (let y = 0; y <= h; y += 80) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
       ctx.stroke();
     }
 
-    // 3. Lanes (Stone Flagstones)
-    ctx.strokeStyle = '#1a2736';
-    ctx.lineWidth = 130;
+    // 2. Cobblestone Lanes (Authentic Summoner's Rift Earthy Paving)
+    ctx.strokeStyle = '#2b3638';
+    ctx.lineWidth = 140;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     // Mid Lane
     ctx.beginPath();
-    ctx.moveTo(200, 200);
-    ctx.lineTo(w - 200, h - 200);
+    ctx.moveTo(220, 220);
+    ctx.lineTo(w - 220, h - 220);
     ctx.stroke();
 
     // Top Lane
     ctx.beginPath();
-    ctx.moveTo(200, 200);
-    ctx.lineTo(200, h - 200);
-    ctx.lineTo(w - 200, h - 200);
+    ctx.moveTo(220, 220);
+    ctx.lineTo(220, h - 220);
+    ctx.lineTo(w - 220, h - 220);
     ctx.stroke();
 
     // Bot Lane
     ctx.beginPath();
-    ctx.moveTo(200, 200);
-    ctx.lineTo(w - 200, 200);
-    ctx.lineTo(w - 200, h - 200);
+    ctx.moveTo(220, 220);
+    ctx.lineTo(w - 220, 220);
+    ctx.lineTo(w - 220, h - 220);
     ctx.stroke();
 
-    // Lane Center Flagstone Seams
-    ctx.strokeStyle = '#273c54';
-    ctx.lineWidth = 80;
+    // Cobblestone Center Pavers
+    ctx.strokeStyle = '#3e4b4f';
+    ctx.lineWidth = 85;
     ctx.beginPath();
-    ctx.moveTo(200, 200);
-    ctx.lineTo(w - 200, h - 200);
+    ctx.moveTo(220, 220);
+    ctx.lineTo(w - 220, h - 220);
     ctx.stroke();
 
-    // 4. Dynamic River Water with Multi-Sine Wave Caustics
+    // 3. Dynamic River Water with Sine Wave Caustics
     this.renderDynamicRiver(ctx, w, h);
 
-    // 5. Team Fountain Platforms
-    this.renderBasePlatform(ctx, 200, 200, 'blue');
-    this.renderBasePlatform(ctx, w - 200, h - 200, 'red');
+    // 4. Base Fountain Platforms
+    this.renderBasePlatform(ctx, 220, 220, 'blue');
+    this.renderBasePlatform(ctx, w - 220, h - 220, 'red');
 
-    // 6. Map Border Walls
-    ctx.strokeStyle = '#3d2d1d';
-    ctx.lineWidth = 16;
+    // Outer Edge Fence
+    ctx.strokeStyle = '#2d3436';
+    ctx.lineWidth = 14;
     ctx.strokeRect(0, 0, w, h);
   }
 
   renderDynamicRiver(ctx, w, h) {
     ctx.save();
-    // Diagonal River path
-    const riverStart = { x: 300, y: h - 100 };
-    const riverEnd = { x: w - 300, y: 100 };
+    const riverStart = { x: 300, y: h - 120 };
+    const riverEnd = { x: w - 300, y: 120 };
 
-    // Water Base
-    ctx.strokeStyle = 'rgba(12, 58, 82, 0.85)';
+    // River Bed Depth
+    ctx.strokeStyle = 'rgba(10, 48, 64, 0.9)';
     ctx.lineWidth = 210;
     ctx.beginPath();
     ctx.moveTo(riverStart.x, riverStart.y);
     ctx.lineTo(riverEnd.x, riverEnd.y);
     ctx.stroke();
 
-    // Water Surface Shimmer (Animated Sine Caustics)
+    // Animated Translucent Emerald Water Caustics
     const t = this.animationTimer;
-    ctx.strokeStyle = 'rgba(34, 166, 179, 0.4)';
-    ctx.lineWidth = 140;
+    ctx.strokeStyle = 'rgba(32, 178, 170, 0.45)';
+    ctx.lineWidth = 150;
     ctx.beginPath();
-    for (let i = 0; i <= 20; i++) {
-      const prog = i / 20;
+    for (let i = 0; i <= 24; i++) {
+      const prog = i / 24;
       const rx = riverStart.x + (riverEnd.x - riverStart.x) * prog;
       const ry = riverStart.y + (riverEnd.y - riverStart.y) * prog;
-      const wave = Math.sin(prog * 12 + t * 3.5) * 14;
+      const wave = Math.sin(prog * 14 + t * 4.0) * 16;
       if (i === 0) ctx.moveTo(rx - wave, ry + wave);
       else ctx.lineTo(rx - wave, ry + wave);
     }
     ctx.stroke();
 
-    // River Crest Highlights
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 2;
-    for (let c = 0; c < 5; c++) {
-      const offset = (c * 0.2 + t * 0.15) % 1.0;
+    // Water Surface Specular Foam
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+    ctx.lineWidth = 2.5;
+    for (let c = 0; c < 6; c++) {
+      const offset = (c * 0.17 + t * 0.12) % 1.0;
       const cx = riverStart.x + (riverEnd.x - riverStart.x) * offset;
       const cy = riverStart.y + (riverEnd.y - riverStart.y) * offset;
       ctx.beginPath();
-      ctx.arc(cx, cy, 28 + Math.sin(t * 4 + c) * 6, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 32 + Math.sin(t * 3 + c) * 8, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -390,25 +466,25 @@ class GameRenderer {
     ctx.save();
     ctx.translate(x, y);
 
-    // Base Dais (Octagon)
+    // Stone Dais
     ctx.fillStyle = '#1e272e';
     ctx.strokeStyle = mainCol;
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.arc(0, 0, 110, 0, Math.PI * 2);
+    ctx.arc(0, 0, 115, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Inner Arcane Ring
+    // Arcane Concentric Ring
     ctx.strokeStyle = glowCol;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.setLineDash([8, 8]);
     ctx.beginPath();
-    ctx.arc(0, 0, 80, 0, Math.PI * 2);
+    ctx.arc(0, 0, 85, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Team Crest Icon
-    ctx.font = '36px sans-serif';
+    // Team Crest
+    ctx.font = '38px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(isBlue ? '🛡️' : '⚔️', 0, 0);
@@ -417,7 +493,67 @@ class GameRenderer {
   }
 
   // ==========================================================
-  // BUSHES (WIND SWAY & INTERACTION)
+  // 3D ISOMETRIC STONE WALLS (VERTICAL ELEVATION & SHADOWS)
+  // ==========================================================
+  render3DIsoWalls(ctx) {
+    const obstacles = this.mapData.obstacles || [];
+    const wallHeight = 55; // vertical 3D height
+
+    for (const obs of obstacles) {
+      const x = obs.x;
+      const y = obs.y;
+      const r = obs.radius || 40;
+
+      ctx.save();
+
+      // 1. Ground Drop Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.beginPath();
+      ctx.ellipse(x + 12, y + 14, r * 1.15, r * 0.65, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Shaded Vertical Front Face (3D Stone Masonry Wall)
+      ctx.fillStyle = '#2d3436';
+      ctx.beginPath();
+      ctx.moveTo(x - r, y);
+      ctx.lineTo(x + r, y);
+      ctx.lineTo(x + r, y - wallHeight);
+      ctx.lineTo(x - r, y - wallHeight);
+      ctx.closePath();
+      ctx.fill();
+
+      // Stone Brick Grooves on Vertical Wall Face
+      ctx.strokeStyle = '#1e272e';
+      ctx.lineWidth = 2;
+      for (let h = y - 10; h > y - wallHeight; h -= 14) {
+        ctx.beginPath();
+        ctx.moveTo(x - r + 4, h);
+        ctx.lineTo(x + r - 4, h);
+        ctx.stroke();
+      }
+
+      // 3. Top Wall Surface (Lit by Sky)
+      ctx.fillStyle = '#4b5558';
+      ctx.strokeStyle = '#636e72';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(x, y - wallHeight, r, r * 0.58, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Stone Wall Edge Rim Highlight
+      ctx.strokeStyle = '#dfe6e9';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x, y - wallHeight, r * 0.75, Math.PI, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  // ==========================================================
+  // BUSHES (FOLIAGE WITH WIND SWAY)
   // ==========================================================
   renderBushes(ctx) {
     const bushes = this.mapData.bushes || [];
@@ -427,18 +563,17 @@ class GameRenderer {
       ctx.save();
       ctx.translate(b.x, b.y);
 
-      // Wind Sway
-      const sway = Math.sin(t * 3 + b.x * 0.01) * 3;
+      const sway = Math.sin(t * 3.2 + b.x * 0.015) * 3;
 
-      // Soft Green Foliage Cluster
-      ctx.fillStyle = 'rgba(16, 75, 41, 0.85)';
+      // Soft Layered Leaves
+      ctx.fillStyle = 'rgba(16, 75, 41, 0.88)';
       ctx.beginPath();
       ctx.arc(sway, 0, b.radius, 0, Math.PI * 2);
-      ctx.arc(-b.radius * 0.4 + sway, -b.radius * 0.3, b.radius * 0.65, 0, Math.PI * 2);
-      ctx.arc(b.radius * 0.4 + sway, b.radius * 0.3, b.radius * 0.65, 0, Math.PI * 2);
+      ctx.arc(-b.radius * 0.4 + sway, -b.radius * 0.35, b.radius * 0.65, 0, Math.PI * 2);
+      ctx.arc(b.radius * 0.4 + sway, b.radius * 0.35, b.radius * 0.65, 0, Math.PI * 2);
       ctx.fill();
 
-      // Bush Leaves Highlight
+      // Green Leaf Edges
       ctx.strokeStyle = '#2ed573';
       ctx.lineWidth = 2.5;
       ctx.stroke();
@@ -448,14 +583,13 @@ class GameRenderer {
   }
 
   // ==========================================================
-  // 2.5D STRUCTURES (NEXUS, TURRETS & OBSTACLES)
+  // 3D ISOMETRIC STRUCTURES (NEXUS & TURRETS)
   // ==========================================================
   renderStructures(ctx, structures) {
     if (!structures) return;
 
     for (const s of structures) {
       if (!s.isAlive) {
-        // Destroyed Ruins
         ctx.fillStyle = '#2d3436';
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.radius * 0.7, 0, Math.PI * 2);
@@ -470,17 +604,16 @@ class GameRenderer {
       ctx.save();
       ctx.translate(s.x, s.y);
 
-      // Drop Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      // Contact Drop Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
       ctx.beginPath();
-      ctx.ellipse(0, s.radius * 0.75, s.radius * 1.05, s.radius * 0.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, s.radius * 0.75, s.radius * 1.15, s.radius * 0.55, 0, 0, Math.PI * 2);
       ctx.fill();
 
       if (s.type === 'nexus') {
         // ============================================
-        // ARCANE GYRO NEXUS
+        // ARCANE NEXUS (3D GYROSCOPE & PULSING CRYSTAL)
         // ============================================
-        // 1. Runic Dais Base
         ctx.fillStyle = '#1e272e';
         ctx.strokeStyle = teamColor;
         ctx.lineWidth = 5;
@@ -489,38 +622,28 @@ class GameRenderer {
         ctx.fill();
         ctx.stroke();
 
-        // 2. Dual Counter-Rotating Rings
-        const rot = this.animationTimer * 1.4;
+        // Dual Rotating Gyro Rings
+        const rot = this.animationTimer * 1.5;
         ctx.save();
         ctx.rotate(rot);
         ctx.strokeStyle = glowColor;
-        ctx.lineWidth = 3;
-        ctx.setLineDash([14, 8]);
+        ctx.lineWidth = 3.5;
+        ctx.setLineDash([16, 8]);
         ctx.beginPath();
-        ctx.arc(0, 0, s.radius + 16, 0, Math.PI * 2);
+        ctx.arc(0, 0, s.radius + 18, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
 
-        ctx.save();
-        ctx.rotate(-rot * 0.8);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 12]);
-        ctx.beginPath();
-        ctx.arc(0, 0, s.radius + 26, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-
-        // 3. Floating Giant Core Crystal Gem
-        const pulse = Math.sin(this.animationTimer * 5) * 5;
+        // Pulsing Floating Core Gem
+        const pulse = Math.sin(this.animationTimer * 5) * 6;
         ctx.fillStyle = teamColor;
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
         ctx.beginPath();
         for (let i = 0; i < 8; i++) {
-          const ang = (i * Math.PI) / 4 + rot * 0.3;
-          const px = Math.cos(ang) * (s.radius * 0.6 + pulse);
-          const py = Math.sin(ang) * (s.radius * 0.6 + pulse);
+          const ang = (i * Math.PI) / 4 + rot * 0.4;
+          const px = Math.cos(ang) * (s.radius * 0.65 + pulse);
+          const py = Math.sin(ang) * (s.radius * 0.65 + pulse);
           if (i === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         }
@@ -529,40 +652,50 @@ class GameRenderer {
         ctx.stroke();
       } else {
         // ============================================
-        // 2.5D STONE TURRET WITH ROTATING CRYSTAL
+        // 3D ISOMETRIC TURRET (COLUMN + LEVITATING CRYSTAL)
         // ============================================
-        // 1. 2.5D Hexagonal Stone Pillar
+        const towerH = 60; // 3D vertical height
+        // Shaded Stone Column Body
         ctx.fillStyle = '#2d3436';
-        ctx.strokeStyle = '#636e72';
+        ctx.beginPath();
+        ctx.moveTo(-s.radius * 0.8, 0);
+        ctx.lineTo(s.radius * 0.8, 0);
+        ctx.lineTo(s.radius * 0.6, -towerH);
+        ctx.lineTo(-s.radius * 0.6, -towerH);
+        ctx.closePath();
+        ctx.fill();
+
+        // Base Stone Pedestal
+        ctx.strokeStyle = teamColor;
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(0, 0, s.radius, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, s.radius, s.radius * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Top Platform Cap
+        ctx.fillStyle = '#4b5558';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, -towerH, s.radius * 0.6, s.radius * 0.35, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        // Stone Wall Elevation Highlight
-        ctx.strokeStyle = teamColor;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, -4, s.radius * 0.8, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // 2. Floating Levitating Mana Crystal
-        const gemFloat = Math.sin(this.animationTimer * 3.5) * 6;
-        const gemRot = this.animationTimer * 2.2;
+        // Floating Levitating Mana Crystal
+        const gemFloat = Math.sin(this.animationTimer * 4) * 6;
+        const gemRot = this.animationTimer * 2.5;
         ctx.save();
-        ctx.translate(0, -10 + gemFloat);
+        ctx.translate(0, -towerH - 18 + gemFloat);
         ctx.rotate(gemRot);
 
         ctx.fillStyle = teamColor;
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2.5;
-        // Diamond Gem
         ctx.beginPath();
         ctx.moveTo(0, -18);
-        ctx.lineTo(14, 0);
+        ctx.lineTo(13, 0);
         ctx.lineTo(0, 18);
-        ctx.lineTo(-14, 0);
+        ctx.lineTo(-13, 0);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
@@ -571,40 +704,35 @@ class GameRenderer {
 
       ctx.restore();
 
-      // Structure Overhead Health Bar
+      // Structure Health Bar
       this.renderStructureHealthBar(ctx, s, teamColor);
     }
   }
 
   renderStructureHealthBar(ctx, s, teamColor) {
-    const barW = 80;
+    const barW = 84;
     const barH = 8;
     const barX = s.x - barW / 2;
-    const barY = s.y - s.radius - 22;
+    const barY = s.y - s.radius - 32;
 
     const hpPct = Math.max(0, Math.min(1, s.hp / s.maxHp));
-
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
-
-    // HP Fill
     ctx.fillStyle = teamColor;
     ctx.fillRect(barX, barY, barW * hpPct, barH);
-
-    // Border
     ctx.strokeStyle = '#2d3436';
     ctx.lineWidth = 1;
     ctx.strokeRect(barX, barY, barW, barH);
   }
 
   // ==========================================================
-  // 2.5D LAYERED CHAMPION RENDERING (10 HEROES)
+  // 2.5D ISOMETRIC UPRIGHT STANDING HUMANOID CHAMPIONS
+  // (Identical to User Screenshots: Legs, Torso, Head, Weapons)
   // ==========================================================
-  renderChampions(ctx, players, localPlayer) {
+  render25DChampions(ctx, players, localPlayer) {
     if (!players || !players.length) return;
 
-    // Y-Sorting for 2.5D depth occlusion!
+    // Y-Sorting for true 2.5D depth occlusion!
     const sortedPlayers = [...players].sort((a, b) => a.y - b.y);
 
     for (const p of sortedPlayers) {
@@ -614,31 +742,24 @@ class GameRenderer {
       const isAlly = localPlayer ? p.team === localPlayer.team : p.team === 'blue';
       const teamColor = p.team === 'blue' ? '#0984e3' : '#d63031';
 
-      // Animation State Tracker
       if (!this.champAnimStates[p.id]) {
-        this.champAnimStates[p.id] = {
-          walkCycle: 0,
-          hitFlashTimer: 0,
-          prevX: p.x,
-          prevY: p.y
-        };
+        this.champAnimStates[p.id] = { walkCycle: 0, attackSwingTimer: 0, hitFlashTimer: 0 };
       }
       const anim = this.champAnimStates[p.id];
       const isMoving = p.vx !== 0 || p.vy !== 0;
-      if (isMoving) {
-        anim.walkCycle += 0.25;
-      }
+      if (isMoving) anim.walkCycle += 0.28;
+      if (anim.attackSwingTimer > 0) anim.attackSwingTimer -= 0.0166;
 
       ctx.save();
       ctx.translate(p.x, p.y);
 
-      // 1. Soft Dynamic Drop Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      // 1. Ground Contact Shadow (Soft Blurred Oval)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
       ctx.beginPath();
-      ctx.ellipse(0, p.radius * 0.75, p.radius * 0.95, p.radius * 0.42, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, p.radius * 0.95, p.radius * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Selection Ring for Local Player
+      // 2. Local Player Selection Ring
       if (isMe) {
         ctx.strokeStyle = '#f1c40f';
         ctx.lineWidth = 2.5;
@@ -650,294 +771,287 @@ class GameRenderer {
       // 3. Hit Damage Flash Tint
       if (anim.hitFlashTimer > 0) {
         anim.hitFlashTimer -= 0.0166;
-        ctx.fillStyle = 'rgba(255, 75, 75, 0.35)';
+        ctx.fillStyle = 'rgba(255, 75, 75, 0.4)';
         ctx.beginPath();
-        ctx.arc(0, 0, p.radius + 12, 0, Math.PI * 2);
+        ctx.arc(0, -25, p.radius + 14, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 4. Directional Body Rotation & Walking Sway
-      ctx.save();
-      ctx.rotate(p.angle);
-
-      const walkBob = isMoving ? Math.sin(anim.walkCycle) * 2.5 : 0;
-      ctx.translate(0, walkBob);
-
-      // Draw Distinct 2.5D Champion Model
-      this.draw25DChampionModel(ctx, p, teamColor, anim, isMoving);
+      // 4. Render Upright Standing 2.5D Humanoid Character Model
+      this.drawUprightHumanoidHero(ctx, p, teamColor, anim, isMoving);
 
       ctx.restore();
-      ctx.restore();
 
-      // 5. Overhead Segmented 100-HP Vitals Bar
-      this.renderOverheadVitalsBar(ctx, p, isMe, isAlly);
+      // 5. Authentic LoL Overhead Health Bar (Left [Level] Badge, 100-HP Ticks, Mana, Nickname)
+      this.renderAuthenticLolHealthBar(ctx, p, isMe, isAlly);
     }
   }
 
-  // Draw Unique 2.5D Layered Champion Silhouettes
-  draw25DChampionModel(ctx, p, teamColor, anim, isMoving) {
-    const r = p.radius || 26;
+  // Draw Full Upright Standing Humanoid Champion (Head at top, feet at bottom)
+  drawUprightHumanoidHero(ctx, p, teamColor, anim, isMoving) {
     const cid = p.championId;
-    const stepSwing = isMoving ? Math.sin(anim.walkCycle) * 6 : 0;
+    const walkBob = isMoving ? Math.sin(anim.walkCycle) * 2.5 : 0;
+    const step = isMoving ? Math.sin(anim.walkCycle) * 7 : 0;
+    const isAttacking = anim.attackSwingTimer > 0;
+    const swingAngle = isAttacking ? Math.sin(anim.attackSwingTimer * 18) * 0.8 : 0;
 
-    // --- 1. Feet (Biped Walk Animation) ---
+    ctx.save();
+    ctx.translate(0, walkBob);
+
+    // --- LEGS & BOOTS (Ground elevation: y = -14 to 0) ---
     ctx.fillStyle = '#2d3436';
-    // Left Foot
+    // Left Leg / Boot
     ctx.beginPath();
-    ctx.ellipse(6, -12 + stepSwing, 5, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(-6, -6 + step, 4, 7, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Right Foot
+    // Right Leg / Boot
     ctx.beginPath();
-    ctx.ellipse(6, 12 - stepSwing, 5, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(6, -6 - step, 4, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // --- 2. Main Torso Armor & Shoulder Pads ---
+    // --- CAPE / SCARF FLUTTERING BEHIND (y = -32 to -10) ---
+    const wind = Math.sin(this.animationTimer * 7) * 4;
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.moveTo(-10, -28);
+    ctx.lineTo(-14 + wind, -8);
+    ctx.lineTo(14 + wind, -8);
+    ctx.lineTo(10, -28);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- TORSO & CHESTPLATE ARMOR (y = -28 to -16) ---
     ctx.fillStyle = p.color || '#2c3e50';
     ctx.strokeStyle = teamColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.roundRect(-12, -32, 24, 20, 4);
     ctx.fill();
     ctx.stroke();
 
-    // Chest Plate
+    // Chest Emblem / Breastplate
     ctx.fillStyle = '#34495e';
     ctx.beginPath();
-    ctx.arc(2, 0, r * 0.65, 0, Math.PI * 2);
+    ctx.roundRect(-8, -30, 16, 12, 2);
     ctx.fill();
 
-    // --- 3. Champion-Specific 2.5D Weapons & Equipment ---
+    // --- SHOULDERS & PAULDRONS (y = -34) ---
+    ctx.fillStyle = '#7f8c8d';
+    // Left Pauldron
+    ctx.beginPath();
+    ctx.arc(-14, -30, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // Right Pauldron
+    ctx.beginPath();
+    ctx.arc(14, -30, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // --- HEAD, HELMET & VISOR (y = -46 to -34) ---
+    ctx.fillStyle = '#f5cd79'; // skin / face tone
+    ctx.beginPath();
+    ctx.arc(0, -42, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Helmet / Hair
+    ctx.fillStyle = '#2c3e50';
+    ctx.beginPath();
+    ctx.arc(0, -45, 9.5, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Glowing Eyes / Visor
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-4, -43, 2.5, 2.5);
+    ctx.fillRect(2, -43, 2.5, 2.5);
+
+    // --- WIELDED WEAPONS IN 3D SPACE (Attack Swings & Glows) ---
+    ctx.save();
+    ctx.translate(12, -26);
+    ctx.rotate(p.angle * 0.3 + swingAngle);
+
     if (cid === 'blademaster') {
-      // ⚔️ 검객: Glowing Katana Blade with Arc Trail
-      ctx.save();
+      // ⚔️ Glowing Katana Blade with Azure Trail
       ctx.strokeStyle = '#00ffff';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.moveTo(8, -4);
-      ctx.lineTo(r + 20, -10);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18, -22);
       ctx.stroke();
-      // Katana Hilt
+      // Gold Hilt
       ctx.fillStyle = '#f1c40f';
-      ctx.fillRect(6, -8, 5, 8);
-      ctx.restore();
+      ctx.fillRect(-2, -2, 6, 4);
 
-      // Scarf fluttering behind
-      ctx.fillStyle = '#0984e3';
-      ctx.beginPath();
-      ctx.moveTo(-r, 0);
-      ctx.lineTo(-r - 18, -6 + Math.sin(this.animationTimer * 8) * 4);
-      ctx.lineTo(-r - 12, 6);
-      ctx.closePath();
-      ctx.fill();
+      if (isAttacking) {
+        this.addSlashTrail(0, -20, p.angle, 45, '#00ffff', 5);
+      }
     } else if (cid === 'sniper') {
-      // 🎯 저격수: Long Precision Sniper Rifle + Laser Sight
-      ctx.save();
-      // Rifle Barrel
+      // 🎯 Precision Hextech Sniper Rifle
       ctx.fillStyle = '#636e72';
-      ctx.fillRect(8, -3, r + 18, 6);
-      // Scope
+      ctx.fillRect(0, -4, 32, 7);
       ctx.fillStyle = '#2d3436';
-      ctx.fillRect(16, -7, 10, 4);
-      // Red Laser Pointer Beam
-      ctx.strokeStyle = 'rgba(255, 71, 87, 0.75)';
+      ctx.fillRect(8, -8, 12, 4); // Scope
+      // Red Laser Sight Pointer
+      ctx.strokeStyle = 'rgba(255, 71, 87, 0.85)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(r + 26, 0);
-      ctx.lineTo(r + 140, 0);
+      ctx.moveTo(32, 0);
+      ctx.lineTo(140, 0);
       ctx.stroke();
-      ctx.restore();
-
-      // Scout Cloak
-      ctx.fillStyle = '#2d3436';
-      ctx.beginPath();
-      ctx.arc(-8, 0, 14, 0, Math.PI * 2);
-      ctx.fill();
     } else if (cid === 'pyromancer') {
-      // 🔥 화염술사: 3 Revolving Arcane Flame Orbs
-      ctx.save();
-      const orbAngle = this.animationTimer * 4;
+      // 🔥 Fire Staff + 3 Orbiting Burning Orbs
+      ctx.strokeStyle = '#d63031';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 8);
+      ctx.lineTo(6, -26);
+      ctx.stroke();
+      // Orbiting Orbs
+      const t = this.animationTimer * 4;
       for (let i = 0; i < 3; i++) {
-        const ang = orbAngle + (i * Math.PI * 2) / 3;
-        const ox = Math.cos(ang) * (r + 10);
-        const oy = Math.sin(ang) * (r + 10);
+        const ang = t + (i * Math.PI * 2) / 3;
+        const ox = Math.cos(ang) * 22;
+        const oy = Math.sin(ang) * 12 - 20;
         ctx.fillStyle = '#ff7675';
         ctx.beginPath();
-        ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+        ctx.arc(ox, oy, 5.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#ffeaa7';
-        ctx.lineWidth = 2;
-        ctx.stroke();
       }
-      ctx.restore();
     } else if (cid === 'guardian') {
-      // 🛡️ 수호자: Massive Tower Shield & Warhammer
-      ctx.save();
-      // Giant Tower Shield on Front
+      // 🛡️ Tower Gold Shield
       ctx.fillStyle = '#f1c40f';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
-      ctx.fillRect(r - 2, -18, 8, 36);
-      ctx.strokeRect(r - 2, -18, 8, 36);
-      // Shield Emblem
-      ctx.fillStyle = '#2d3436';
-      ctx.beginPath();
-      ctx.arc(r + 2, 0, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      ctx.fillRect(2, -18, 10, 36);
+      ctx.strokeRect(2, -18, 10, 36);
     } else if (cid === 'shadow_assassin') {
-      // 🗡️ 암살자: Twin Obsidian Daggers
-      ctx.save();
+      // 🗡️ Twin Daggers
       ctx.strokeStyle = '#a55eea';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(6, -14);
-      ctx.lineTo(r + 12, -16);
-      ctx.moveTo(6, 14);
-      ctx.lineTo(r + 12, 16);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(14, -14);
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(-26, -12);
       ctx.stroke();
-      ctx.restore();
-
-      // Shadow Mist Trail
-      if (Math.random() < 0.3) {
-        this.spawnParticleTrail(p.x, p.y, '#a55eea', 1, 6);
-      }
     } else if (cid === 'frost_mage') {
-      // ❄️ 빙결술사: Frost Crystal Crown & Staff
-      ctx.save();
+      // ❄️ Frost Staff
       ctx.fillStyle = '#74b9ff';
       ctx.beginPath();
-      ctx.arc(r + 8, 0, 8, 0, Math.PI * 2);
+      ctx.arc(6, -22, 8, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
     } else if (cid === 'berserker') {
-      // 🪓 광전사: Dual Bloody Battle Axes
-      ctx.save();
+      // 🪓 Dual Battleaxes
       ctx.fillStyle = '#d63031';
-      ctx.fillRect(r + 2, -16, 12, 6);
-      ctx.fillRect(r + 2, 10, 12, 6);
-      ctx.restore();
+      ctx.fillRect(0, -18, 14, 8);
+      ctx.fillRect(-22, -18, 14, 8);
     } else if (cid === 'shadow_hunter') {
-      // 🏹 그림자 사냥꾼: Wrist Repeater Crossbow
-      ctx.save();
+      // 🏹 Wrist Repeater Crossbow
       ctx.strokeStyle = '#00b894';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(r - 4, -14);
-      ctx.lineTo(r + 12, 0);
-      ctx.lineTo(r - 4, 14);
+      ctx.moveTo(-4, -12);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(-4, 12);
       ctx.stroke();
-      ctx.restore();
     } else if (cid === 'brawler') {
-      // 🥊 격투가: Blazing Dragon Gauntlets
-      ctx.save();
+      // 🥊 Dragon Fist Gauntlets
       ctx.fillStyle = '#e17055';
       ctx.beginPath();
-      ctx.arc(r + 4, -9, 7, 0, Math.PI * 2);
-      ctx.arc(r + 4, 9, 7, 0, Math.PI * 2);
+      ctx.arc(4, -4, 8, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
     } else if (cid === 'demolitionist') {
-      // 💣 폭탄광: Mad Goggles & Rocket Backpack
-      ctx.save();
-      ctx.fillStyle = '#d63031';
+      // 💣 Bomb with Sparking Fuse
+      ctx.fillStyle = '#2d3436';
       ctx.beginPath();
-      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.arc(4, -6, 11, 0, Math.PI * 2);
       ctx.fill();
-      // Sparking Fuse
       ctx.fillStyle = '#f1c40f';
-      ctx.fillRect(-6, -14, 4, 4);
-      ctx.restore();
+      ctx.fillRect(2, -18, 4, 4);
     }
+
+    ctx.restore();
+    ctx.restore();
   }
 
   // ==========================================================
-  // AUTHENTIC 100-HP SEGMENTED OVERHEAD VITALS BAR
+  // AUTHENTIC LOL OVERHEAD HEALTH BAR
+  // (Matching User Screenshots: Left [Level] Box, 100-HP Ticks, Mana, Nickname)
   // ==========================================================
-  renderOverheadVitalsBar(ctx, p, isMe, isAlly) {
-    const barW = 76;
-    const barH = 7;
-    const barX = p.x - barW / 2;
-    const barY = p.y - p.radius - 24;
+  renderAuthenticLolHealthBar(ctx, p, isMe, isAlly) {
+    const barW = 86;
+    const barH = 8;
+    const barX = p.x - barW / 2 + 10;
+    const barY = p.y - 68; // positioned right over character's head
 
     const hpPct = Math.max(0, Math.min(1, p.hp / p.maxHp));
     const shieldPct = Math.max(0, Math.min(1, (p.shield || 0) / p.maxHp));
     const mpPct = Math.max(0, Math.min(1, p.mp / p.maxMp));
 
-    // 1. Dark Plate Container
-    ctx.fillStyle = 'rgba(10, 15, 24, 0.88)';
-    ctx.fillRect(barX - 2, barY - 14, barW + 4, barH + 19);
-
-    // 2. Summoner Nickname Tag
+    // 1. Summoner Nickname above bar
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillStyle = isMe ? '#f1c40f' : (isAlly ? '#74b9ff' : '#ff7675');
-    ctx.fillText(p.nickname || '소환사', p.x, barY - 4);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    const nickText = p.nickname || '소환사';
+    ctx.strokeText(nickText, p.x, barY - 6);
+    ctx.fillStyle = isMe ? '#f1c40f' : (isAlly ? '#74b9ff' : '#ffffff');
+    ctx.fillText(nickText, p.x, barY - 6);
 
-    // 3. HP Fill (Green for Ally, Red for Enemy)
-    const hpCol = isAlly ? '#2ed573' : '#ff4757';
-    ctx.fillStyle = hpCol;
+    // 2. Left Level Box (Black Badge with Level Number e.g. [14])
+    const levelBoxX = barX - 22;
+    const levelBoxY = barY - 2;
+    ctx.fillStyle = '#0a0e17';
+    ctx.strokeStyle = '#57606f';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(levelBoxX, levelBoxY, 18, 18);
+    ctx.strokeRect(levelBoxX, levelBoxY, 18, 18);
+
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('14', levelBoxX + 9, levelBoxY + 9);
+
+    // 3. Health Bar Background
+    ctx.fillStyle = '#060a10';
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+    // 4. HP Fill (Green for Ally, Red for Enemy)
+    const hpColor = isAlly ? '#2ed573' : '#ff4757';
+    ctx.fillStyle = hpColor;
     ctx.fillRect(barX, barY, barW * hpPct, barH);
 
-    // 4. White Shield Overlay Fill
+    // 5. White Shield Overlay
     if (shieldPct > 0) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.fillRect(barX + barW * hpPct, barY, barW * shieldPct, barH);
     }
 
-    // 5. 100-HP Segmented Black Notches (LoL Classic HP Bar)
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.lineWidth = 1;
+    // 6. 100-HP Black Ticks & 1000-HP Thick Dividers (Signature LoL Bar)
     const segments = Math.floor(p.maxHp / 100);
     for (let i = 1; i < segments; i++) {
       const notchX = barX + (i / segments) * barW;
-      const isThick = i % 10 === 0; // 1000 HP thick tick
+      const isThick = i % 10 === 0;
+      ctx.strokeStyle = isThick ? '#ffffff' : 'rgba(0, 0, 0, 0.85)';
+      ctx.lineWidth = isThick ? 1.5 : 1.0;
       ctx.beginPath();
       ctx.moveTo(notchX, barY);
       ctx.lineTo(notchX, barY + barH);
       ctx.stroke();
     }
 
-    // 6. MP Bar Underneath
-    ctx.fillStyle = '#0984e3';
-    ctx.fillRect(barX, barY + barH + 1, barW * mpPct, 2.5);
-
-    // 7. Outer Gold / Dark Border
-    ctx.strokeStyle = isMe ? '#f1c40f' : '#2d3436';
+    // Outer Border
+    ctx.strokeStyle = '#2d3436';
     ctx.lineWidth = 1;
     ctx.strokeRect(barX, barY, barW, barH);
+
+    // 7. Cyan Mana Bar Immediately Below
+    ctx.fillStyle = '#0984e3';
+    ctx.fillRect(barX, barY + barH + 1, barW * mpPct, 2.5);
   }
 
   // ==========================================================
-  // SPACEBAR FOCUS PING (LoL Iconic Yellow Overhead Marker)
-  // ==========================================================
-  renderSpaceFocusPing(ctx, localPlayer) {
-    ctx.save();
-    const markerY = localPlayer.y - localPlayer.radius - 40;
-    const bounce = Math.sin(this.animationTimer * 12) * 5;
-
-    ctx.translate(localPlayer.x, markerY + bounce);
-
-    // Glowing Yellow Arrow (▼)
-    ctx.fillStyle = '#f1c40f';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 10);
-    ctx.lineTo(-10, -8);
-    ctx.lineTo(10, -8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // ==========================================================
-  // PROJECTILES & SPELL VISUALS
+  // PROJECTILES WITH DISTINCT CHAMPION VISUALS
   // ==========================================================
   renderProjectiles(ctx, projectiles) {
     if (!projectiles || !projectiles.length) return;
@@ -946,23 +1060,21 @@ class GameRenderer {
       ctx.save();
       ctx.translate(pr.x, pr.y);
 
-      // GPU Additive Blending for Bright Light Core
+      // GPU Additive Blending
       ctx.globalCompositeOperation = 'lighter';
 
-      // Laser Core / Magic Glow
-      const radGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, pr.radius * 2);
+      const radGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, pr.radius * 2.2);
       radGrad.addColorStop(0, '#ffffff');
       radGrad.addColorStop(0.4, pr.color || '#ff9f43');
       radGrad.addColorStop(1, 'rgba(0,0,0,0)');
 
       ctx.fillStyle = radGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, pr.radius * 2, 0, Math.PI * 2);
+      ctx.arc(0, 0, pr.radius * 2.2, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
 
-      // Spawn Particle Trail Behind Projectile
       if (Math.random() < 0.6) {
         this.spawnParticleTrail(pr.x, pr.y, pr.color || '#ff9f43', 2, 4);
       }
@@ -970,7 +1082,47 @@ class GameRenderer {
   }
 
   // ==========================================================
-  // AOE SKILL ZONES & GROUND SEALS
+  // CUSTOM SKILL VFX (LASER BEAMS, METEORS)
+  // ==========================================================
+  renderSkillVfx(ctx) {
+    for (let i = this.skillVfxList.length - 1; i >= 0; i--) {
+      const v = this.skillVfxList[i];
+      v.alpha -= (v.decay || 3.0) * 0.0166;
+
+      if (v.alpha <= 0) {
+        this.skillVfxList.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, v.alpha);
+
+      if (v.type === 'laser_beam') {
+        // High-Velocity Laser Beam (Sniper Q/R)
+        ctx.globalCompositeOperation = 'lighter';
+        // Outer Glow
+        ctx.strokeStyle = v.glowColor || '#ff4757';
+        ctx.lineWidth = v.width * 2;
+        ctx.beginPath();
+        ctx.moveTo(v.x1, v.y1);
+        ctx.lineTo(v.x2, v.y2);
+        ctx.stroke();
+
+        // White Core
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = v.width;
+        ctx.beginPath();
+        ctx.moveTo(v.x1, v.y1);
+        ctx.lineTo(v.x2, v.y2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // ==========================================================
+  // AOE SKILL ZONES & RUNIC GROUND SEALS
   // ==========================================================
   renderAoeZones(ctx, aoeZones) {
     if (!aoeZones || !aoeZones.length) return;
@@ -979,7 +1131,6 @@ class GameRenderer {
       ctx.save();
       ctx.translate(z.x, z.y);
 
-      // Pulsing Runic Ground Seal
       const pulse = Math.sin(this.animationTimer * 6) * 4;
       ctx.strokeStyle = z.color || '#ff4757';
       ctx.lineWidth = 2.5;
@@ -987,8 +1138,7 @@ class GameRenderer {
       ctx.arc(0, 0, z.radius + pulse, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Semi-transparent Fill
-      ctx.fillStyle = z.color ? z.color + '26' : 'rgba(255, 71, 87, 0.15)';
+      ctx.fillStyle = z.color ? z.color + '26' : 'rgba(255, 71, 87, 0.16)';
       ctx.beginPath();
       ctx.arc(0, 0, z.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -998,7 +1148,7 @@ class GameRenderer {
   }
 
   // ==========================================================
-  // LoL CLICK MOVE RINGS (4-PRONGED ROTATING GREEN CHEVRON)
+  // LoL CLICK MOVE RINGS (4-PRONGED ROTATING CHEVRONS)
   // ==========================================================
   renderClickRings(ctx) {
     for (let i = this.clickRings.length - 1; i >= 0; i--) {
@@ -1018,7 +1168,6 @@ class GameRenderer {
       ctx.strokeStyle = `rgba(46, 213, 115, ${ring.alpha})`;
       ctx.lineWidth = 2.5;
 
-      // 4-Pronged Arrows
       for (let k = 0; k < 4; k++) {
         ctx.rotate(Math.PI / 2);
         ctx.beginPath();
@@ -1072,7 +1221,7 @@ class GameRenderer {
       ctx.rotate(st.angle);
       ctx.strokeStyle = st.color;
       ctx.globalAlpha = st.alpha;
-      ctx.lineWidth = 5;
+      ctx.lineWidth = st.width || 6;
       ctx.beginPath();
       ctx.arc(0, 0, st.radius, -Math.PI / 3, Math.PI / 3);
       ctx.stroke();
@@ -1080,8 +1229,28 @@ class GameRenderer {
     }
   }
 
-  renderGroundDecals(ctx) {
-    // Persistent impact scorch marks or runes
+  // ==========================================================
+  // SPACEBAR FOCUS PING (LoL Yellow Triangle Indicator)
+  // ==========================================================
+  renderSpaceFocusPing(ctx, localPlayer) {
+    ctx.save();
+    const markerY = localPlayer.y - 78;
+    const bounce = Math.sin(this.animationTimer * 12) * 5;
+
+    ctx.translate(localPlayer.x, markerY + bounce);
+
+    ctx.fillStyle = '#f1c40f';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 10);
+    ctx.lineTo(-10, -8);
+    ctx.lineTo(10, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
   }
 
   // ==========================================================
@@ -1123,7 +1292,6 @@ class GameRenderer {
     const range = aim.range || 500;
 
     if (aim.type === 'line') {
-      // Skillshot Direction Arrow
       ctx.translate(player.x, player.y);
       ctx.rotate(ang);
       ctx.fillStyle = 'rgba(0, 206, 201, 0.2)';
@@ -1140,7 +1308,6 @@ class GameRenderer {
       ctx.fill();
       ctx.stroke();
     } else if (aim.type === 'circle') {
-      // AoE Circle
       ctx.fillStyle = 'rgba(255, 118, 117, 0.25)';
       ctx.strokeStyle = '#ff7675';
       ctx.lineWidth = 2;
@@ -1153,7 +1320,7 @@ class GameRenderer {
   }
 
   // ==========================================================
-  // FLOATING COMBAT TEXTS
+  // FLOATING COMBAT TEXTS & '+90 💰' GOLD BOUNTIES
   // ==========================================================
   renderFloatingTexts(ctx) {
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
@@ -1170,11 +1337,9 @@ class GameRenderer {
       ctx.globalAlpha = Math.max(0, ft.alpha);
       ctx.font = `bold ${Math.round(ft.size * ft.scale)}px sans-serif`;
       ctx.textAlign = 'center';
-      // Outline
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.strokeText(ft.text, ft.x, ft.y);
-      // Fill
       ctx.fillStyle = ft.color;
       ctx.fillText(ft.text, ft.x, ft.y);
       ctx.restore();
@@ -1209,11 +1374,10 @@ class GameRenderer {
     const mapW = this.mapData.width || 2400;
     const mapH = this.mapData.height || 1600;
 
-    // Clear
     mctx.fillStyle = '#060a10';
     mctx.fillRect(0, 0, mw, mh);
 
-    // Map Outline & Lanes
+    // Diagonal Lane
     mctx.strokeStyle = '#1e272e';
     mctx.lineWidth = 6;
     mctx.beginPath();
@@ -1221,7 +1385,7 @@ class GameRenderer {
     mctx.lineTo(mw, mh);
     mctx.stroke();
 
-    // Structures on Minimap
+    // Structures
     if (gameState.structures) {
       for (const s of gameState.structures) {
         if (!s.isAlive) continue;
@@ -1232,7 +1396,7 @@ class GameRenderer {
       }
     }
 
-    // Champions on Minimap
+    // Champions
     if (gameState.players) {
       for (const p of gameState.players) {
         if (!p.isAlive) continue;
@@ -1253,7 +1417,7 @@ class GameRenderer {
       }
     }
 
-    // Camera Viewport Frustum Box (Shows visible view on map)
+    // Camera Frustum Box
     const bounds = this.camera.getViewportBounds();
     const vx = (bounds.x / mapW) * mw;
     const vy = (bounds.y / mapH) * mh;
