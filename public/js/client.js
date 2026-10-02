@@ -31,6 +31,7 @@
   let isGameActive = false;
   let mouseScreenPos = { x: 0, y: 0 };
   let mouseWorldPos = { x: 0, y: 0 };
+  let isAttackMoveActive = false;
 
   // Aiming state (for manual targeting if needed)
   let activeAimKey = null;
@@ -550,10 +551,12 @@
   let currentFps = 60;
   let pingIntervalHandle = null;
 
+  let lastHudUpdate = 0;
+
   function start60FpsGameLoop() {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-    // Periodic Ping Check (every 1.5s)
+    // Periodic Ping Check (every 1.0s)
     if (pingIntervalHandle) clearInterval(pingIntervalHandle);
     pingIntervalHandle = setInterval(() => {
       if (!isGameActive) return;
@@ -563,10 +566,17 @@
         const pingEl = document.getElementById('ping-display');
         if (pingEl) pingEl.textContent = `${pingMs}ms`;
       });
-    }, 1500);
+    }, 1000);
+
+    let lastFrameTime = performance.now();
+    let lastHoverCheckTime = 0;
+    let prevHoverState = false;
 
     function frame(now) {
       if (isGameActive && gameRenderer && latestGameState) {
+        const dt = Math.min((now - lastFrameTime) / 1000, 0.05);
+        lastFrameTime = now;
+
         // Calculate real FPS
         fpsFrames++;
         if (now - fpsLastCalc >= 500) {
@@ -577,11 +587,65 @@
           if (fpsEl) fpsEl.textContent = `${currentFps} FPS`;
         }
 
-        // Screen to world mouse position
+        // Screen to world mouse position (1 raycast per frame)
         mouseWorldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
 
-        // Render at 60+ FPS with camera update
+        // Client-side movement prediction for local player (0ms immediate responsiveness)
+        const myPlayer = latestGameState.players ? latestGameState.players.find(p => p.id === localUser.socketId) : null;
+        if (myPlayer && myPlayer.isAlive && myPlayer.isMoving && myPlayer.targetX !== undefined) {
+          const dx = myPlayer.targetX - myPlayer.x;
+          const dy = myPlayer.targetY - myPlayer.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 4) {
+            const speed = myPlayer.moveSpeed || 340;
+            const step = Math.min(dist, speed * dt);
+            myPlayer.x += (dx / dist) * step;
+            myPlayer.y += (dy / dist) * step;
+            myPlayer.angle = Math.atan2(dy, dx);
+          } else {
+            myPlayer.x = myPlayer.targetX;
+            myPlayer.y = myPlayer.targetY;
+            myPlayer.isMoving = false;
+          }
+        }
+
+        // Throttled enemy hover attack cursor check (20Hz)
+        if (now - lastHoverCheckTime >= 50 && myPlayer) {
+          lastHoverCheckTime = now;
+          let isEnemyHovered = false;
+          for (const ep of latestGameState.players) {
+            if (ep.isAlive && ep.team !== myPlayer.team) {
+              if (Math.hypot(ep.x - mouseWorldPos.x, ep.y - mouseWorldPos.y) <= 75) {
+                isEnemyHovered = true;
+                break;
+              }
+            }
+          }
+          if (!isEnemyHovered && latestGameState.structures) {
+            for (const s of latestGameState.structures) {
+              if (s.isAlive && s.team !== myPlayer.team) {
+                if (Math.hypot(s.x - mouseWorldPos.x, s.y - mouseWorldPos.y) <= 85) {
+                  isEnemyHovered = true;
+                  break;
+                }
+              }
+            }
+          }
+          const shouldAttackCursor = isEnemyHovered || isAttackMoveActive;
+          if (shouldAttackCursor !== prevHoverState) {
+            prevHoverState = shouldAttackCursor;
+            const gameScreenEl = document.getElementById('screen-game');
+            if (gameScreenEl) {
+              if (shouldAttackCursor) gameScreenEl.classList.add('cursor-attack');
+              else gameScreenEl.classList.remove('cursor-attack');
+            }
+          }
+        }
+
+        // Render at 60~144+ FPS with camera update
         gameRenderer.render(latestGameState, mouseScreenPos);
+      } else {
+        lastFrameTime = now;
       }
       animationFrameId = requestAnimationFrame(frame);
     }
@@ -619,14 +683,70 @@
   });
 
   socket.on('gameTick', (state) => {
-    latestGameState = state;
+    if (!latestGameState) {
+      latestGameState = state;
+    } else {
+      // Smooth Client-Side Prediction Reconciliation
+      const serverMe = state.players ? state.players.find(p => p.id === localUser.socketId) : null;
+      const clientMe = latestGameState.players ? latestGameState.players.find(p => p.id === localUser.socketId) : null;
+      if (serverMe && clientMe) {
+        const errDist = Math.hypot(serverMe.x - clientMe.x, serverMe.y - clientMe.y);
+        if (errDist > 120 || !serverMe.isAlive) {
+          clientMe.x = serverMe.x;
+          clientMe.y = serverMe.y;
+          clientMe.targetX = serverMe.x;
+          clientMe.targetY = serverMe.y;
+          clientMe.isMoving = false;
+        } else if (errDist > 4) {
+          clientMe.x = clientMe.x * 0.72 + serverMe.x * 0.28;
+          clientMe.y = clientMe.y * 0.72 + serverMe.y * 0.28;
+        }
+        clientMe.hp = serverMe.hp;
+        clientMe.maxHp = serverMe.maxHp;
+        clientMe.mp = serverMe.mp;
+        clientMe.maxMp = serverMe.maxMp;
+        clientMe.shield = serverMe.shield;
+        clientMe.cooldowns = serverMe.cooldowns;
+        clientMe.kills = serverMe.kills;
+        clientMe.deaths = serverMe.deaths;
+        clientMe.assists = serverMe.assists;
+        clientMe.isAlive = serverMe.isAlive;
+        clientMe.respawnTimer = serverMe.respawnTimer;
+        clientMe.stealth = serverMe.stealth;
+      }
+
+      // Reconcile other players and game state
+      if (state.players) {
+        state.players.forEach(sp => {
+          if (sp.id !== localUser.socketId) {
+            let cp = latestGameState.players ? latestGameState.players.find(p => p.id === sp.id) : null;
+            if (!cp) {
+              if (latestGameState.players) latestGameState.players.push(sp);
+            } else {
+              Object.assign(cp, sp);
+            }
+          }
+        });
+      }
+      latestGameState.structures = state.structures;
+      latestGameState.projectiles = state.projectiles;
+      latestGameState.aoeZones = state.aoeZones;
+      latestGameState.events = state.events;
+      latestGameState.scores = state.scores;
+      latestGameState.gameTime = state.gameTime;
+    }
+
     if (!isGameActive || !gameRenderer) return;
 
     // Process events for VFX
     gameRenderer.processEvents(state.events);
 
-    // Update HUD
-    updateInGameHUD(state);
+    // Throttle HUD DOM reflows to 15 Hz (~66ms) to prevent UI thread locking
+    const now = performance.now();
+    if (now - lastHudUpdate >= 66) {
+      lastHudUpdate = now;
+      updateInGameHUD(latestGameState);
+    }
   });
 
   function setupInGameInputListeners() {
@@ -681,44 +801,10 @@
       });
     }
 
-    let isAttackMoveActive = false;
-
-    // Track mouse position & Enemy Hover Attack Cursor
+    // High-performance mouse tracking (Zero raycasts or DOM touches on mousemove for 1000Hz gaming mice)
     window.addEventListener('mousemove', (e) => {
       mouseScreenPos.x = e.clientX;
       mouseScreenPos.y = e.clientY;
-
-      if (isGameActive && gameRenderer && latestGameState) {
-        const worldPos = gameRenderer.screenToWorld(e.clientX, e.clientY);
-        const myPlayer = latestGameState.players.find(p => p.id === localUser.socketId);
-        let isEnemyHovered = false;
-
-        if (myPlayer) {
-          for (const ep of latestGameState.players) {
-            if (ep.isAlive && ep.team !== myPlayer.team) {
-              if (Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y) <= 75) {
-                isEnemyHovered = true;
-                break;
-              }
-            }
-          }
-          if (!isEnemyHovered) {
-            for (const s of latestGameState.structures) {
-              if (s.isAlive && s.team !== myPlayer.team) {
-                if (Math.hypot(s.x - worldPos.x, s.y - worldPos.y) <= 85) {
-                  isEnemyHovered = true;
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        if (gameScreenEl) {
-          if (isEnemyHovered || isAttackMoveActive) gameScreenEl.classList.add('cursor-attack');
-          else gameScreenEl.classList.remove('cursor-attack');
-        }
-      }
     });
 
     // Disable default right-click context menu
@@ -760,7 +846,7 @@
             }
           }
           // Check enemy structures
-          if (!clickedTarget) {
+          if (!clickedTarget && latestGameState.structures) {
             let closestStructDist = 85;
             for (const s of latestGameState.structures) {
               if (s.isAlive && s.team !== myPlayer.team) {
@@ -780,10 +866,23 @@
           socket.emit('playerTarget', { targetId: clickedTarget });
           gameRenderer.addClickRing(targetX, targetY, true); // Red targeting ring!
         } else {
-          // Move command
-          socket.emit('playerMove', { x: Math.round(worldPos.x), y: Math.round(worldPos.y) });
+          // Move command - Instantly apply client-side prediction for 0ms perceptual latency!
+          const tx = Math.round(worldPos.x);
+          const ty = Math.round(worldPos.y);
+          socket.emit('playerMove', { x: tx, y: ty });
           gameRenderer.addClickRing(worldPos.x, worldPos.y, false); // Green move ring!
           if (window.soundEngine) window.soundEngine.playMovePing();
+
+          if (myPlayer && myPlayer.isAlive) {
+            myPlayer.targetX = tx;
+            myPlayer.targetY = ty;
+            const dx = tx - myPlayer.x;
+            const dy = ty - myPlayer.y;
+            if (Math.hypot(dx, dy) > 5) {
+              myPlayer.angle = Math.atan2(dy, dx);
+              myPlayer.isMoving = true;
+            }
+          }
         }
       } else if (e.button === 0) { // Left Click
         if (isAttackMoveActive) {
@@ -849,6 +948,12 @@
         isAttackMoveActive = false;
         if (gameRenderer) gameRenderer.isAttackMoveActive = false;
         if (gameScreenEl) gameScreenEl.classList.remove('cursor-attack');
+        const myP = latestGameState?.players?.find(p => p.id === localUser.socketId);
+        if (myP) {
+          myP.targetX = myP.x;
+          myP.targetY = myP.y;
+          myP.isMoving = false;
+        }
       } else if (e.code === 'KeyY') {
         // Toggle camera lock mode
         if (gameRenderer && gameRenderer.camera) {
@@ -1005,55 +1110,89 @@
     }
   }
 
+  const hudDomCache = {};
+  function setHudText(id, text) {
+    if (hudDomCache[id] !== text) {
+      hudDomCache[id] = text;
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+  }
+  function setHudWidth(id, width) {
+    if (hudDomCache[id] !== width) {
+      hudDomCache[id] = width;
+      const el = document.getElementById(id);
+      if (el) el.style.width = width;
+    }
+  }
+
   function updateInGameHUD(state) {
     // 1. Scoreboard & Timer
-    document.getElementById('score-blue-num').textContent = state.scores ? state.scores.blue : 0;
-    document.getElementById('score-red-num').textContent = state.scores ? state.scores.red : 0;
+    const blueScore = state.scores ? state.scores.blue : 0;
+    const redScore = state.scores ? state.scores.red : 0;
+    setHudText('score-blue-num', blueScore);
+    setHudText('score-red-num', redScore);
 
     const totalSec = state.gameTime || 0;
     const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
     const s = Math.floor(totalSec % 60).toString().padStart(2, '0');
-    document.getElementById('game-timer-display').textContent = `${m}:${s}`;
+    setHudText('game-timer-display', `${m}:${s}`);
 
     // 2. Local Player Vitals & KDA
-    const me = state.players.find(p => p.id === localUser.socketId);
+    const me = state.players ? state.players.find(p => p.id === localUser.socketId) : null;
     if (me) {
-      document.getElementById('kda-display').textContent = `${me.kills} / ${me.deaths} / ${me.assists}`;
+      setHudText('kda-display', `${me.kills} / ${me.deaths} / ${me.assists}`);
 
       // HP & MP Fill
-      const hpPct = Math.max(0, Math.min(100, (me.hp / me.maxHp) * 100));
-      const mpPct = Math.max(0, Math.min(100, (me.mp / me.maxMp) * 100));
-      const shieldPct = Math.max(0, Math.min(100, ((me.shield || 0) / me.maxHp) * 100));
+      const hpPct = Math.max(0, Math.min(100, (me.hp / me.maxHp) * 100)).toFixed(1);
+      const mpPct = Math.max(0, Math.min(100, (me.mp / me.maxMp) * 100)).toFixed(1);
+      const shieldPct = Math.max(0, Math.min(100, ((me.shield || 0) / me.maxHp) * 100)).toFixed(1);
 
-      document.getElementById('hud-hp-fill').style.width = `${hpPct}%`;
-      document.getElementById('hud-shield-fill').style.width = `${shieldPct}%`;
-      document.getElementById('hud-hp-text').textContent = `${me.hp} / ${me.maxHp} ${me.shield ? `(+${me.shield})` : ''}`;
+      setHudWidth('hud-hp-fill', `${hpPct}%`);
+      setHudWidth('hud-shield-fill', `${shieldPct}%`);
+      setHudText('hud-hp-text', `${me.hp} / ${me.maxHp} ${me.shield ? `(+${me.shield})` : ''}`);
 
-      document.getElementById('hud-mp-fill').style.width = `${mpPct}%`;
-      document.getElementById('hud-mp-text').textContent = `${me.mp} / ${me.maxMp}`;
+      setHudWidth('hud-mp-fill', `${mpPct}%`);
+      setHudText('hud-mp-text', `${me.mp} / ${me.maxMp}`);
 
       // Cooldowns
       ['Q', 'W', 'E', 'R', 'D', 'F'].forEach(k => {
         const cd = me.cooldowns ? me.cooldowns[k] : 0;
-        const overlay = document.getElementById(`hud-cd-overlay-${k.toLowerCase()}`);
-        const cdText = document.getElementById(`hud-cd-text-${k.toLowerCase()}`);
-        if (overlay && cdText) {
-          if (cd > 0) {
-            overlay.classList.remove('hidden');
-            cdText.textContent = cd > 1 ? Math.ceil(cd) : cd.toFixed(1);
-          } else {
-            overlay.classList.add('hidden');
+        const overlayId = `hud-cd-overlay-${k.toLowerCase()}`;
+        const cdTextId = `hud-cd-text-${k.toLowerCase()}`;
+        const cdFormatted = cd > 0 ? (cd > 1 ? Math.ceil(cd) : cd.toFixed(1)) : '';
+
+        if (cd > 0) {
+          if (hudDomCache[overlayId] !== true) {
+            hudDomCache[overlayId] = true;
+            const overlay = document.getElementById(overlayId);
+            if (overlay) overlay.classList.remove('hidden');
+          }
+          setHudText(cdTextId, cdFormatted);
+        } else {
+          if (hudDomCache[overlayId] !== false) {
+            hudDomCache[overlayId] = false;
+            const overlay = document.getElementById(overlayId);
+            if (overlay) overlay.classList.add('hidden');
           }
         }
       });
 
       // Respawn Overlay
-      const respawnOverlay = document.getElementById('respawn-overlay');
+      const respawnOverlayId = 'respawn-overlay';
       if (!me.isAlive) {
-        respawnOverlay.classList.remove('hidden');
-        document.getElementById('respawn-timer-sec').textContent = me.respawnTimer;
+        if (hudDomCache[respawnOverlayId] !== true) {
+          hudDomCache[respawnOverlayId] = true;
+          const respawnOverlay = document.getElementById(respawnOverlayId);
+          if (respawnOverlay) respawnOverlay.classList.remove('hidden');
+        }
+        setHudText('respawn-timer-sec', me.respawnTimer);
       } else {
-        respawnOverlay.classList.add('hidden');
+        if (hudDomCache[respawnOverlayId] !== false) {
+          hudDomCache[respawnOverlayId] = false;
+          const respawnOverlay = document.getElementById(respawnOverlayId);
+          if (respawnOverlay) respawnOverlay.classList.add('hidden');
+        }
       }
     }
 

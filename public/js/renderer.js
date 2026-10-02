@@ -82,11 +82,12 @@ class GameRenderer {
       this.renderer3D = new THREE.WebGLRenderer();
     }
     this.renderer3D.setSize(this.width, this.height);
-    this.renderer3D.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Optimized pixel ratio: caps at 1.25 to prevent extreme 4K fill rate lag while staying sharp
+    this.renderer3D.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     this.renderer3D.shadowMap.enabled = true;
-    this.renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer3D.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer3D.toneMappingExposure = 1.15;
+    this.renderer3D.shadowMap.type = THREE.PCFShadowMap; // Fast high-performance shadow mapping
+    this.renderer3D.toneMapping = THREE.LinearToneMapping;
+    this.renderer3D.toneMappingExposure = 1.05;
 
     this.renderer3D.domElement.style.position = 'absolute';
     this.renderer3D.domElement.style.top = '0';
@@ -104,6 +105,9 @@ class GameRenderer {
     this.raycaster = new THREE.Raycaster();
     this.mouseVec = new THREE.Vector2();
     this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    this._cachedHitPoint = new THREE.Vector3();
+    this._cachedWorldPos = new THREE.Vector3();
+    this._cachedTargetVec = new THREE.Vector3();
   }
 
   init2DOverlayCanvas() {
@@ -123,23 +127,25 @@ class GameRenderer {
   setup3DLights() {
     const THREE = window.THREE;
     // Ambient Sky Fill
-    const hemiLight = new THREE.HemisphereLight(0x70a1ff, 0x14211a, 0.75);
+    const hemiLight = new THREE.HemisphereLight(0x70a1ff, 0x14211a, 0.85);
     this.scene.add(hemiLight);
 
-    // Key Directional Sunlight (Casts Soft Real-Time Shadows)
-    this.sunLight = new THREE.DirectionalLight(0xfff6e0, 1.45);
-    this.sunLight.position.set(600, 1200, 700);
+    // Key Directional Sunlight (Fixed center coverage for zero per-frame shadow invalidations)
+    this.sunLight = new THREE.DirectionalLight(0xfff6e0, 1.4);
+    this.sunLight.position.set(1200, 1100, 1300);
+    this.sunLight.target.position.set(1200, 0, 800);
+    this.scene.add(this.sunLight.target);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
-    this.sunLight.shadow.camera.near = 50;
-    this.sunLight.shadow.camera.far = 3000;
-    const d = 1600;
+    this.sunLight.shadow.mapSize.width = 1024;
+    this.sunLight.shadow.mapSize.height = 1024;
+    this.sunLight.shadow.camera.near = 100;
+    this.sunLight.shadow.camera.far = 2800;
+    const d = 1400;
     this.sunLight.shadow.camera.left = -d;
     this.sunLight.shadow.camera.right = d;
     this.sunLight.shadow.camera.top = d;
     this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.bias = -0.0005;
+    this.sunLight.shadow.bias = -0.001;
     this.scene.add(this.sunLight);
   }
 
@@ -235,7 +241,6 @@ class GameRenderer {
       const tg = new THREE.Group();
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(4 * scale, 6 * scale, 24 * scale, 8), trunkMat);
       trunk.position.y = 12 * scale;
-      trunk.castShadow = true;
       tg.add(trunk);
 
       // 3 Conical foliage tiers
@@ -243,7 +248,6 @@ class GameRenderer {
         const rad = (18 - i * 4) * scale;
         const fol = new THREE.Mesh(new THREE.ConeGeometry(rad, 18 * scale, 8), (i % 2 === 0) ? foliageMat1 : foliageMat2);
         fol.position.y = (20 + i * 11) * scale;
-        fol.castShadow = true;
         tg.add(fol);
       }
       tg.position.set(x, 0, z);
@@ -327,7 +331,6 @@ class GameRenderer {
         const m = new THREE.Mesh(new THREE.SphereGeometry(b.radius * 0.45, 8, 8), bushMat);
         m.position.set(offX, 10, offZ);
         m.scale.set(1.1, 0.65, 1.1);
-        m.castShadow = true;
         bg.add(m);
       }
       bg.position.set(b.x, 0, b.y);
@@ -396,10 +399,9 @@ class GameRenderer {
     this.mouseVec.y = -(screenY / this.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouseVec, this.camera3D);
 
-    const hitPoint = new THREE.Vector3();
-    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
+    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, this._cachedHitPoint);
     if (hit) {
-      return { x: hitPoint.x, y: hitPoint.z };
+      return { x: hit.x, y: hit.z };
     }
     return this.cameraCtrl.screenToWorld(screenX, screenY);
   }
@@ -410,12 +412,12 @@ class GameRenderer {
       return this.cameraCtrl.worldToScreen(worldX, worldZ);
     }
 
-    const pos = new THREE.Vector3(worldX, 0, worldZ);
-    pos.project(this.camera3D);
+    this._cachedWorldPos.set(worldX, 0, worldZ);
+    this._cachedWorldPos.project(this.camera3D);
 
     return {
-      x: (pos.x * 0.5 + 0.5) * this.width,
-      y: (-(pos.y * 0.5) + 0.5) * this.height
+      x: (this._cachedWorldPos.x * 0.5 + 0.5) * this.width,
+      y: (-(this._cachedWorldPos.y * 0.5) + 0.5) * this.height
     };
   }
 
@@ -589,10 +591,14 @@ class GameRenderer {
     );
     this.camera3D.lookAt(camTargetX, 0, camTargetZ);
 
-    // Update sunlight to follow camera for crisp local shadows
-    this.sunLight.position.set(camTargetX + 300, 1000, camTargetZ + 400);
-    this.sunLight.target.position.set(camTargetX, 0, camTargetZ);
-    this.sunLight.target.updateMatrixWorld();
+    // Throttle sunlight position updates to avoid re-rendering entire shadow map every single frame
+    if (!this.lastSunCamX || Math.hypot(camTargetX - this.lastSunCamX, camTargetZ - this.lastSunCamZ) > 180) {
+      this.lastSunCamX = camTargetX;
+      this.lastSunCamZ = camTargetZ;
+      this.sunLight.position.set(camTargetX + 300, 1000, camTargetZ + 400);
+      this.sunLight.target.position.set(camTargetX, 0, camTargetZ);
+      this.sunLight.target.updateMatrixWorld();
+    }
 
     // 3. Update 3D Champion Hierarchical Models
     this.update3DChampions(gameState.players);
@@ -849,13 +855,19 @@ class GameRenderer {
       group.visible = p.isAlive;
       if (!p.isAlive) return;
 
-      // Position & Directional Rotation
-      group.position.set(p.x, 0, p.y);
-      group.rotation.y = -p.angle + Math.PI / 2;
-
-      // Biped Walking Animation (Legs scissor swing & torso bob)
+      // Smooth Lerp Interpolation for 60~144 FPS fluid movement
       const walkBob = isMoving ? Math.sin(anim.walkCycle) * 2.5 : 0;
-      group.position.y = walkBob;
+      this._cachedTargetVec.set(p.x, walkBob, p.y);
+      if (group.position.lengthSq() === 0) {
+        group.position.copy(this._cachedTargetVec);
+      } else {
+        const lerpFactor = (p.id === this.localPlayerId) ? 0.8 : 0.6;
+        group.position.lerp(this._cachedTargetVec, lerpFactor);
+      }
+
+      // Smooth Rotation Lerp
+      const targetRotY = -p.angle + Math.PI / 2;
+      group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, targetRotY, 0.45);
 
       if (group.userData.leftLeg && group.userData.rightLeg) {
         const step = isMoving ? Math.sin(anim.walkCycle) * 0.45 : 0;

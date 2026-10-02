@@ -26,7 +26,10 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
-  }
+  },
+  perMessageDeflate: false, // Disabling compression eliminates zlib deflate latency
+  httpCompression: false,
+  transports: ['websocket', 'polling']
 });
 
 const PORT = process.env.PORT || 3000;
@@ -90,6 +93,20 @@ const roomManager = new RoomManager(io);
 // Socket.IO Connection Handling
 io.on('connection', (socket) => {
   console.log(`[Socket Connected] ID: ${socket.id}`);
+
+  // Disable Nagle's algorithm for instant sub-millisecond packet transmission
+  try {
+    if (socket.conn && socket.conn.transport && socket.conn.transport.socket) {
+      if (typeof socket.conn.transport.socket.setNoDelay === 'function') {
+        socket.conn.transport.socket.setNoDelay(true);
+      }
+    }
+    socket.conn.on('upgrade', (transport) => {
+      if (transport && transport.socket && typeof transport.socket.setNoDelay === 'function') {
+        transport.socket.setNoDelay(true);
+      }
+    });
+  } catch (e) {}
 
   // Register Nickname
   socket.on('registerUser', (data, callback) => {
