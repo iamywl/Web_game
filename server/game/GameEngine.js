@@ -475,7 +475,40 @@ class GameEngine {
 
   updateAutoAttacks() {
     for (const p of Object.values(this.players)) {
-      if (!p.isAlive || p.isStunned || !p.targetEnemyId) continue;
+      if (!p.isAlive || p.isStunned) continue;
+
+      // Auto-target acquisition if idle or in attack-move mode
+      if (!p.targetEnemyId && !p.stealth) {
+        const isIdle = Math.hypot(p.targetX - p.x, p.targetY - p.y) < 10;
+        if (isIdle || p.isAttackMove) {
+          let nearestEnemy = null;
+          let nearestDist = p.attackRange + 30;
+          for (const ep of Object.values(this.players)) {
+            if (!ep.isAlive || ep.team === p.team || ep.stealth) continue;
+            const ed = Math.hypot(ep.x - p.x, ep.y - p.y);
+            if (ed <= nearestDist) {
+              nearestDist = ed;
+              nearestEnemy = ep;
+            }
+          }
+          if (!nearestEnemy) {
+            for (const s of Object.values(this.structures)) {
+              if (!s.isAlive || s.team === p.team) continue;
+              const sd = Math.hypot(s.x - p.x, s.y - p.y);
+              if (sd <= nearestDist) {
+                nearestDist = sd;
+                nearestEnemy = s;
+              }
+            }
+          }
+          if (nearestEnemy) {
+            p.targetEnemyId = nearestEnemy.id;
+            p.isAttackMove = false;
+          }
+        }
+      }
+
+      if (!p.targetEnemyId) continue;
 
       const target = this.players[p.targetEnemyId] || this.structures[p.targetEnemyId];
       if (!target || !target.isAlive || target.team === p.team) {
@@ -484,11 +517,32 @@ class GameEngine {
       }
 
       const dist = Math.hypot(target.x - p.x, target.y - p.y);
-      if (dist <= p.attackRange + (target.radius || 20)) {
-        // Can attack
+      const attackRangeThreshold = p.attackRange + (target.radius || 20);
+
+      if (dist > attackRangeThreshold) {
+        // Target is out of range: chase enemy until in attack range!
+        p.targetX = target.x;
+        p.targetY = target.y;
+      } else {
+        // Within attack range: halt movement and perform attack
+        p.targetX = p.x;
+        p.targetY = p.y;
+        p.vx = 0;
+        p.vy = 0;
+        p.angle = Math.atan2(target.y - p.y, target.x - p.x);
+
         if (p.autoAttackCooldown <= 0) {
           p.autoAttackCooldown = 1 / p.as;
-          p.angle = Math.atan2(target.y - p.y, target.x - p.x);
+
+          // Broadcast attack event for animations & sounds
+          this.eventsQueue.push({
+            type: 'attack',
+            attackerId: p.id,
+            targetId: target.id,
+            isRanged: p.attackRange > 150,
+            x: p.x,
+            y: p.y
+          });
 
           if (p.attackRange <= 150) {
             // Melee instant strike
@@ -505,7 +559,7 @@ class GameEngine {
               speed: 780,
               radius: 9,
               damage: p.ad,
-              rangeRemaining: p.attackRange + 100,
+              rangeRemaining: p.attackRange + 120,
               color: p.color
             });
           }
@@ -946,12 +1000,72 @@ class GameEngine {
     p.targetX = Math.max(20, Math.min(MAP_WIDTH - 20, targetX));
     p.targetY = Math.max(20, Math.min(MAP_HEIGHT - 20, targetY));
     p.targetEnemyId = null; // moving clears auto-attack target unless targeted click
+    p.isAttackMove = false;
   }
 
   handleAttackTarget(socketId, targetId) {
     const p = this.players[socketId];
     if (!p || !p.isAlive || p.isStunned) return;
     p.targetEnemyId = targetId;
+    p.isAttackMove = false;
+
+    // If out of range, immediately set target coordinates towards enemy
+    const target = this.players[targetId] || this.structures[targetId];
+    if (target) {
+      const dist = Math.hypot(target.x - p.x, target.y - p.y);
+      if (dist > p.attackRange + (target.radius || 20)) {
+        p.targetX = target.x;
+        p.targetY = target.y;
+      }
+    }
+  }
+
+  handleAttackMove(socketId, targetX, targetY) {
+    const p = this.players[socketId];
+    if (!p || !p.isAlive || p.isStunned || p.isRooted) return;
+
+    // Check if an enemy is close to the clicked point or player
+    let closestEnemy = null;
+    let closestDist = 200; // click tolerance
+
+    for (const ep of Object.values(this.players)) {
+      if (!ep.isAlive || ep.team === p.team || ep.stealth) continue;
+      const dClick = Math.hypot(ep.x - targetX, ep.y - targetY);
+      if (dClick < closestDist) {
+        closestDist = dClick;
+        closestEnemy = ep;
+      }
+    }
+    if (!closestEnemy) {
+      for (const s of Object.values(this.structures)) {
+        if (!s.isAlive || s.team === p.team) continue;
+        const dClick = Math.hypot(s.x - targetX, s.y - targetY);
+        if (dClick < closestDist) {
+          closestDist = dClick;
+          closestEnemy = s;
+        }
+      }
+    }
+
+    if (closestEnemy) {
+      this.handleAttackTarget(socketId, closestEnemy.id);
+    } else {
+      p.targetX = Math.max(20, Math.min(MAP_WIDTH - 20, targetX));
+      p.targetY = Math.max(20, Math.min(MAP_HEIGHT - 20, targetY));
+      p.targetEnemyId = null;
+      p.isAttackMove = true;
+    }
+  }
+
+  handleStop(socketId) {
+    const p = this.players[socketId];
+    if (!p || !p.isAlive) return;
+    p.targetX = p.x;
+    p.targetY = p.y;
+    p.vx = 0;
+    p.vy = 0;
+    p.targetEnemyId = null;
+    p.isAttackMove = false;
   }
 
   handleCastSkill(socketId, skillKey, targetX, targetY) {

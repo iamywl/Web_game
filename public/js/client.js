@@ -681,6 +681,8 @@
       });
     }
 
+    let isAttackMoveActive = false;
+
     // Track mouse position & Enemy Hover Attack Cursor
     window.addEventListener('mousemove', (e) => {
       mouseScreenPos.x = e.clientX;
@@ -694,7 +696,7 @@
         if (myPlayer) {
           for (const ep of latestGameState.players) {
             if (ep.isAlive && ep.team !== myPlayer.team) {
-              if (Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y) <= ep.radius + 15) {
+              if (Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y) <= 75) {
                 isEnemyHovered = true;
                 break;
               }
@@ -703,7 +705,7 @@
           if (!isEnemyHovered) {
             for (const s of latestGameState.structures) {
               if (s.isAlive && s.team !== myPlayer.team) {
-                if (Math.hypot(s.x - worldPos.x, s.y - worldPos.y) <= 55) {
+                if (Math.hypot(s.x - worldPos.x, s.y - worldPos.y) <= 85) {
                   isEnemyHovered = true;
                   break;
                 }
@@ -713,7 +715,7 @@
         }
 
         if (gameScreenEl) {
-          if (isEnemyHovered) gameScreenEl.classList.add('cursor-attack');
+          if (isEnemyHovered || isAttackMoveActive) gameScreenEl.classList.add('cursor-attack');
           else gameScreenEl.classList.remove('cursor-attack');
         }
       }
@@ -722,36 +724,52 @@
     // Disable default right-click context menu
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Right Click: Move or Target Enemy
+    // Mouse Click Handling (Left = Cast/A-Move, Right = Move/Target)
     window.addEventListener('mousedown', (e) => {
       if (!isGameActive || !latestGameState) return;
 
-      if (e.button === 2) { // Right Click
+      if (e.button === 2) { // Right Click (Move / Auto-Attack Target)
         e.preventDefault();
         const worldPos = gameRenderer.screenToWorld(e.clientX, e.clientY);
 
-        // Check if right-clicked on an enemy champion or structure
+        // Cancel A-move mode if active
+        if (isAttackMoveActive) {
+          isAttackMoveActive = false;
+          if (gameRenderer) gameRenderer.isAttackMoveActive = false;
+          if (gameScreenEl) gameScreenEl.classList.remove('cursor-attack');
+        }
+
+        // Check if right-clicked on an enemy champion or structure with generous 75px hitbox
         let clickedTarget = null;
+        let targetX = worldPos.x;
+        let targetY = worldPos.y;
         const myPlayer = latestGameState.players.find(p => p.id === localUser.socketId);
+
         if (myPlayer) {
           // Check enemy players
+          let closestDist = 75;
           for (const ep of latestGameState.players) {
             if (ep.isAlive && ep.team !== myPlayer.team) {
               const d = Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y);
-              if (d <= ep.radius + 15) {
+              if (d <= closestDist) {
+                closestDist = d;
                 clickedTarget = ep.id;
-                break;
+                targetX = ep.x;
+                targetY = ep.y;
               }
             }
           }
           // Check enemy structures
           if (!clickedTarget) {
+            let closestStructDist = 85;
             for (const s of latestGameState.structures) {
               if (s.isAlive && s.team !== myPlayer.team) {
                 const d = Math.hypot(s.x - worldPos.x, s.y - worldPos.y);
-                if (d <= 55) {
+                if (d <= closestStructDist) {
+                  closestStructDist = d;
                   clickedTarget = s.id;
-                  break;
+                  targetX = s.x;
+                  targetY = s.y;
                 }
               }
             }
@@ -760,14 +778,22 @@
 
         if (clickedTarget) {
           socket.emit('playerTarget', { targetId: clickedTarget });
+          gameRenderer.addClickRing(targetX, targetY, true); // Red targeting ring!
         } else {
           // Move command
           socket.emit('playerMove', { x: Math.round(worldPos.x), y: Math.round(worldPos.y) });
-          gameRenderer.addClickRing(worldPos.x, worldPos.y);
+          gameRenderer.addClickRing(worldPos.x, worldPos.y, false); // Green move ring!
           if (window.soundEngine) window.soundEngine.playMovePing();
         }
       } else if (e.button === 0) { // Left Click
-        if (activeAimKey) {
+        if (isAttackMoveActive) {
+          const worldPos = gameRenderer.screenToWorld(e.clientX, e.clientY);
+          socket.emit('playerAttackMove', { x: Math.round(worldPos.x), y: Math.round(worldPos.y) });
+          gameRenderer.addClickRing(worldPos.x, worldPos.y, true); // Red attack ring!
+          isAttackMoveActive = false;
+          if (gameRenderer) gameRenderer.isAttackMoveActive = false;
+          if (gameScreenEl) gameScreenEl.classList.remove('cursor-attack');
+        } else if (activeAimKey) {
           // Cast the queued skill
           const worldPos = gameRenderer.screenToWorld(e.clientX, e.clientY);
           if (activeAimKey === 'D' || activeAimKey === 'F') {
@@ -783,7 +809,7 @@
       }
     });
 
-    // Keyboard Shortcuts (Q, W, E, R, D, F, Y, Space)
+    // Keyboard Shortcuts (Q, W, E, R, D, F, A, S, Y, Space)
     window.addEventListener('keydown', (e) => {
       if (!isGameActive) return;
       const key = e.key.toUpperCase();
@@ -809,6 +835,20 @@
           targetY: Math.round(worldPos.y)
         });
         if (key === 'D' && window.soundEngine) window.soundEngine.playFlash();
+      } else if (e.code === 'KeyA') {
+        // Toggle Attack-Move (A-Key) Mode
+        isAttackMoveActive = !isAttackMoveActive;
+        if (gameRenderer) gameRenderer.isAttackMoveActive = isAttackMoveActive;
+        if (gameScreenEl) {
+          if (isAttackMoveActive) gameScreenEl.classList.add('cursor-attack');
+          else gameScreenEl.classList.remove('cursor-attack');
+        }
+      } else if (e.code === 'KeyS') {
+        // Stop Command (S-Key)
+        socket.emit('playerStop');
+        isAttackMoveActive = false;
+        if (gameRenderer) gameRenderer.isAttackMoveActive = false;
+        if (gameScreenEl) gameScreenEl.classList.remove('cursor-attack');
       } else if (e.code === 'KeyY') {
         // Toggle camera lock mode
         if (gameRenderer && gameRenderer.camera) {
