@@ -1241,22 +1241,37 @@ body, html {
 }
 
 .kill-banner-item {
-  background: rgba(10, 16, 26, 0.9);
-  border: 1px solid var(--gold-primary);
-  box-shadow: 0 0 15px rgba(200, 155, 60, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(90deg, rgba(142, 14, 0, 0.95) 0%, rgba(20, 16, 24, 0.95) 50%, rgba(142, 14, 0, 0.95) 100%);
+  border: 2px solid #f1c40f;
+  box-shadow: 0 0 25px rgba(231, 76, 60, 0.8), inset 0 0 15px rgba(241, 196, 15, 0.4);
   color: #fff;
-  padding: 8px 20px;
+  padding: 10px 28px;
   border-radius: 4px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  animation: bannerFade 3.5s forwards;
+  font-weight: 900;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  animation: bannerFade 3.8s forwards;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+}
+
+.kill-banner-item.pentakill {
+  font-size: 1.55rem;
+  border: 3px solid #f1c40f;
+  box-shadow: 0 0 40px #ff4757, inset 0 0 20px #f1c40f;
+  color: #fff;
+  text-shadow: 0 0 15px #ff4757, 0 0 5px #f1c40f;
 }
 
 @keyframes bannerFade {
-  0% { opacity: 0; transform: translateY(-10px); }
-  10% { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; transform: translateY(-16px) scale(0.9); }
+  12% { opacity: 1; transform: translateY(0) scale(1.05); }
+  20% { transform: translateY(0) scale(1.0); }
   80% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-15px); }
+  100% { opacity: 0; transform: translateY(-20px) scale(0.95); }
 }
 
 /* Bottom HUD */
@@ -1436,6 +1451,85 @@ body, html {
   height: 100%;
   display: block;
   cursor: crosshair;
+}
+
+/* ==========================================================
+   HEXTECH SKILL TOOLTIP POPUP (LOL STYLE)
+   ========================================================== */
+.skill-tooltip-hextech {
+  position: absolute;
+  bottom: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  background: linear-gradient(180deg, #0d1a2d 0%, #060b13 100%);
+  border: 1.5px solid var(--gold-primary);
+  border-radius: 4px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.95), 0 0 10px rgba(200, 155, 60, 0.35);
+  z-index: 50;
+  pointer-events: none;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.tooltip-header {
+  border-bottom: 1px solid rgba(200, 155, 60, 0.25);
+  padding-bottom: 8px;
+}
+
+.tooltip-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tooltip-key-badge {
+  background: linear-gradient(180deg, #c89b3c 0%, #785a28 100%);
+  color: #060b13;
+  font-weight: 900;
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.tooltip-skill-name {
+  color: #f0e6d2;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.tooltip-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tooltip-cost { color: #00cec9; }
+.tooltip-cooldown { color: #f1c40f; }
+
+.tooltip-body {
+  font-size: 0.85rem;
+  line-height: 1.48;
+  color: #dcdde1;
+}
+
+.tooltip-extra-tip {
+  font-size: 0.76rem;
+  color: #70a1ff;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
 }
 
 /* Respawn Overlay */

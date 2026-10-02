@@ -796,6 +796,10 @@
           targetX: Math.round(worldPos.x),
           targetY: Math.round(worldPos.y)
         });
+        if (gameRenderer) {
+          gameRenderer.triggerSkillVfx(localUser.socketId, localUser.selectedChampId, key, worldPos.x, worldPos.y);
+        }
+        playChampionSkillSound(localUser.selectedChampId, key);
       } else if (['D', 'F'].includes(key)) {
         // Quick Cast Summoner Spells
         const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
@@ -856,6 +860,10 @@
         slot.addEventListener('click', () => {
           const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
           socket.emit('castSkill', { key, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
+          if (gameRenderer) {
+            gameRenderer.triggerSkillVfx(localUser.socketId, localUser.selectedChampId, key, worldPos.x, worldPos.y);
+          }
+          playChampionSkillSound(localUser.selectedChampId, key);
         });
       }
     });
@@ -866,6 +874,7 @@
         slot.addEventListener('click', () => {
           const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
           socket.emit('castSpell', { slot: slotKey, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
+          if (slotKey === 'D' && window.soundEngine) window.soundEngine.playFlash();
         });
       }
     });
@@ -878,25 +887,82 @@
     document.getElementById('hud-avatar-icon').textContent = champ.avatar;
     document.getElementById('hud-hero-name').textContent = champ.name;
 
-    // Passive
-    document.getElementById('hud-skill-p-icon').textContent = 'P';
-    document.querySelector('.passive-box').title = `${champ.passive.name}: ${champ.passive.desc}`;
+    const tooltipEl = document.getElementById('hud-skill-tooltip');
+    const tipBadge = document.getElementById('tooltip-key-badge');
+    const tipName = document.getElementById('tooltip-name');
+    const tipCost = document.getElementById('tooltip-cost');
+    const tipCd = document.getElementById('tooltip-cooldown');
+    const tipDesc = document.getElementById('tooltip-desc');
+    const tipExtra = document.getElementById('tooltip-tip');
 
-    // QWER
+    function displaySkillTooltip(slotEl, keyBadge, name, cost, cd, desc, tip) {
+      if (!tooltipEl) return;
+      tipBadge.textContent = keyBadge;
+      tipName.textContent = name;
+      tipCost.textContent = cost || '소모값 없음';
+      tipCd.textContent = cd ? `재사용 대기시간: ${cd}초` : '패시브 지속 효과';
+      tipDesc.textContent = desc;
+      tipExtra.textContent = tip ? `💡 팁: ${tip}` : '';
+      tipExtra.style.display = tip ? 'block' : 'none';
+
+      const rect = slotEl.getBoundingClientRect();
+      const hudRect = document.querySelector('.game-hud')?.getBoundingClientRect() || { left: 0 };
+      const offsetLeft = rect.left + rect.width / 2 - hudRect.left;
+      tooltipEl.style.left = `${offsetLeft}px`;
+      tooltipEl.classList.remove('hidden');
+    }
+
+    function hideSkillTooltip() {
+      if (tooltipEl) tooltipEl.classList.add('hidden');
+    }
+
+    // 1. Passive
+    const slotP = document.getElementById('hud-slot-p');
+    if (slotP) {
+      document.getElementById('hud-skill-p-icon').textContent = 'P';
+      slotP.addEventListener('mouseenter', () => {
+        displaySkillTooltip(slotP, 'P', champ.passive.name, '소모값 없음', null, champ.passive.desc, '전투 중 지속적으로 적용되는 고유 지속 효과입니다.');
+      });
+      slotP.addEventListener('mouseleave', hideSkillTooltip);
+    }
+
+    // 2. QWER Skills
     ['Q', 'W', 'E', 'R'].forEach(k => {
       const sk = champ.skills[k];
-      if (sk) {
+      const slot = document.getElementById(`hud-slot-${k.toLowerCase()}`);
+      if (sk && slot) {
         document.getElementById(`hud-skill-${k.toLowerCase()}-icon`).textContent = k;
         document.getElementById(`hud-mana-${k.toLowerCase()}`).textContent = sk.mana;
-        document.getElementById(`hud-slot-${k.toLowerCase()}`).title = `${sk.name}: ${sk.desc}`;
+        slot.addEventListener('mouseenter', () => {
+          const costStr = sk.mana ? `마나: ${sk.mana}` : '소모값 없음';
+          const tipStr = `사거리: ${sk.range || sk.radius || 300}px | 피해 계수: ${(sk.damageRatio || 1.0) * 100}% AD/AP`;
+          displaySkillTooltip(slot, k, sk.name, costStr, sk.cooldown, sk.desc, tipStr);
+        });
+        slot.addEventListener('mouseleave', hideSkillTooltip);
       }
     });
 
-    // Spells icons
+    // 3. Spells (D, F)
     const dSpell = spellsData[localUser.spellD];
     const fSpell = spellsData[localUser.spellF];
-    if (dSpell) document.getElementById('hud-spell-d-icon').textContent = dSpell.icon || '⚡';
-    if (fSpell) document.getElementById('hud-spell-f-icon').textContent = fSpell.icon || '🔥';
+    const slotD = document.getElementById('hud-slot-d');
+    const slotF = document.getElementById('hud-slot-f');
+
+    if (dSpell && slotD) {
+      document.getElementById('hud-spell-d-icon').textContent = dSpell.icon || '⚡';
+      slotD.addEventListener('mouseenter', () => {
+        displaySkillTooltip(slotD, 'D', dSpell.name, '소모값 없음', dSpell.cooldown, dSpell.desc, `순간이동 사거리: ${dSpell.range || 380}px`);
+      });
+      slotD.addEventListener('mouseleave', hideSkillTooltip);
+    }
+
+    if (fSpell && slotF) {
+      document.getElementById('hud-spell-f-icon').textContent = fSpell.icon || '🔥';
+      slotF.addEventListener('mouseenter', () => {
+        displaySkillTooltip(slotF, 'F', fSpell.name, '소모값 없음', fSpell.cooldown, fSpell.desc, fSpell.id === 'ignite' ? '치유량 50% 감소' : '이동 속도 30% 증가');
+      });
+      slotF.addEventListener('mouseleave', hideSkillTooltip);
+    }
   }
 
   function updateInGameHUD(state) {
@@ -961,13 +1027,44 @@
     }
   }
 
+  // Multi-kill streak tracker
+  const killStreakTracker = {};
+
   function showKillBanner(ev) {
     const bannerContainer = document.getElementById('kill-banner-container');
     const div = document.createElement('div');
-    div.className = 'kill-banner-item';
-    div.innerHTML = `⚔️ <b>${escapeHtml(ev.killerName)}</b> 님이 <b>${escapeHtml(ev.victimName)}</b> 님을 처치했습니다!`;
+
+    const now = Date.now();
+    const pid = ev.killerId || ev.killerName;
+    if (!killStreakTracker[pid] || now - killStreakTracker[pid].lastTime > 14000) {
+      killStreakTracker[pid] = { count: 1, lastTime: now };
+    } else {
+      killStreakTracker[pid].count++;
+      killStreakTracker[pid].lastTime = now;
+    }
+
+    const count = killStreakTracker[pid].count;
+    let badgeTitle = 'CHAMPION SLAIN!';
+    let isPenta = false;
+
+    if (count === 2) badgeTitle = '⚔️ DOUBLE KILL! (더블 킬)';
+    else if (count === 3) badgeTitle = '⚔️ TRIPLE KILL! (트리플 킬)';
+    else if (count === 4) badgeTitle = '👑 QUADRA KILL! (쿼드라 킬)';
+    else if (count >= 5) {
+      badgeTitle = '🔥 PENTAKILL! (펜타킬) 🔥';
+      isPenta = true;
+    }
+
+    div.className = `kill-banner-item ${isPenta ? 'pentakill' : ''}`;
+    div.innerHTML = `
+      <div style="font-size: 1.5rem;">👑</div>
+      <div>
+        <div style="font-size: 0.85rem; color: #f1c40f; letter-spacing: 1px;">${badgeTitle}</div>
+        <div style="font-size: 1.05rem; color: #fff;"><b>${escapeHtml(ev.killerName)}</b> 님이 <b>${escapeHtml(ev.victimName)}</b> 님을 처치!</div>
+      </div>
+    `;
     bannerContainer.appendChild(div);
-    setTimeout(() => { div.remove(); }, 3500);
+    setTimeout(() => { div.remove(); }, 3800);
   }
 
   // Battle Ended

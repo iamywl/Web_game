@@ -379,7 +379,7 @@
         <!-- Skills Bar (Passive, Q, W, E, R, D, F) -->
         <div class="hud-skills-dock">
           <!-- Passive -->
-          <div class="skill-box passive-box" title="패시브">
+          <div id="hud-slot-p" class="skill-box passive-box" title="패시브">
             <div id="hud-skill-p-icon" class="skill-icon">P</div>
             <span class="skill-key-badge">P</span>
           </div>
@@ -448,6 +448,24 @@
         <!-- Minimap Display -->
         <div class="hud-minimap-wrap">
           <canvas id="minimap-canvas" width="180" height="120"></canvas>
+        </div>
+
+        <!-- LoL Hextech Skill Tooltip Popup -->
+        <div id="hud-skill-tooltip" class="skill-tooltip-hextech hidden">
+          <div class="tooltip-header">
+            <div class="tooltip-title-row">
+              <span id="tooltip-key-badge" class="tooltip-key-badge">Q</span>
+              <h4 id="tooltip-name" class="tooltip-skill-name">스킬 이름</h4>
+            </div>
+            <div class="tooltip-meta-row">
+              <span id="tooltip-cost" class="tooltip-cost">마나 40</span>
+              <span id="tooltip-cooldown" class="tooltip-cooldown">재사용 대기시간 5초</span>
+            </div>
+          </div>
+          <div class="tooltip-body">
+            <p id="tooltip-desc" class="tooltip-desc-text">스킬 설명</p>
+          </div>
+          <div id="tooltip-tip" class="tooltip-extra-tip">💡 팁: 대상에게 적중 시 추가 효과가 발동합니다.</div>
         </div>
       </footer>
 
