@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>LOL WEB MOBA - 실시간 웹 리그 오브 레전드</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Offline Pixi.js (WebGL rendering) -->
+  <script src="/lib/pixi.min.js"></script>
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- SCREEN 1: LOGIN / LAN ENTRY -->
+    <section id="screen-login" class="screen active">
+      <div class="login-bg-overlay"></div>
+      <div class="login-container hextech-panel">
+        <div class="logo-area">
+          <div class="moba-crest">⚔️</div>
+          <h1 class="game-title">LEAGUE OF MOBA</h1>
+          <p class="game-subtitle">실시간 웹 기반 5v5 / 2v2 / 1v1 아레나</p>
+        </div>
+
+        <div class="lan-info-badge">
+          <div class="lan-status-dot online"></div>
+          <div class="lan-details">
+            <span class="lan-label">LAN 접속 주소:</span>
+            <code id="login-lan-url">http://localhost:3000</code>
+            <button id="btn-copy-lan" class="btn-sm btn-gold">주소 복사</button>
+          </div>
+        </div>
+
+        <form id="form-login" class="login-form">
+          <div class="form-group">
+            <label for="input-nickname">소환사 이름 (닉네임)</label>
+            <input type="text" id="input-nickname" placeholder="소환사의 이름을 입력하세요" maxlength="12" required autofocus autocomplete="off">
+          </div>
+          <button type="submit" id="btn-enter-lobby" class="btn-hextech">소환사의 협곡 입장</button>
+        </form>
+
+        <div class="login-features">
+          <div class="feat-item">🔥 10인의 개성 넘치는 챔피언</div>
+          <div class="feat-item">⚡ 드래프트 독점 밴픽 시스템</div>
+          <div class="feat-item">🌐 로컬 LAN 전용 초저지연 배틀</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: LOBBY & WAITING ROOM -->
+    <section id="screen-lobby" class="screen">
+      <!-- Top Navigation Bar -->
+      <header class="lobby-header">
+        <div class="header-left">
+          <span class="header-logo">⚔️ LEAGUE OF MOBA</span>
+          <div class="badge-lan">LAN: <span id="lobby-lan-ip">--</span></div>
+        </div>
+        <div class="header-right">
+          <div class="user-profile">
+            <span class="profile-avatar">🛡️</span>
+            <span id="lobby-user-name" class="profile-name">소환사</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Lobby Content -->
+      <main class="lobby-content">
+        <!-- Room List Section -->
+        <div id="lobby-browser" class="lobby-section">
+          <div class="section-toolbar">
+            <div class="section-title">
+              <h2>전투 대기실 목록</h2>
+              <span id="room-count-badge" class="badge">0개 방 운영 중</span>
+            </div>
+            <div class="toolbar-actions">
+              <button id="btn-refresh-rooms" class="btn-gold">새로고침</button>
+              <button id="btn-open-create-room" class="btn-hextech">+ 방 만들기</button>
+            </div>
+          </div>
+
+          <div class="rooms-container">
+            <table class="rooms-table">
+              <thead>
+                <tr>
+                  <th>방 번호</th>
+                  <th>방 이름</th>
+                  <th>모드</th>
+                  <th>인원</th>
+                  <th>상태</th>
+                  <th>입장</th>
+                </tr>
+              </thead>
+              <tbody id="rooms-list-tbody">
+                <!-- Dynamic rooms list -->
+                <tr><td colspan="6" class="empty-notice">개설된 방이 없습니다. 새로 만들어보세요!</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Connected LAN Summoners sidebar -->
+          <div class="online-users-box">
+            <h3>접속 중인 소환사 (<span id="online-users-count">0</span>명)</h3>
+            <div id="online-users-list" class="users-chips"></div>
+          </div>
+        </div>
+
+        <!-- Waiting Room View (Inside Room) -->
+        <div id="lobby-room-view" class="lobby-section hidden">
+          <div class="room-view-header">
+            <div class="room-title-info">
+              <h2 id="room-view-name">방 이름</h2>
+              <span id="room-view-mode" class="badge-mode">1v1</span>
+            </div>
+            <button id="btn-leave-room" class="btn-danger">방 나가기</button>
+          </div>
+
+          <div class="teams-container">
+            <!-- Blue Team -->
+            <div class="team-column team-blue">
+              <div class="team-header">
+                <h3>블루 팀 (BLUE)</h3>
+                <button id="btn-switch-blue" class="btn-sm btn-outline-blue">블루팀 참가</button>
+              </div>
+              <div id="team-blue-slots" class="slots-list"></div>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="vs-column">
+              <div class="vs-crest">VS</div>
+              <div class="room-action-area">
+                <button id="btn-toggle-ready" class="btn-gold btn-lg">준비 완료</button>
+                <button id="btn-start-draft" class="btn-hextech btn-lg hidden">밴픽 시작</button>
+              </div>
+            </div>
+
+            <!-- Red Team -->
+            <div class="team-column team-red">
+              <div class="team-header">
+                <h3>레드 팀 (RED)</h3>
+                <button id="btn-switch-red" class="btn-sm btn-outline-red">레드팀 참가</button>
+              </div>
+              <div id="team-red-slots" class="slots-list"></div>
+            </div>
+          </div>
+
+          <!-- Room Chat Box -->
+          <div class="room-chat-panel">
+            <div id="room-chat-messages" class="chat-messages"></div>
+            <form id="form-room-chat" class="chat-input-row">
+              <input type="text" id="input-room-chat" placeholder="채팅 메시지 입력..." maxlength="100" autocomplete="off">
+              <button type="submit" class="btn-gold">전송</button>
+            </form>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- CREATE ROOM MODAL -->
+    <div id="modal-create-room" class="modal-overlay hidden">
+      <div class="modal-content hextech-panel">
+        <div class="modal-header">
+          <h3>새로운 방 만들기</h3>
+          <button id="btn-close-modal" class="btn-icon">✕</button>
+        </div>
+        <form id="form-create-room">
+          <div class="form-group">
+            <label for="input-room-name">방 제목</label>
+            <input type="text" id="input-room-name" placeholder="승리를 쟁취할 소환사 구함" maxlength="20" required>
+          </div>
+          <div class="form-group">
+            <label>대전 모드</label>
+            <div class="mode-select-grid">
+              <label class="mode-card active">
+                <input type="radio" name="roomMode" value="1v1" checked>
+                <span class="mode-title">1 vs 1</span>
+                <span class="mode-desc">최대 2인 결투</span>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="roomMode" value="2v2">
+                <span class="mode-title">2 vs 2</span>
+                <span class="mode-desc">최대 4인 팀전</span>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="roomMode" value="custom">
+                <span class="mode-title">사용자 설정</span>
+                <span class="mode-desc">최대 10인 (5v5)</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="btn-cancel-create" class="btn-outline">취소</button>
+            <button type="submit" class="btn-hextech">생성하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: DRAFT PICK (CHAMPION SELECT) -->
+    <section id="screen-draft" class="screen">
+      <div class="draft-header">
+        <div class="draft-title-box">
+          <h2 id="draft-phase-title">챔피언을 선택하십시오!</h2>
+          <div id="draft-timer-box" class="draft-timer">30</div>
+        </div>
+      </div>
+
+      <div class="draft-body">
+        <!-- Blue Team Draft Roster -->
+        <aside class="draft-team-panel draft-blue">
+          <div class="team-label">블루 팀</div>
+          <div id="draft-blue-roster" class="draft-roster"></div>
+        </aside>
+
+        <!-- Center: Champion Selection Grid & Details -->
+        <main class="draft-center-panel">
+          <!-- 10 Champion Select Cards Grid -->
+          <div class="champ-grid-header">
+            <span>사용 가능한 챔피언 (10인) - 중복 픽 불가 (선착순 독점)</span>
+          </div>
+          <div id="champions-grid" class="champions-grid">
+            <!-- 10 Champion cards dynamically rendered -->
+          </div>
+
+          <!-- Selected Champion Details & Lock In Section -->
+          <div id="draft-detail-card" class="draft-detail-card">
+            <div class="detail-champ-main">
+              <div id="detail-champ-avatar" class="detail-avatar">⚔️</div>
+              <div class="detail-champ-info">
+                <div class="name-row">
+                  <h3 id="detail-champ-name">검객</h3>
+                  <span id="detail-champ-title" class="sub-title">Blademaster</span>
+                  <span id="detail-champ-role" class="badge-role">전사</span>
+                </div>
+                <!-- Stats Summary -->
+                <div id="detail-champ-stats" class="stats-row">
+                  <span>체력: <b>640</b></span>
+                  <span>사거리: <b>130</b></span>
+                  <span>공격력: <b>68</b></span>
+                  <span>이동속도: <b>310</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skills List -->
+            <div class="detail-skills-row">
+              <div id="skill-passive" class="skill-chip">
+                <div class="skill-key">P</div>
+                <div class="skill-meta">
+                  <div class="skill-name">패시브</div>
+                  <div class="skill-desc">설명</div>
+                </div>
+              </div>
+              <div id="skill-q" class="skill-chip">
+                <div class="skill-key">Q</div>
+                <div class="skill-meta">
+                  <div class="skill-name">스킬 Q</div>
+                  <div class="skill-desc">설명</div>
+                </div>
+              </div>
+              <div id="skill-w" class="skill-chip">
+                <div class="skill-key">W</div>
+                <div class="skill-meta">
+                  <div class="skill-name">스킬 W</div>
+                  <div class="skill-desc">설명</div>
+                </div>
+              </div>
+              <div id="skill-e" class="skill-chip">
+                <div class="skill-key">E</div>
+                <div class="skill-meta">
+                  <div class="skill-name">스킬 E</div>
+                  <div class="skill-desc">설명</div>
+                </div>
+              </div>
+              <div id="skill-r" class="skill-chip">
+                <div class="skill-key">R</div>
+                <div class="skill-meta">
+                  <div class="skill-name">궁극기 R</div>
+                  <div class="skill-desc">설명</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spells Pick & Lock-in Button -->
+            <div class="draft-action-footer">
+              <div class="spells-selector">
+                <label>소환사 주문:</label>
+                <div class="spell-slot">
+                  <span class="slot-letter">D</span>
+                  <select id="select-spell-d" class="spell-dropdown">
+                    <option value="flash">⚡ 점멸 (Flash)</option>
+                  </select>
+                </div>
+                <div class="spell-slot">
+                  <span class="slot-letter">F</span>
+                  <select id="select-spell-f" class="spell-dropdown">
+                    <option value="ignite">🔥 점화 (Ignite)</option>
+                    <option value="heal">💚 회복 (Heal)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button id="btn-lock-champion" class="btn-hextech-large">선택 완료 (LOCK IN)</button>
+            </div>
+          </div>
+        </main>
+
+        <!-- Red Team Draft Roster -->
+        <aside class="draft-team-panel draft-red">
+          <div class="team-label">레드 팀</div>
+          <div id="draft-red-roster" class="draft-roster"></div>
+        </aside>
+      </div>
+
+      <!-- Draft Countdown Overlay -->
+      <div id="draft-countdown-overlay" class="countdown-overlay hidden">
+        <div class="countdown-modal">
+          <div class="countdown-title">전투가 곧 시작됩니다!</div>
+          <div id="countdown-number" class="countdown-big-num">3</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: IN-GAME ARENA & HUD -->
+    <section id="screen-game" class="screen">
+      <!-- Pixi Canvas Viewport -->
+      <div id="game-canvas-container"></div>
+
+      <!-- Top Scoreboard Bar -->
+      <header class="game-scoreboard">
+        <div class="score-team blue-score">
+          <span class="team-name">BLUE</span>
+          <span id="score-blue-num" class="score-val">0</span>
+        </div>
+        <div class="game-clock-box">
+          <span id="game-timer-display" class="clock-val">00:00</span>
+        </div>
+        <div class="score-team red-score">
+          <span id="score-red-num" class="score-val">0</span>
+          <span class="team-name">RED</span>
+        </div>
+
+        <div class="personal-kda">
+          <span class="kda-label">K / D / A</span>
+          <span id="kda-display" class="kda-val">0 / 0 / 0</span>
+        </div>
+
+        <div class="perf-stats-box">
+          <span id="fps-display" class="fps-tag">60 FPS</span>
+          <span id="ping-display" class="ping-tag">1ms</span>
+          <button type="button" id="btn-sound-toggle" class="btn-sound-toggle" title="사운드 켜기/끄기">🔊</button>
+        </div>
+      </header>
+
+      <!-- Kill Alert Banner -->
+      <div id="kill-banner-container" class="kill-banner-container"></div>
+
+      <!-- Bottom HUD (LOL Hextech Bar) -->
+      <footer class="game-hud">
+        <!-- Champion Avatar & Level -->
+        <div class="hud-hero-portrait">
+          <div id="hud-avatar-icon" class="hero-icon">⚔️</div>
+          <div id="hud-hero-name" class="hero-label">검객</div>
+        </div>
+
+        <!-- Vitals: HP & MP Bars -->
+        <div class="hud-vitals">
+          <div class="bar-container hp-bar-wrap">
+            <div id="hud-hp-fill" class="bar-fill hp-fill" style="width: 100%;"></div>
+            <div id="hud-shield-fill" class="bar-fill shield-fill" style="width: 0%;"></div>
+            <span id="hud-hp-text" class="bar-text">640 / 640</span>
+          </div>
+          <div class="bar-container mp-bar-wrap">
+            <div id="hud-mp-fill" class="bar-fill mp-fill" style="width: 100%;"></div>
+            <span id="hud-mp-text" class="bar-text">300 / 300</span>
+          </div>
+        </div>
+
+        <!-- Skills Bar (Passive, Q, W, E, R, D, F) -->
+        <div class="hud-skills-dock">
+          <!-- Passive -->
+          <div class="skill-box passive-box" title="패시브">
+            <div id="hud-skill-p-icon" class="skill-icon">P</div>
+            <span class="skill-key-badge">P</span>
+          </div>
+
+          <!-- Q -->
+          <div id="hud-slot-q" class="skill-box active-skill" data-key="Q">
+            <div id="hud-skill-q-icon" class="skill-icon">Q</div>
+            <span class="skill-key-badge">Q</span>
+            <span id="hud-mana-q" class="skill-mana-cost">45</span>
+            <div id="hud-cd-overlay-q" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-q" class="cd-num">0</span>
+            </div>
+          </div>
+
+          <!-- W -->
+          <div id="hud-slot-w" class="skill-box active-skill" data-key="W">
+            <div id="hud-skill-w-icon" class="skill-icon">W</div>
+            <span class="skill-key-badge">W</span>
+            <span id="hud-mana-w" class="skill-mana-cost">50</span>
+            <div id="hud-cd-overlay-w" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-w" class="cd-num">0</span>
+            </div>
+          </div>
+
+          <!-- E -->
+          <div id="hud-slot-e" class="skill-box active-skill" data-key="E">
+            <div id="hud-skill-e-icon" class="skill-icon">E</div>
+            <span class="skill-key-badge">E</span>
+            <span id="hud-mana-e" class="skill-mana-cost">55</span>
+            <div id="hud-cd-overlay-e" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-e" class="cd-num">0</span>
+            </div>
+          </div>
+
+          <!-- R (Ultimate) -->
+          <div id="hud-slot-r" class="skill-box ult-skill" data-key="R">
+            <div id="hud-skill-r-icon" class="skill-icon">R</div>
+            <span class="skill-key-badge">R</span>
+            <span id="hud-mana-r" class="skill-mana-cost">100</span>
+            <div id="hud-cd-overlay-r" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-r" class="cd-num">0</span>
+            </div>
+          </div>
+
+          <div class="dock-separator"></div>
+
+          <!-- D (Spell 1) -->
+          <div id="hud-slot-d" class="skill-box spell-box" data-key="D">
+            <div id="hud-spell-d-icon" class="skill-icon">⚡</div>
+            <span class="skill-key-badge">D</span>
+            <div id="hud-cd-overlay-d" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-d" class="cd-num">0</span>
+            </div>
+          </div>
+
+          <!-- F (Spell 2) -->
+          <div id="hud-slot-f" class="skill-box spell-box" data-key="F">
+            <div id="hud-spell-f-icon" class="skill-icon">🔥</div>
+            <span class="skill-key-badge">F</span>
+            <div id="hud-cd-overlay-f" class="cooldown-overlay hidden">
+              <span id="hud-cd-text-f" class="cd-num">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Minimap Display -->
+        <div class="hud-minimap-wrap">
+          <canvas id="minimap-canvas" width="180" height="120"></canvas>
+        </div>
+      </footer>
+
+      <!-- Respawn Overlay -->
+      <div id="respawn-overlay" class="respawn-overlay hidden">
+        <div class="respawn-box">
+          <div class="respawn-title">처치당했습니다</div>
+          <div class="respawn-sub">부활 대기시간: <span id="respawn-timer-sec">7</span>초</div>
+        </div>
+      </div>
+
+      <!-- Game Over Modal -->
+      <div id="gameover-modal" class="gameover-modal-overlay hidden">
+        <div class="gameover-content hextech-panel">
+          <h2 id="gameover-banner-text" class="gameover-title victory">VICTORY</h2>
+          <p id="gameover-desc-text" class="gameover-desc">블루 팀이 승리했습니다!</p>
+          <div class="gameover-scores">
+            <div class="final-score blue"><span class="label">블루:</span> <span id="final-blue-score">0</span></div>
+            <div class="final-score red"><span class="label">레드:</span> <span id="final-red-score">0</span></div>
+          </div>
+          <button id="btn-return-lobby" class="btn-hextech-large">대기실로 돌아가기</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/audio.js"></script>
+  <script src="/js/renderer.js"></script>
+  <script src="/js/client.js"></script>
+</body>
+</html>
