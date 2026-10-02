@@ -1129,6 +1129,11 @@ body, html {
 #screen-game {
   background: #000;
   position: relative;
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><polygon points='0,0 16,6 9,9 6,16' fill='%23f1c40f' stroke='%231e272e' stroke-width='1.5'/></svg>"), default;
+}
+
+#screen-game.cursor-attack {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='none' stroke='%23ff4757' stroke-width='2'/><line x1='12' y1='2' x2='12' y2='22' stroke='%23ff4757' stroke-width='2'/><line x1='2' y1='12' x2='22' y2='12' stroke='%23ff4757' stroke-width='2'/></svg>") 12 12, crosshair;
 }
 
 #game-canvas-container {
@@ -1430,6 +1435,7 @@ body, html {
   width: 100%;
   height: 100%;
   display: block;
+  cursor: crosshair;
 }
 
 /* Respawn Overlay */
