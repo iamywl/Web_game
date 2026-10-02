@@ -1,19 +1,19 @@
 {
-  "startedAt": "2026-10-02T07:59:44.066Z",
+  "startedAt": "2026-10-02T08:00:39.822Z",
   "serverUrl": "http://localhost:3000",
   "categories": {
     "1. Concurrency & Pick Exclusivity Race Condition": [
       {
         "testName": "1.1 Simultaneous connection of 4 headless socket clients",
         "passed": true,
-        "durationMs": 24,
-        "details": "All 4 sockets connected: 6ya_v, LNm-j, cPmYS, ab3-q",
+        "durationMs": 23,
+        "details": "All 4 sockets connected: dprJF, QRwri, ZHF5p, nO0rx",
         "error": null
       },
       {
         "testName": "1.2 Concurrent nickname registration and validation",
         "passed": true,
-        "durationMs": 1,
+        "durationMs": 2,
         "details": "Registered: 페이커_T1, 쵸비_GEN, 쇼메이커_DK, 비디디_KT",
         "error": null
       },
@@ -21,7 +21,7 @@
         "testName": "1.3 4-Player 2v2 Room creation and auto team-balance (2 Blue vs 2 Red)",
         "passed": true,
         "durationMs": 3,
-        "details": "Room room_27: Balanced into 2 Blue and 2 Red teams, all 3 non-host players ready.",
+        "details": "Room room_1: Balanced into 2 Blue and 2 Red teams, all 3 non-host players ready.",
         "error": null
       },
       {
@@ -50,21 +50,21 @@
       {
         "testName": "2.1 GET /api/server-info health status and LAN IP auto-detection",
         "passed": true,
-        "durationMs": 10,
+        "durationMs": 12,
         "details": "Status: online, Port: 3000, LAN IP: 192.168.42.82",
         "error": null
       },
       {
         "testName": "2.2 GET /api/game-data schema and 10 champion entries existence",
         "passed": true,
-        "durationMs": 3,
+        "durationMs": 4,
         "details": "Champions verified (10): blademaster, sniper, pyromancer, shadow_assassin, guardian, frost_mage, berserker, shadow_hunter, brawler, demolitionist",
         "error": null
       },
       {
         "testName": "2.3 In-depth verification of stats, 40 skills (Q, W, E, R) and passives",
         "passed": true,
-        "durationMs": 0,
+        "durationMs": 1,
         "details": "Audited 10 champions, 40 skills, 10 passives with 100% data integrity.",
         "error": null
       },
@@ -80,36 +80,36 @@
       {
         "testName": "3.1 1v1 Match initialization and arena terrain setup (2400x1600)",
         "passed": true,
-        "durationMs": 3043,
+        "durationMs": 3013,
         "details": "Arena initialized. Blue Base: (260, 800), Red Base: (2140, 800)",
         "error": null
       },
       {
         "testName": "3.2 Authoritative movement input (playerMove) and coordinates displacement",
         "passed": true,
-        "durationMs": 528,
-        "details": "P1 position moved: (340, 730) ➔ (431, 738)",
+        "durationMs": 539,
+        "details": "P1 position moved: (340, 730) ➔ (436, 738)",
         "error": null
       },
       {
         "testName": "3.3 Projectile skillshot spawning and flight telemetry in gameTick.projectiles",
         "passed": true,
-        "durationMs": 803,
-        "details": "Observed 2 active projectiles: sniper_q@(1108,799), sniper_r@(1112,799)",
+        "durationMs": 806,
+        "details": "Observed 3 active projectiles: basic_attack@(1120,799), sniper_q@(1108,799), sniper_r@(1112,799)",
         "error": null
       },
       {
         "testName": "3.4 Cast of Q, W, E, R, D(Flash), F(Ignite) and tick-by-tick cooldown decrements",
         "passed": true,
-        "durationMs": 606,
-        "details": "All 6 skills/spells triggered and actively decremented: Q (4.5s ➔ 4.2s), R (49.5s ➔ 49.2s)",
+        "durationMs": 605,
+        "details": "All 6 skills/spells triggered and actively decremented: Q (4.5s ➔ 4.1s), R (49.5s ➔ 49.1s)",
         "error": null
       },
       {
         "testName": "3.5 Projectile collision detection & authoritative damage application (Victim HP decrease)",
         "passed": true,
         "durationMs": 0,
-        "details": "Victim HP decreased from 780 to 211 (-569 DMG dealt)",
+        "details": "Victim HP decreased from 780 to 169 (-611 DMG dealt)",
         "error": null
       }
     ],
@@ -117,14 +117,14 @@
       {
         "testName": "4.1 Unexpected player disconnect during DRAFT phase (Draft cancellation & fallback to LOBBY)",
         "passed": true,
-        "durationMs": 8,
+        "durationMs": 9,
         "details": "Draft gracefully aborted: \"플레이어가 퇴장하여 대기실로 돌아갑니다.\", room safely returned to LOBBY",
         "error": null
       },
       {
         "testName": "4.2 Unexpected player disconnect during ACTIVE IN-GAME battle (Team Forfeit & Win state)",
         "passed": true,
-        "durationMs": 3030,
+        "durationMs": 3042,
         "details": "Winner: BLUE team (레드 팀 기권 승리)",
         "error": null
       },
@@ -149,7 +149,7 @@
     "passed": 19,
     "failed": 0,
     "skipped": 0,
-    "durationMs": 9607
+    "durationMs": 9588
   },
   "metrics": {
     "raceConditionLatencyMs": 1,
