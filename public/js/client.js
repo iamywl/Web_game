@@ -580,8 +580,8 @@
         // Screen to world mouse position
         mouseWorldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
 
-        // Render at 60+ FPS
-        gameRenderer.render(latestGameState, mouseWorldPos);
+        // Render at 60+ FPS with camera update
+        gameRenderer.render(latestGameState, mouseScreenPos);
       }
       animationFrameId = requestAnimationFrame(frame);
     }
@@ -593,12 +593,23 @@
     draftCountdownOverlay.classList.add('hidden');
     switchScreen('game');
 
-    // Initialize Renderer
+    // Initialize Renderer with LoL CameraController
     if (!gameRenderer) {
-      gameRenderer = new GameRenderer('game-canvas-container');
+      const cameraController = new CameraController({
+        mapWidth: data.mapData ? data.mapData.width : 2400,
+        mapHeight: data.mapData ? data.mapData.height : 1600
+      });
+      gameRenderer = new GameRenderer('game-canvas-container', cameraController);
+    } else {
+      gameRenderer.setMapData(data.mapData);
     }
-    gameRenderer.setMapData(data.mapData);
     gameRenderer.setLocalPlayerId(localUser.socketId);
+
+    // Initial snap camera to player base
+    const myPlayer = (data.gameState && data.gameState.players) ? data.gameState.players.find(p => p.id === localUser.socketId) : null;
+    if (myPlayer) {
+      gameRenderer.camera.snapTo(myPlayer.x, myPlayer.y);
+    }
 
     setupInGameInputListeners();
     setupInGameHud(localUser.selectedChampId);
@@ -620,11 +631,92 @@
 
   function setupInGameInputListeners() {
     const canvasContainer = document.getElementById('game-canvas-container');
+    const gameScreenEl = document.getElementById('screen-game');
+    const minimapCanvas = document.getElementById('minimap-canvas');
+    const btnCameraMode = document.getElementById('btn-camera-mode');
 
-    // Track mouse position
+    // Camera Mode button helper
+    function updateCameraModeUI(mode) {
+      if (!btnCameraMode) return;
+      btnCameraMode.textContent = mode === 'LOCKED' ? '[Y] 고정 시점' : '[Y] 자유 시점';
+      btnCameraMode.style.background = mode === 'LOCKED' ? '#1e3a5f' : '#27ae60';
+      btnCameraMode.style.borderColor = mode === 'LOCKED' ? '#00d2d3' : '#2ecc71';
+    }
+
+    if (btnCameraMode) {
+      btnCameraMode.addEventListener('click', () => {
+        if (gameRenderer && gameRenderer.camera) {
+          const newMode = gameRenderer.camera.toggleLock();
+          updateCameraModeUI(newMode);
+        }
+      });
+    }
+
+    // Minimap Left-Click & Drag Navigation
+    let isMinimapNavigating = false;
+    function handleMinimapPan(e) {
+      if (!gameRenderer || !gameRenderer.camera || !minimapCanvas) return;
+      const rect = minimapCanvas.getBoundingClientRect();
+      const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      const mapW = gameRenderer.mapData.width || 2400;
+      const mapH = gameRenderer.mapData.height || 1600;
+      gameRenderer.camera.panTo(normX * mapW, normY * mapH);
+    }
+
+    if (minimapCanvas) {
+      minimapCanvas.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          isMinimapNavigating = true;
+          handleMinimapPan(e);
+        }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (isMinimapNavigating) {
+          handleMinimapPan(e);
+        }
+      });
+      window.addEventListener('mouseup', () => {
+        isMinimapNavigating = false;
+      });
+    }
+
+    // Track mouse position & Enemy Hover Attack Cursor
     window.addEventListener('mousemove', (e) => {
       mouseScreenPos.x = e.clientX;
       mouseScreenPos.y = e.clientY;
+
+      if (isGameActive && gameRenderer && latestGameState) {
+        const worldPos = gameRenderer.screenToWorld(e.clientX, e.clientY);
+        const myPlayer = latestGameState.players.find(p => p.id === localUser.socketId);
+        let isEnemyHovered = false;
+
+        if (myPlayer) {
+          for (const ep of latestGameState.players) {
+            if (ep.isAlive && ep.team !== myPlayer.team) {
+              if (Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y) <= ep.radius + 15) {
+                isEnemyHovered = true;
+                break;
+              }
+            }
+          }
+          if (!isEnemyHovered) {
+            for (const s of latestGameState.structures) {
+              if (s.isAlive && s.team !== myPlayer.team) {
+                if (Math.hypot(s.x - worldPos.x, s.y - worldPos.y) <= 55) {
+                  isEnemyHovered = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (gameScreenEl) {
+          if (isEnemyHovered) gameScreenEl.classList.add('cursor-attack');
+          else gameScreenEl.classList.remove('cursor-attack');
+        }
+      }
     });
 
     // Disable default right-click context menu
@@ -691,7 +783,7 @@
       }
     });
 
-    // Keyboard Shortcuts (Q, W, E, R, D, F)
+    // Keyboard Shortcuts (Q, W, E, R, D, F, Y, Space)
     window.addEventListener('keydown', (e) => {
       if (!isGameActive) return;
       const key = e.key.toUpperCase();
@@ -713,14 +805,25 @@
           targetY: Math.round(worldPos.y)
         });
         if (key === 'D' && window.soundEngine) window.soundEngine.playFlash();
+      } else if (e.code === 'KeyY') {
+        // Toggle camera lock mode
+        if (gameRenderer && gameRenderer.camera) {
+          const newMode = gameRenderer.camera.toggleLock();
+          updateCameraModeUI(newMode);
+        }
       } else if (e.code === 'Space') {
-        // Snap camera to local player
-        if (latestGameState) {
-          const me = latestGameState.players.find(p => p.id === localUser.socketId);
-          if (me) {
-            gameRenderer.camera.x = me.x - gameRenderer.width / 2;
-            gameRenderer.camera.y = me.y - gameRenderer.height / 2;
-          }
+        e.preventDefault();
+        // Hold Spacebar to lock onto champion
+        if (gameRenderer && gameRenderer.camera) {
+          gameRenderer.camera.isSpaceHeld = true;
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        if (gameRenderer && gameRenderer.camera) {
+          gameRenderer.camera.isSpaceHeld = false;
         }
       }
     });
