@@ -5,6 +5,8 @@
  * user inputs, skill casts, and real-time state synchronization.
  */
 
+import { GameRenderer } from './renderer.js';
+
 (function () {
   'use strict';
 
@@ -26,6 +28,7 @@
   let currentRoom = null;
   let championsData = {};
   let spellsData = {};
+  let itemsData = {};
   let gameRenderer = null;
   let latestGameState = null;
   let isGameActive = false;
@@ -74,6 +77,7 @@
     .then(data => {
       championsData = data.champions || {};
       spellsData = data.spells || {};
+      itemsData = data.items || {};
     })
     .catch(err => console.log('Game data fetch error:', err));
 
@@ -404,10 +408,19 @@
       const card = document.createElement('div');
       card.className = `champ-pick-card ${key === localUser.selectedChampId ? 'selected' : ''}`;
       card.id = `champ-card-${key}`;
+      card.style.setProperty('--champ-accent', champ.color || '#c89b3c');
       card.innerHTML = `
-        <div class="champ-card-icon">${champ.avatar}</div>
-        <div class="champ-card-name">${champ.name}</div>
-        <div class="champ-card-role">${champ.role.split(' ')[0]}</div>
+        <div class="champ-card-glow-bg" style="background: radial-gradient(circle at 50% 20%, ${champ.color}44 0%, rgba(6, 11, 20, 0.95) 75%);"></div>
+        <div class="champ-card-avatar-crest" style="border-color: ${champ.color || '#c89b3c'}; box-shadow: 0 0 14px ${champ.color}55;">
+          <span class="champ-avatar-emoji">${champ.avatar}</span>
+        </div>
+        <div class="champ-card-meta">
+          <div class="champ-card-name">${champ.name}</div>
+          <div class="champ-card-title">${champ.title}</div>
+          <div class="champ-card-role-badge" style="background: ${champ.color}22; border-color: ${champ.color}66; color: ${champ.color};">
+            ${champ.role.split(' ')[0]}
+          </div>
+        </div>
       `;
 
       card.addEventListener('click', () => {
@@ -592,20 +605,27 @@
 
         // Client-side movement prediction for local player (0ms immediate responsiveness)
         const myPlayer = latestGameState.players ? latestGameState.players.find(p => p.id === localUser.socketId) : null;
-        if (myPlayer && myPlayer.isAlive && myPlayer.isMoving && myPlayer.targetX !== undefined) {
-          const dx = myPlayer.targetX - myPlayer.x;
-          const dy = myPlayer.targetY - myPlayer.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist > 4) {
-            const speed = myPlayer.moveSpeed || 340;
-            const step = Math.min(dist, speed * dt);
-            myPlayer.x += (dx / dist) * step;
-            myPlayer.y += (dy / dist) * step;
-            myPlayer.angle = Math.atan2(dy, dx);
-          } else {
-            myPlayer.x = myPlayer.targetX;
-            myPlayer.y = myPlayer.targetY;
-            myPlayer.isMoving = false;
+        if (myPlayer && myPlayer.isAlive) {
+          if (gameRenderer && gameRenderer.gameFeelController) {
+            // Synchronize with GameFeelController prediction
+            myPlayer.x = Math.round(gameRenderer.gameFeelController.predictedPosition.x);
+            myPlayer.y = Math.round(gameRenderer.gameFeelController.predictedPosition.z);
+            myPlayer.isMoving = gameRenderer.gameFeelController.isMoving;
+          } else if (myPlayer.isMoving && myPlayer.targetX !== undefined) {
+            const dx = myPlayer.targetX - myPlayer.x;
+            const dy = myPlayer.targetY - myPlayer.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 4) {
+              const speed = myPlayer.moveSpeed || 340;
+              const step = Math.min(dist, speed * dt);
+              myPlayer.x += (dx / dist) * step;
+              myPlayer.y += (dy / dist) * step;
+              myPlayer.angle = Math.atan2(dy, dx);
+            } else {
+              myPlayer.x = myPlayer.targetX;
+              myPlayer.y = myPlayer.targetY;
+              myPlayer.isMoving = false;
+            }
           }
         }
 
@@ -613,18 +633,31 @@
         if (now - lastHoverCheckTime >= 50 && myPlayer) {
           lastHoverCheckTime = now;
           let isEnemyHovered = false;
+          // Check enemy champions (32px hitbox)
           for (const ep of latestGameState.players) {
             if (ep.isAlive && ep.team !== myPlayer.team) {
-              if (Math.hypot(ep.x - mouseWorldPos.x, ep.y - mouseWorldPos.y) <= 75) {
+              if (Math.hypot(ep.x - mouseWorldPos.x, ep.y - mouseWorldPos.y) <= 32) {
                 isEnemyHovered = true;
                 break;
               }
             }
           }
+          // Check enemy minions (24px hitbox)
+          if (!isEnemyHovered && latestGameState.minions) {
+            for (const m of latestGameState.minions) {
+              if (m.hp > 0 && m.team !== myPlayer.team) {
+                if (Math.hypot(m.x - mouseWorldPos.x, m.y - mouseWorldPos.y) <= 24) {
+                  isEnemyHovered = true;
+                  break;
+                }
+              }
+            }
+          }
+          // Check enemy structures (52px hitbox)
           if (!isEnemyHovered && latestGameState.structures) {
             for (const s of latestGameState.structures) {
               if (s.isAlive && s.team !== myPlayer.team) {
-                if (Math.hypot(s.x - mouseWorldPos.x, s.y - mouseWorldPos.y) <= 85) {
+                if (Math.hypot(s.x - mouseWorldPos.x, s.y - mouseWorldPos.y) <= 52) {
                   isEnemyHovered = true;
                   break;
                 }
@@ -663,8 +696,14 @@
         mapWidth: data.mapData ? data.mapData.width : 2400,
         mapHeight: data.mapData ? data.mapData.height : 1600
       });
-      gameRenderer = new GameRenderer('game-canvas-container', cameraController);
-    } else {
+      const RendererClass = window.GameRenderer || globalThis.GameRenderer || (typeof GameRenderer !== 'undefined' ? GameRenderer : null);
+      if (!RendererClass) {
+        console.error('Fatal: GameRenderer class not found on window or global scope!');
+        return;
+      }
+      gameRenderer = new RendererClass('game-canvas-container', cameraController);
+    }
+    if (data.mapData) {
       gameRenderer.setMapData(data.mapData);
     }
     gameRenderer.setLocalPlayerId(localUser.socketId);
@@ -685,6 +724,10 @@
   socket.on('gameTick', (state) => {
     if (!latestGameState) {
       latestGameState = state;
+      const initialMe = state.players ? state.players.find(p => p.id === localUser.socketId) : null;
+      if (initialMe && gameRenderer && gameRenderer.gameFeelController) {
+        gameRenderer.gameFeelController.initPosition(initialMe.x, initialMe.y);
+      }
     } else {
       // Smooth Client-Side Prediction Reconciliation
       const serverMe = state.players ? state.players.find(p => p.id === localUser.socketId) : null;
@@ -713,6 +756,11 @@
         clientMe.isAlive = serverMe.isAlive;
         clientMe.respawnTimer = serverMe.respawnTimer;
         clientMe.stealth = serverMe.stealth;
+
+        // Reconcile GameFeelController prediction with authoritative server position
+        if (gameRenderer && gameRenderer.gameFeelController) {
+          gameRenderer.gameFeelController.onServerSnapshot(serverMe.x, serverMe.y);
+        }
       }
 
       // Reconcile other players and game state
@@ -729,6 +777,7 @@
         });
       }
       latestGameState.structures = state.structures;
+      latestGameState.minions = state.minions;
       latestGameState.projectiles = state.projectiles;
       latestGameState.aoeZones = state.aoeZones;
       latestGameState.events = state.events;
@@ -789,6 +838,22 @@
         if (e.button === 0) {
           isMinimapNavigating = true;
           handleMinimapPan(e);
+        } else if (e.button === 2) {
+          // Authentic LoL minimap right-click move command
+          e.preventDefault();
+          const rect = minimapCanvas.getBoundingClientRect();
+          const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+          const mapW = (gameRenderer && gameRenderer.mapData && gameRenderer.mapData.width) ? gameRenderer.mapData.width : 2400;
+          const mapH = (gameRenderer && gameRenderer.mapData && gameRenderer.mapData.height) ? gameRenderer.mapData.height : 1600;
+          const targetWorldX = normX * mapW;
+          const targetWorldY = normY * mapH;
+          if (networkManager) {
+            networkManager.sendMove(targetWorldX, targetWorldY);
+            if (gameRenderer) {
+              gameRenderer.addClickRing(targetWorldX, targetWorldY, '#2ecc71');
+            }
+          }
         }
       });
       window.addEventListener('mousemove', (e) => {
@@ -832,8 +897,8 @@
         const myPlayer = latestGameState.players.find(p => p.id === localUser.socketId);
 
         if (myPlayer) {
-          // Check enemy players
-          let closestDist = 75;
+          // Check enemy players (Direct click on champion hitbox)
+          let closestDist = 32;
           for (const ep of latestGameState.players) {
             if (ep.isAlive && ep.team !== myPlayer.team) {
               const d = Math.hypot(ep.x - worldPos.x, ep.y - worldPos.y);
@@ -845,9 +910,24 @@
               }
             }
           }
-          // Check enemy structures
+          // Check enemy minions (Direct click on minion hitbox)
+          if (!clickedTarget && latestGameState.minions) {
+            let closestMinionDist = 24;
+            for (const m of latestGameState.minions) {
+              if (m.hp > 0 && m.team !== myPlayer.team) {
+                const d = Math.hypot(m.x - worldPos.x, m.y - worldPos.y);
+                if (d <= closestMinionDist) {
+                  closestMinionDist = d;
+                  clickedTarget = m.id;
+                  targetX = m.x;
+                  targetY = m.y;
+                }
+              }
+            }
+          }
+          // Check enemy structures (Direct click on tower base)
           if (!clickedTarget && latestGameState.structures) {
-            let closestStructDist = 85;
+            let closestStructDist = 52;
             for (const s of latestGameState.structures) {
               if (s.isAlive && s.team !== myPlayer.team) {
                 const d = Math.hypot(s.x - worldPos.x, s.y - worldPos.y);
@@ -865,6 +945,9 @@
         if (clickedTarget) {
           socket.emit('playerTarget', { targetId: clickedTarget });
           gameRenderer.addClickRing(targetX, targetY, true); // Red targeting ring!
+          if (gameRenderer && gameRenderer.gameFeelController) {
+            gameRenderer.gameFeelController.stopMoving();
+          }
         } else {
           // Move command - Instantly apply client-side prediction for 0ms perceptual latency!
           const tx = Math.round(worldPos.x);
@@ -882,6 +965,11 @@
               myPlayer.angle = Math.atan2(dy, dx);
               myPlayer.isMoving = true;
             }
+          }
+
+          // GameFeelController instant 0ms input prediction
+          if (gameRenderer && gameRenderer.gameFeelController) {
+            gameRenderer.gameFeelController.issueMoveCommand(tx, ty);
           }
         }
       } else if (e.button === 0) { // Left Click
@@ -908,10 +996,23 @@
       }
     });
 
-    // Keyboard Shortcuts (Q, W, E, R, D, F, A, S, Y, Space)
+    function castWardTrinket() {
+      if (!isGameActive || !gameRenderer) return;
+      const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
+      socket.emit('placeWard', { x: Math.round(worldPos.x), y: Math.round(worldPos.y) });
+    }
+
+    // Keyboard Shortcuts (Q, W, E, R, D, F, A, S, Y, Space, B, P, 4, Ctrl+Q/W/E/R)
     window.addEventListener('keydown', (e) => {
       if (!isGameActive) return;
       const key = e.key.toUpperCase();
+
+      // Quick Skill Upgrade: Ctrl + Q/W/E/R
+      if (e.ctrlKey && ['Q', 'W', 'E', 'R'].includes(key)) {
+        e.preventDefault();
+        socket.emit('upgradeSkill', { key });
+        return;
+      }
 
       if (['Q', 'W', 'E', 'R'].includes(key)) {
         // Quick Cast towards cursor
@@ -934,6 +1035,15 @@
           targetY: Math.round(worldPos.y)
         });
         if (key === 'D' && window.soundEngine) window.soundEngine.playFlash();
+      } else if (e.code === 'KeyB') {
+        // Recall to Base [B]
+        socket.emit('startRecall');
+      } else if (e.code === 'KeyP') {
+        // Toggle Hextech Shop [P]
+        toggleShopModal();
+      } else if (e.code === 'Digit4' || e.key === '4') {
+        // Vision Ward Trinket [4]
+        castWardTrinket();
       } else if (e.code === 'KeyA') {
         // Toggle Attack-Move (A-Key) Mode
         isAttackMoveActive = !isAttackMoveActive;
@@ -953,6 +1063,9 @@
           myP.targetX = myP.x;
           myP.targetY = myP.y;
           myP.isMoving = false;
+        }
+        if (gameRenderer && gameRenderer.gameFeelController) {
+          gameRenderer.gameFeelController.stopMoving();
         }
       } else if (e.code === 'KeyY') {
         // Toggle camera lock mode
@@ -1013,6 +1126,51 @@
       }
     });
 
+    // Skill Upgrade buttons [▲] click triggers
+    ['Q', 'W', 'E', 'R'].forEach(key => {
+      const btnUpgrade = document.getElementById(`btn-upgrade-${key.toLowerCase()}`);
+      if (btnUpgrade) {
+        btnUpgrade.addEventListener('click', (e) => {
+          e.stopPropagation();
+          socket.emit('upgradeSkill', { key });
+        });
+      }
+    });
+
+    // Recall [B] button click trigger
+    const slotB = document.getElementById('hud-slot-b');
+    if (slotB) {
+      slotB.addEventListener('click', () => {
+        socket.emit('startRecall');
+      });
+    }
+
+    // Vision Ward trinket [4] click trigger
+    const slotTrinket = document.getElementById('hud-trinket-slot');
+    if (slotTrinket) {
+      slotTrinket.addEventListener('click', () => {
+        castWardTrinket();
+      });
+    }
+
+    // Item Slots click triggers (opens shop)
+    for (let i = 0; i < 6; i++) {
+      const slotItem = document.getElementById(`hud-item-${i}`);
+      if (slotItem) {
+        slotItem.addEventListener('click', () => {
+          toggleShopModal();
+        });
+      }
+    }
+
+    // Shop Close Button
+    const btnCloseShop = document.getElementById('btn-close-shop');
+    if (btnCloseShop) {
+      btnCloseShop.addEventListener('click', () => {
+        toggleShopModal();
+      });
+    }
+
     ['D', 'F'].forEach(slotKey => {
       const slot = document.getElementById(`hud-slot-${slotKey.toLowerCase()}`);
       if (slot) {
@@ -1025,12 +1183,56 @@
     });
   }
 
+  const CHAMPION_SKILL_ICONS = {
+    blademaster: { P: '⚔️', Q: '💨', W: '🌀', E: '🛡️', R: '⚡' },
+    sniper: { P: '👁️', Q: '🎯', W: '🌫️', E: '👟', R: '🔭' },
+    pyromancer: { P: '🔥', Q: '☄️', W: '🌋', E: '🛡️', R: '💥' },
+    frost_mage: { P: '❄️', Q: '🧊', W: '🌨️', E: '💎', R: '🔮' },
+    guardian: { P: '🏰', Q: '🛡️', W: '⚔️', E: '⚜️', R: '🔨' },
+    shadow_assassin: { P: '🌑', Q: '🥷', W: '🌫️', E: '💨', R: '🗡️' },
+    berserker: { P: '🩸', Q: '🪓', W: '🦁', E: '⛓️', R: '⚡' },
+    shadow_hunter: { P: '🏹', Q: '🌪️', W: '📌', E: '🦅', R: '☠️' },
+    brawler: { P: '👊', Q: '🥊', W: '💥', E: '🤼', R: '🌋' },
+    demolitionist: { P: '🧨', Q: '💣', W: '🚀', E: '⚠️', R: '☢️' }
+  };
+
   function setupInGameHud(champId) {
     const champ = championsData[champId];
     if (!champ) return;
 
-    document.getElementById('hud-avatar-icon').textContent = champ.avatar;
-    document.getElementById('hud-hero-name').textContent = champ.name;
+    // Portrait and Champion Name with Glow
+    const avatarEl = document.getElementById('hud-avatar-icon');
+    if (avatarEl) {
+      avatarEl.textContent = champ.avatar;
+      avatarEl.style.boxShadow = `0 0 16px ${champ.color || '#00d2d3'}, inset 0 0 8px rgba(0,0,0,0.8)`;
+    }
+    const nameEl = document.getElementById('hud-hero-name');
+    if (nameEl) nameEl.textContent = champ.name;
+
+    // Update Stats Pane (AD, Armor, AS, MS)
+    const adEl = document.getElementById('hud-stat-ad');
+    if (adEl && champ.stats) adEl.textContent = champ.stats.attackDamage || 68;
+    const armorEl = document.getElementById('hud-stat-armor');
+    if (armorEl && champ.stats) armorEl.textContent = champ.stats.armor || 34;
+    const asEl = document.getElementById('hud-stat-as');
+    if (asEl && champ.stats) asEl.textContent = champ.stats.attackSpeed || '0.75';
+    const msEl = document.getElementById('hud-stat-ms');
+    if (msEl && champ.stats) msEl.textContent = champ.stats.moveSpeed || 310;
+
+    // Generate 100-HP Ticks Overlay
+    const hpTicksEl = document.getElementById('hud-hp-ticks');
+    if (hpTicksEl && champ.stats?.maxHp) {
+      hpTicksEl.innerHTML = '';
+      const totalTicks = Math.floor(champ.stats.maxHp / 100);
+      for (let t = 1; t < totalTicks; t++) {
+        const tick = document.createElement('div');
+        tick.className = `hp-tick ${t % 10 === 0 ? 'major' : ''}`;
+        tick.style.left = `${(t * 100 / champ.stats.maxHp) * 100}%`;
+        hpTicksEl.appendChild(tick);
+      }
+    }
+
+    const champIcons = CHAMPION_SKILL_ICONS[champId] || { P: 'P', Q: 'Q', W: 'W', E: 'E', R: 'R' };
 
     const tooltipEl = document.getElementById('hud-skill-tooltip');
     const tipBadge = document.getElementById('tooltip-key-badge');
@@ -1064,7 +1266,8 @@
     // 1. Passive
     const slotP = document.getElementById('hud-slot-p');
     if (slotP) {
-      document.getElementById('hud-skill-p-icon').textContent = 'P';
+      const pIcon = document.getElementById('hud-skill-p-icon');
+      if (pIcon) pIcon.textContent = champIcons.P || 'P';
       slotP.addEventListener('mouseenter', () => {
         displaySkillTooltip(slotP, 'P', champ.passive.name, '소모값 없음', null, champ.passive.desc, '전투 중 지속적으로 적용되는 고유 지속 효과입니다.');
       });
@@ -1076,8 +1279,10 @@
       const sk = champ.skills[k];
       const slot = document.getElementById(`hud-slot-${k.toLowerCase()}`);
       if (sk && slot) {
-        document.getElementById(`hud-skill-${k.toLowerCase()}-icon`).textContent = k;
-        document.getElementById(`hud-mana-${k.toLowerCase()}`).textContent = sk.mana;
+        const iconEl = document.getElementById(`hud-skill-${k.toLowerCase()}-icon`);
+        if (iconEl) iconEl.textContent = champIcons[k] || k;
+        const manaEl = document.getElementById(`hud-mana-${k.toLowerCase()}`);
+        if (manaEl) manaEl.textContent = sk.mana;
         slot.addEventListener('mouseenter', () => {
           const costStr = sk.mana ? `마나: ${sk.mana}` : '소모값 없음';
           const tipStr = `사거리: ${sk.range || sk.radius || 300}px | 피해 계수: ${(sk.damageRatio || 1.0) * 100}% AD/AP`;
@@ -1126,6 +1331,92 @@
     }
   }
 
+  let isShopOpen = false;
+  function toggleShopModal() {
+    isShopOpen = !isShopOpen;
+    const modal = document.getElementById('shop-modal');
+    if (!modal) return;
+    if (isShopOpen) {
+      modal.classList.remove('hidden');
+      updateShopUI();
+    } else {
+      modal.classList.add('hidden');
+    }
+  }
+
+  function updateShopUI() {
+    const modal = document.getElementById('shop-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    const me = latestGameState?.players?.find(p => p.id === localUser.socketId);
+    if (!me) return;
+
+    // Gold display
+    const shopGoldEl = document.getElementById('shop-player-gold');
+    if (shopGoldEl) shopGoldEl.textContent = me.gold || 0;
+
+    // Catalog items
+    const shopListEl = document.getElementById('shop-items-list');
+    if (shopListEl && Object.keys(itemsData).length > 0) {
+      shopListEl.innerHTML = '';
+      Object.values(itemsData).forEach(item => {
+        const canAfford = (me.gold || 0) >= item.cost;
+        const itemCard = document.createElement('div');
+        itemCard.className = `shop-item-card ${canAfford ? '' : 'cannot-afford'}`;
+        itemCard.innerHTML = `
+          <div class="shop-item-icon">${item.icon || '📦'}</div>
+          <div class="shop-item-info">
+            <div class="shop-item-name">${item.name}</div>
+            <div class="shop-item-cost">${item.cost} 💰</div>
+            <div class="shop-item-desc">${item.desc}</div>
+          </div>
+          <button class="btn-shop-buy" ${canAfford ? '' : 'disabled'}>구매</button>
+        `;
+        const buyBtn = itemCard.querySelector('.btn-shop-buy');
+        buyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          socket.emit('buyItem', { itemId: item.id });
+        });
+        shopListEl.appendChild(itemCard);
+      });
+    }
+
+    // Current player inventory in shop
+    const invListEl = document.getElementById('shop-inventory-list');
+    if (invListEl) {
+      invListEl.innerHTML = '';
+      const items = me.items || [];
+      for (let i = 0; i < 6; i++) {
+        const itemId = items[i];
+        const item = itemId ? itemsData[itemId] : null;
+        const slotEl = document.createElement('div');
+        slotEl.className = 'shop-inv-slot';
+        if (item) {
+          const sellPrice = Math.floor(item.cost * 0.7);
+          slotEl.innerHTML = `
+            <div class="shop-item-icon">${item.icon}</div>
+            <div class="shop-item-info">
+              <div class="shop-item-name">${item.name}</div>
+              <div class="shop-item-cost">판매가: ${sellPrice} 💰</div>
+            </div>
+            <button class="btn-shop-sell">판매</button>
+          `;
+          const sellBtn = slotEl.querySelector('.btn-shop-sell');
+          sellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            socket.emit('sellItem', { slotIndex: i });
+          });
+          slotEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            socket.emit('sellItem', { slotIndex: i });
+          });
+        } else {
+          slotEl.innerHTML = `<span style="color:#576574; font-size:0.85rem;">빈 슬롯 (${i + 1})</span>`;
+        }
+        invListEl.appendChild(slotEl);
+      }
+    }
+  }
+
   function updateInGameHUD(state) {
     // 1. Scoreboard & Timer
     const blueScore = state.scores ? state.scores.blue : 0;
@@ -1138,10 +1429,21 @@
     const s = Math.floor(totalSec % 60).toString().padStart(2, '0');
     setHudText('game-timer-display', `${m}:${s}`);
 
-    // 2. Local Player Vitals & KDA
+    // 2. Local Player Vitals & KDA & Level Progression
     const me = state.players ? state.players.find(p => p.id === localUser.socketId) : null;
     if (me) {
       setHudText('kda-display', `${me.kills} / ${me.deaths} / ${me.assists}`);
+      setHudText('cs-display', `${me.cs || 0}`);
+      setHudText('gold-display', `${me.gold || 500} 💰`);
+
+      // Level Badge
+      setHudText('hud-level-badge', me.level || 1);
+
+      // Dynamic Stats Pane (AD, Armor, AS, MS)
+      if (me.ad !== undefined) setHudText('hud-stat-ad', me.ad);
+      if (me.armor !== undefined) setHudText('hud-stat-armor', me.armor);
+      if (me.as !== undefined) setHudText('hud-stat-as', me.as);
+      if (me.moveSpeed !== undefined) setHudText('hud-stat-ms', me.moveSpeed);
 
       // HP & MP Fill
       const hpPct = Math.max(0, Math.min(100, (me.hp / me.maxHp) * 100)).toFixed(1);
@@ -1154,6 +1456,97 @@
 
       setHudWidth('hud-mp-fill', `${mpPct}%`);
       setHudText('hud-mp-text', `${me.mp} / ${me.maxMp}`);
+
+      // Skill Upgrade Buttons [▲]
+      ['Q', 'W', 'E', 'R'].forEach(k => {
+        const btn = document.getElementById(`btn-upgrade-${k.toLowerCase()}`);
+        if (btn) {
+          let canUpgrade = false;
+          if (me.skillPoints > 0) {
+            const curRank = me.skillRanks ? (me.skillRanks[k] || 0) : 0;
+            if (k === 'R') {
+              if (curRank === 0 && me.level >= 6) canUpgrade = true;
+              else if (curRank === 1 && me.level >= 11) canUpgrade = true;
+              else if (curRank === 2 && me.level >= 16) canUpgrade = true;
+            } else {
+              if (curRank < 5) canUpgrade = true;
+            }
+          }
+          if (canUpgrade) {
+            btn.classList.remove('hidden');
+          } else {
+            btn.classList.add('hidden');
+          }
+        }
+      });
+
+      // Skill Rank Indicator Pips
+      ['Q', 'W', 'E', 'R'].forEach(k => {
+        const pipsContainer = document.getElementById(`hud-pips-${k.toLowerCase()}`);
+        if (pipsContainer && me.skillRanks) {
+          const curRank = me.skillRanks[k] || 0;
+          const pips = pipsContainer.querySelectorAll('.pip');
+          pips.forEach((pip, idx) => {
+            if (idx < curRank) {
+              pip.classList.add('active');
+            } else {
+              pip.classList.remove('active');
+            }
+          });
+        }
+      });
+
+      // Channeling Cast Bar (Recall, etc.)
+      const castBar = document.getElementById('hud-cast-bar');
+      if (castBar) {
+        if (me.recalling) {
+          castBar.classList.remove('hidden');
+          const prog = Math.min(100, Math.max(0, (me.recallProgress || 0) * 100));
+          const castFill = document.getElementById('hud-cast-fill');
+          if (castFill) castFill.style.width = `${prog.toFixed(1)}%`;
+          const remSec = (8.0 * (1 - (me.recallProgress || 0))).toFixed(1);
+          const castLabel = document.getElementById('hud-cast-label');
+          if (castLabel) castLabel.textContent = `귀환 중... ${remSec}s`;
+        } else {
+          castBar.classList.add('hidden');
+        }
+      }
+
+      // 6 Inventory Item Slots
+      const items = me.items || [];
+      for (let i = 0; i < 6; i++) {
+        const slotEl = document.getElementById(`hud-item-${i}`);
+        if (slotEl) {
+          const itemId = items[i];
+          const item = itemId ? itemsData[itemId] : null;
+          const num = i < 3 ? i + 1 : i + 2;
+          if (item) {
+            slotEl.innerHTML = `<span class="item-icon">${item.icon}</span><span class="slot-num">${num}</span>`;
+            slotEl.title = `${item.name}\n${item.desc}`;
+          } else {
+            slotEl.innerHTML = `<span class="slot-num">${num}</span>`;
+            slotEl.title = `아이템 ${num} [P 키로 상점]`;
+          }
+        }
+      }
+
+      // Ward Trinket Slot Cooldown
+      const wardCd = me.wardCooldown || 0;
+      const wardOverlay = document.getElementById('hud-ward-overlay');
+      const wardText = document.getElementById('hud-ward-text');
+      if (wardOverlay && wardText) {
+        if (wardCd > 0) {
+          wardOverlay.classList.remove('hidden');
+          wardText.textContent = wardCd;
+        } else {
+          wardOverlay.classList.add('hidden');
+        }
+      }
+
+      // Update Shop UI if active
+      if (isShopOpen) {
+        updateShopUI();
+      }
 
       // Cooldowns
       ['Q', 'W', 'E', 'R', 'D', 'F'].forEach(k => {
@@ -1196,11 +1589,13 @@
       }
     }
 
-    // Kill events banner
+    // Kill events & LoL announcer events
     if (state.events) {
       state.events.forEach(ev => {
         if (ev.type === 'kill') {
           showKillBanner(ev);
+        } else if (['first_blood', 'multikill', 'ace', 'dragon_slain', 'turret_destroyed'].includes(ev.type)) {
+          showAnnouncerBanner(ev);
         }
       });
     }
@@ -1244,6 +1639,69 @@
     `;
     bannerContainer.appendChild(div);
     setTimeout(() => { div.remove(); }, 3800);
+  }
+
+  // Authentic LoL Announcer Banner System
+  const seenAnnouncerEvents = new Set();
+  function showAnnouncerBanner(ev) {
+    const key = `${ev.type}_${ev.killerName || ''}_${ev.victimName || ''}_${ev.team || ''}_${ev.killerTeam || ''}_${Math.floor(Date.now() / 2500)}`;
+    if (seenAnnouncerEvents.has(key)) return;
+    seenAnnouncerEvents.add(key);
+
+    const overlay = document.getElementById('announcer-overlay');
+    if (!overlay) return;
+
+    let title = '';
+    let subtitle = '';
+    let bannerType = 'gold-banner';
+
+    if (ev.type === 'first_blood') {
+      title = 'FIRST BLOOD';
+      subtitle = `${escapeHtml(ev.killerName)} 님이 첫 번째 처치를 달성했습니다! (+100G 보너스)`;
+      bannerType = 'red-banner';
+      if (window.soundEngine) window.soundEngine.playCrit();
+    } else if (ev.type === 'multikill') {
+      if (ev.count === 2) {
+        title = 'DOUBLE KILL!';
+        subtitle = `${escapeHtml(ev.killerName)} 님의 더블 킬!`;
+      } else if (ev.count === 3) {
+        title = 'TRIPLE KILL!';
+        subtitle = `${escapeHtml(ev.killerName)} 님의 트리플 킬!`;
+      } else if (ev.count === 4) {
+        title = 'QUADRA KILL!';
+        subtitle = `${escapeHtml(ev.killerName)} 님의 쿼드라 킬!`;
+      } else {
+        title = '🔥 PENTAKILL! 🔥';
+        subtitle = `${escapeHtml(ev.killerName)} 님의 전설적인 펜타킬!!`;
+      }
+      bannerType = ev.count >= 4 ? 'red-banner' : 'gold-banner';
+      if (window.soundEngine) window.soundEngine.playCrit();
+    } else if (ev.type === 'ace') {
+      title = 'ACE (에이스)';
+      subtitle = `${ev.team === 'blue' ? '블루 팀' : '레드 팀'}이 전멸했습니다!`;
+      bannerType = ev.team === localUser.team ? 'red-banner' : 'blue-banner';
+    } else if (ev.type === 'dragon_slain') {
+      title = 'ELEMENTAL DRAGON SLAIN';
+      subtitle = `${ev.killerTeam === 'blue' ? '블루 팀' : '레드 팀'}이 원소 드래곤을 처치하여 영구 버프를 획득했습니다! (+12% 공격력/주문력)`;
+      bannerType = ev.killerTeam === 'blue' ? 'blue-banner' : 'red-banner';
+    } else if (ev.type === 'turret_destroyed') {
+      title = 'TURRET DESTROYED';
+      subtitle = `${ev.team === 'blue' ? '블루 팀' : '레드 팀'}의 포탑이 파괴되었습니다!`;
+      bannerType = ev.team === localUser.team ? 'red-banner' : 'blue-banner';
+    } else {
+      return;
+    }
+
+    const banner = document.createElement('div');
+    banner.className = `announcer-banner ${bannerType}`;
+    banner.innerHTML = `
+      <div class="banner-title">${title}</div>
+      <div class="banner-sub">${subtitle}</div>
+    `;
+    overlay.appendChild(banner);
+    setTimeout(() => {
+      banner.remove();
+    }, 4200);
   }
 
   // Battle Ended

@@ -7,10 +7,11 @@ const { CHAMPIONS, SUMMONER_SPELLS } = require('./ChampionData');
 const GameEngine = require('./GameEngine');
 
 class Room {
-  constructor(id, name, mode, hostPlayer, io) {
+  constructor(id, name, mode, hostPlayer, io, mapType) {
     this.id = id;
     this.name = name;
-    this.mode = mode || '1v1'; // '1v1', '2v2', 'custom'
+    this.mode = mode || '5v5'; // '5v5', 'custom', '2v2', '1v1'
+    this.mapType = mapType || (this.mode === '1v1' ? 'aram' : 'summoners_rift');
     this.maxPlayers = this.getMaxPlayersForMode(this.mode);
     this.hostId = hostPlayer.socketId;
     this.io = io;
@@ -29,8 +30,9 @@ class Room {
     switch (mode) {
       case '1v1': return 2;
       case '2v2': return 4;
+      case '5v5':
       case 'custom': return 10;
-      default: return 2;
+      default: return 10;
     }
   }
 
@@ -138,12 +140,28 @@ class Room {
     if (this.state !== 'LOBBY') return { success: false, error: '대기실 상태가 아닙니다.' };
     if (this.hostId !== socketId) return { success: false, error: '방장만 밴픽을 시작할 수 있습니다.' };
 
-    const playerList = Object.values(this.players);
-    if (playerList.length < 2 && this.mode !== '1v1') {
-      return { success: false, error: '최소 2명 이상의 플레이어가 필요합니다.' };
+    let playerList = Object.values(this.players);
+    // 1-Player Instant Practice Support: Automatically spawn bot opponent
+    if (playerList.length === 1) {
+      const host = playerList[0];
+      const botTeam = host.team === 'blue' ? 'red' : 'blue';
+      const botId = 'bot_practice_ai';
+      this.players[botId] = {
+        socketId: botId,
+        nickname: '연습용 AI 봇',
+        team: botTeam,
+        isReady: true,
+        isBot: true,
+        tentativeChampId: 'guardian',
+        championId: 'guardian',
+        isLocked: true,
+        spellD: 'flash',
+        spellF: 'ignite'
+      };
+      playerList = Object.values(this.players);
     }
 
-    // Check team balance: at least 1 blue and 1 red
+    // Check team balance
     const blueCount = playerList.filter(p => p.team === 'blue').length;
     const redCount = playerList.filter(p => p.team === 'red').length;
     if (blueCount === 0 || redCount === 0) {
@@ -159,9 +177,15 @@ class Room {
     // Enter draft
     this.state = 'DRAFT';
     playerList.forEach(p => {
-      p.tentativeChampId = null;
-      p.championId = null;
-      p.isLocked = false;
+      if (p.isBot) {
+        p.tentativeChampId = 'guardian';
+        p.championId = 'guardian';
+        p.isLocked = true;
+      } else {
+        p.tentativeChampId = null;
+        p.championId = null;
+        p.isLocked = false;
+      }
     });
 
     this.broadcastState();
@@ -368,6 +392,7 @@ class Room {
       id: this.id,
       name: this.name,
       mode: this.mode,
+      mapType: this.mapType,
       maxPlayers: this.maxPlayers,
       hostId: this.hostId,
       state: this.state,

@@ -19,6 +19,7 @@ const path = require('path');
 const os = require('os');
 const RoomManager = require('./game/RoomManager');
 const { CHAMPIONS, SUMMONER_SPELLS } = require('./game/ChampionData');
+const { ITEMS } = require('./game/ItemData');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,8 +51,13 @@ function getLocalLanIp() {
 
 const LAN_IP = getLocalLanIp();
 
-// Prevent 404 on browser favicon request
-app.get('/favicon.ico', (req, res) => res.status(204).end());
+// Suppress 404 on browser favicon and source map (.map) requests
+app.use((req, res, next) => {
+  if (req.path.endsWith('.map') || req.path === '/favicon.ico') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // Serve static assets from public/
 const publicDir = path.join(__dirname, '..', 'public');
@@ -79,11 +85,12 @@ app.get('/api/server-info', (req, res) => {
   });
 });
 
-// Champions and Spells API
+// Champions, Spells and Items API
 app.get('/api/game-data', (req, res) => {
   res.json({
     champions: CHAMPIONS,
-    spells: SUMMONER_SPELLS
+    spells: SUMMONER_SPELLS,
+    items: ITEMS
   });
 });
 
@@ -136,7 +143,7 @@ io.on('connection', (socket) => {
   socket.on('createRoom', (data, callback) => {
     try {
       const d = data || {};
-      const res = roomManager.createRoom(d.name, d.mode, socket.id);
+      const res = roomManager.createRoom(d.name, d.mode, socket.id, d.mapType);
       if (res.success && res.room) {
         socket.join(res.room.id);
       }
@@ -345,6 +352,75 @@ io.on('connection', (socket) => {
       room.gameEngine.handleCastSpell(socket.id, d.slot, d.targetX, d.targetY);
     } catch (err) {
       console.error('castSpell error:', err);
+    }
+  });
+
+  // In-Game Skill Upgrade
+  socket.on('upgradeSkill', (data, callback) => {
+    try {
+      const d = data || {};
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      const res = room.gameEngine.handleUpgradeSkill(socket.id, d.key);
+      if (typeof callback === 'function') callback(res);
+    } catch (err) {
+      console.error('upgradeSkill error:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // In-Game Recall Channeling
+  socket.on('startRecall', (callback) => {
+    try {
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      const res = room.gameEngine.handleRecall(socket.id);
+      if (typeof callback === 'function') callback(res);
+    } catch (err) {
+      console.error('startRecall error:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // In-Game Item Purchase
+  socket.on('buyItem', (data, callback) => {
+    try {
+      const d = data || {};
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      const res = room.gameEngine.handleBuyItem(socket.id, d.itemId);
+      if (typeof callback === 'function') callback(res);
+    } catch (err) {
+      console.error('buyItem error:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // In-Game Item Sale
+  socket.on('sellItem', (data, callback) => {
+    try {
+      const d = data || {};
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      const res = room.gameEngine.handleSellItem(socket.id, d.slotIndex);
+      if (typeof callback === 'function') callback(res);
+    } catch (err) {
+      console.error('sellItem error:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // In-Game Place Ward Trinket
+  socket.on('placeWard', (data, callback) => {
+    try {
+      const d = data || {};
+      const room = roomManager.getRoomBySocket(socket.id);
+      if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
+      const res = room.gameEngine.handlePlaceWard(socket.id, d.x, d.y);
+      if (typeof callback === 'function') callback(res);
+    } catch (err) {
+      console.error('placeWard error:', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
     }
   });
 

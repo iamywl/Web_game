@@ -250,28 +250,66 @@ class SoundEngine {
     osc.stop(now + 0.2);
   }
 
-  // 9. Hit Impact / Damage Taken
+  // 9. Layered Commercial-Grade Hit Impact / Damage Taken
   playHitImpact(isCrit = false) {
     if (this.isMuted) return;
     this.ensureContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
 
-    osc.type = isCrit ? 'sawtooth' : 'triangle';
-    osc.frequency.setValueAtTime(isCrit ? 180 : 120, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + (isCrit ? 0.14 : 0.08));
+    // Layer 1: High-Frequency Attack Transient Snap (Tactile "Crack" / 0~12ms)
+    const snapLen = Math.floor(this.ctx.sampleRate * 0.015);
+    const snapBuf = this.ctx.createBuffer(1, snapLen, this.ctx.sampleRate);
+    const snapData = snapBuf.getChannelData(0);
+    for (let i = 0; i < snapLen; i++) {
+      snapData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (snapLen * 0.22));
+    }
+    const snapSrc = this.ctx.createBufferSource();
+    snapSrc.buffer = snapBuf;
 
-    gain.gain.setValueAtTime(isCrit ? 0.4 : 0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + (isCrit ? 0.14 : 0.08));
+    const snapFilter = this.ctx.createBiquadFilter();
+    snapFilter.type = 'highpass';
+    snapFilter.frequency.setValueAtTime(isCrit ? 3200 : 2200, now);
 
-    osc.connect(gain);
-    gain.connect(this.masterGain);
+    const snapGain = this.ctx.createGain();
+    snapGain.gain.setValueAtTime(isCrit ? 0.45 : 0.28, now);
+    snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
 
-    osc.start(now);
-    osc.stop(now + (isCrit ? 0.14 : 0.08));
+    snapSrc.connect(snapFilter);
+    snapFilter.connect(snapGain);
+    snapGain.connect(this.masterGain);
+    snapSrc.start(now);
+
+    // Layer 2: Meaty Mid Crunch (Bandpass saturated impact body)
+    const midOsc = this.ctx.createOscillator();
+    const midGain = this.ctx.createGain();
+    midOsc.type = isCrit ? 'sawtooth' : 'triangle';
+    midOsc.frequency.setValueAtTime(isCrit ? 260 : 180, now);
+    midOsc.frequency.exponentialRampToValueAtTime(50, now + (isCrit ? 0.16 : 0.09));
+
+    midGain.gain.setValueAtTime(isCrit ? 0.42 : 0.26, now);
+    midGain.gain.exponentialRampToValueAtTime(0.005, now + (isCrit ? 0.16 : 0.09));
+
+    midOsc.connect(midGain);
+    midGain.connect(this.masterGain);
+    midOsc.start(now);
+    midOsc.stop(now + (isCrit ? 0.16 : 0.09));
+
+    // Layer 3: Sub-Bass Punch Kick (70Hz down to 25Hz physical weight)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(isCrit ? 85 : 65, now);
+    subOsc.frequency.exponentialRampToValueAtTime(25, now + (isCrit ? 0.18 : 0.10));
+
+    subGain.gain.setValueAtTime(isCrit ? 0.55 : 0.35, now);
+    subGain.gain.exponentialRampToValueAtTime(0.002, now + (isCrit ? 0.18 : 0.10));
+
+    subOsc.connect(subGain);
+    subGain.connect(this.masterGain);
+    subOsc.start(now);
+    subOsc.stop(now + (isCrit ? 0.18 : 0.10));
   }
 
   // 10. Kill Fanfare / Ace Chime
@@ -298,6 +336,62 @@ class SoundEngine {
       osc.start(now);
       osc.stop(now + 0.2);
     });
+  }
+
+  // 11. Gold Chime (Minion Last-Hit Crisp Coin Sound)
+  playGoldChime() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(987.77, now); // B5
+    osc1.frequency.exponentialRampToValueAtTime(1318.51, now + 0.08); // E6
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1975.53, now); // B6
+    osc2.frequency.exponentialRampToValueAtTime(2637.02, now + 0.08); // E7
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.16);
+    osc2.stop(now + 0.16);
+  }
+
+  // 12. Turret Heavy Arcane Laser Blast
+  playTurretShot() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.18);
   }
 }
 

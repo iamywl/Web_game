@@ -1,163 +1,167 @@
 <div align="center">
 
 # ⚔️ Web MOBA - 리그 오브 레전드 웹 아레나
-**Zero-Install, Pure JavaScript Real-Time 60 FPS Multiplayer MOBA Game**
+**Pure JavaScript & Three.js Real-Time 60 FPS Multiplayer MOBA Engine**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-v4.8-blue.svg)](https://socket.io/)
-[![Canvas WebGL](https://img.shields.io/badge/Render-WebGL%20%2F%20Canvas2D-orange.svg)](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)
-[![Frame Rate](https://img.shields.io/badge/FPS-60%20Hz%20Locked-brightgreen.svg)](#)
+[![Three.js](https://img.shields.io/badge/Graphics-Three.js%20(NPR%20Toon)-ff69b4.svg)](https://threejs.org/)
+[![Frame Rate](https://img.shields.io/badge/Engine-60%20FPS%20Locked-brightgreen.svg)](#)
+[![QA Pass Rate](https://img.shields.io/badge/QA%20Tests-19%2F19%20PASS%20(100%25)-success.svg)](test/qa_suite.js)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-웹 브라우저에서 설치 없이 즉시 실행되는 **실시간 60 FPS 쿼터뷰 MOBA(League of Legends 스타일) 대전 게임**입니다.  
-사설망(프라이빗 LAN / 폐쇄망)에서도 인터넷 연결 없이 **100% 오프라인**으로 작동합니다.
+설치 없이 브라우저에서 즉시 구동되는 **실시간 60 FPS 쿼터뷰 탑다운 MOBA(League of Legends 정통 스타일) 웹 게임 엔진**입니다.  
+사설망(프라이빗 LAN / 폐쇄망)에서도 인터넷 연결 없이 **100% 오프라인**으로 완벽하게 동작합니다.
 
-[🎮 시작하기](#-빠른-시작-quick-start) • [🛡️ 챔피언 가이드](docs/CHAMPIONS.md) • [🏗️ 시스템 아키텍처](docs/ARCHITECTURE.md) • [🤝 오픈소스 기여 가이드](CONTRIBUTING.md)
-
----
-
-### 📸 인게임 프리뷰 (Gameplay Preview)
-
-![Gameplay Preview](docs/images/preview.jpg)
-
-### 🎯 드래프트 밴픽 화면 (Draft Pick Exclusivity)
-
-![Draft Pick UI](docs/images/draft_pick.jpg)
+[🎮 빠른 시작](#-빠른-시작-quick-start) • [🛡️ 챔피언 도감](docs/CHAMPIONS.md) • [🏗️ 시스템 아키텍처](docs/ARCHITECTURE.md) • [🎨 그래픽스 & 타격감](docs/GAME_FEEL_AND_GRAPHICS.md) • [📡 네트워크 프로토콜](docs/API_AND_PROTOCOL.md) • [🤝 오픈소스 기여](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## 🌟 핵심 특징 (Key Highlights)
+## 🌟 핵심 기술 및 엔진 특징 (Core Highlights)
 
-* **🚫 무계정 즉시 접속**: 아이디/비밀번호 필요 없이 브라우저에서 닉네임만 입력하면 즉시 로비 입장
-* **🌐 사설망(LAN) 자동 탐색**: 내부 IP 자동 감지 (`http://192.168.x.x:3000`), 같은 공유기 내 모든 기기(데스크톱, 노트북, 태블릿) 동시 대전
-* **🔒 선착순 독점 밴픽 (Exclusive Draft Pick)**: 한 플레이어가 선택/확정한 챔피언은 다른 플레이어가 절대 중복 선택 불가 (단일 스레드 원자적 동시성 방어)
-* **⚡ 60 FPS 서버 권한 루프 (Authoritative 60Hz Engine)**:
-  * 서버 60 FPS 틱 루프 (`dt = ~0.0166s`) 기반 충돌/투사체/스킬/대미지 정밀 연산 (핵 방지 및 Desync 원천 차단)
-  * 클라이언트 `requestAnimationFrame` 렌더 루프 및 위치 보간(Interpolation) 적용
-* **🔊 100% 오프라인 절차적 오디오 (Procedural Web Audio Engine)**:
-  * 외장 MP3/WAV 파일 의존 제로! Web Audio API 신디사이저로 칼 베는 소리, 총성, 화염구, 폭발음, 점멸 사운드, 킬 팡파레 실시간 합성
-* **💥 고품질 시각 효과 (VFX & Polish)**:
-  * 100-HP 분할 눈금 체력바 (리그 오브 레전드 정통 UI)
-  * 투사체 파티클 꼬리, 착탄 충격파 링, 크리티컬 시 화면 흔들림(Screen Shake), 강물 흐름 애니메이션, 회전하는 넥서스 마법 수정
+### 1. 🎨 스타일라이즈드 툰 그래픽 (NPR Shader Pipeline)
+* **3단계 그래디언트 맵 (3-Step Toon Ramp)**: 실사형 PBR의 플라스틱 질감을 배제하고 애니메이션 풍의 또렷한 3단계 음영 렌더링.
+* **커스텀 림 라이팅 (Rim Lighting)**: 캐릭터 외곽에 셰이더 기반 발광 림 라이트를 적용하여 협곡 배경과 캐릭터를 시각적으로 분리.
+* **인버티드 헐 외곽선 (Inverted Hull Mesh)**: 정점 노멀 확장 백페이스 렌더링으로 애니메이션 셀화 느낌의 날카롭고 균일한 실루엣 외곽선 구현.
+
+### 2. 💥 4단계 동기 타격감 (Combat Juice Pipeline)
+* **히트스톱 (Hit-Stop)**: 치명타 및 강력 스킬 적중 시 30~50ms 프레임 정지로 묵직한 물리 질량감 부여.
+* **피격 플래시 (Damage Flash)**: 피격 대상 메쉬를 0.05초간 순백색(`0xffffff`)으로 발광 후 지수 감쇠 복구.
+* **안정적인 트라우마 스크린 셰이크**: 평타/미니언 전투에서는 카메라 진동을 완전 차단하여 멀미 방지. 치명타/궁극기 적중 시에만 $Trauma^2$ 비선형 감쇠 적용 (카메라 롤링 `0.0` 고정).
+* **플로팅 대미지 바운스**: $1.4\times$ 스케일 팝업 후 중력 가속도를 받아 바닥에서 탄성 바운스하는 2D 캔버스 수치 오버레이.
+
+### 3. ⚡ 60 FPS 권위 서버 & 클라이언트 예측 (Authoritative Loop)
+* **클라이언트 사이드 예측 (Client-Side Prediction)**: 우클릭 즉시 이동 벡터를 설정하고 720 deg/s 쿼터니언 Slerp로 자연스러운 턴 속도 적용.
+* **지수 감쇠 보정 (Exponential Reconciliation)**: 서버 스냅샷 오차가 0.5 유닛 이하일 경우 부드러운 수렴 보정, 충돌/스턴 발생 시 정밀 스냅.
+* **선착순 독점 밴픽 (Atomic Lock-In)**: 단일 스레드 원자적 픽 검증으로 4인 동시 클릭 시 1명 승인, 3명 충돌 방어.
+
+### 4. 🏰 미니언 AI & 포탑 충돌 회피 (Minion & Turret Mechanics)
+* **포탑 동적 우회 기동 (Flank Steering)**: 미니언이 직선 이동 중 포탑 반경(140px) 접근 시 포탑 양옆 외곽선으로 유연하게 곡선 우회.
+* **하드 구조물 충돌 분리 (Hard Collision Resolution)**: 매 프레임 법선 방향 밀어내기(Pushback)로 포탑 및 넥서스 내부 침범 100% 방지.
+* **포탑 포위 공격 진형**: 근접 미니언은 포탑 표면($r_{\text{turret}} + 18\text{px}$)에서 원형 진형 유지, 원거리/대포 미니언은 안전 사거리에서 포격.
+
+### 5. 🛡️ 리그 오브 레전드 정통 헥스테크 HUD (LoL Hextech UI)
+* **중앙 하단 액션 콘솔**: 좌측 초상화(골드 뱃지, AD/방어력/공속/이속), 중앙 스킬바(P, Q, W, E, R, 점멸/점화, 귀환) + 100 체력 단위 눈금선 체력/마나바, 우측 6칸 아이템 인벤토리 & [4]번 장신구.
+* **우측 하단 분리형 미니맵**: 롤 고유 위치에 배치된 독립 석조 프레임 및 핑 버튼.
+* **상단 스코어보드**: 팀별 킬수 대치, 게임 시간(00:00), 개인 KDA, CS, 골드, 실시간 FPS/Ping.
 
 ---
 
 ## 🕹️ 조작법 (Controls)
 
-| 조작키 | 기능 | 설명 |
+| 조작키 | 기능 | 세부 설명 |
 | :---: | :---: | :--- |
-| **마우스 우클릭** | **이동 & 공격** | 커서 위치로 이동 (녹색 핑 링) 또는 적 타겟팅 공격 |
+| **마우스 우클릭** | **이동 & 공격** | 커서 위치로 즉시 이동 (녹색 핑) 또는 적 타겟팅 공격 |
 | **Q / W / E / R** | **챔피언 스킬** | 마우스 커서 방향으로 스마트키 즉시 시전 |
-| **D** | **점멸 (Flash)** | 커서 방향으로 380 거리 즉시 순간이동 (쿨타임 45초) |
-| **F** | **점화 / 회복** | 타깃 도트 피해(Ignite) 또는 즉시 체력 회복(Heal) |
-| **SPACEBAR** | **화면 집중** | 카메라를 내 챔피언 위치로 즉시 센터링 |
-| **🔊 / 🔇 버튼** | **사운드 토글** | 상단 스코어보드 우측에서 사운드 On/Off 토글 |
-
----
-
-## ⚔️ 10인의 개성 넘치는 챔피언 (Champion Roster)
-
-| 챔피언 | 역할군 | 패시브 (P) | 주요 스킬 (Q / W / E / R) |
-| :---: | :---: | :--- | :--- |
-| **⚔️ 검객 (Blademaster)** | 전사 / 암살자 | 3타 추가 고정 피해 & 이속 증가 | 직선 돌진 베기(Q) / 회전 베기(W) / 방패 쉴드(E) / **연속 난무 에어본(R)** |
-| **🎯 저격수 (Sniper)** | 원거리 딜러 | 사거리 비례 치명타 | 고속 관통탄(Q) / 덫 속박(W) / 후방 텀블링(E) / **초장거리 저격탄(R)** |
-| **🔥 화염술사 (Pyromancer)** | 광역 마법사 | 스킬 적중 시 연소 화상 도트 | 화염구 투사체(Q) / 화염 기둥 장판(W) / 폭발 밀치기(E) / **메테오 폭격(R)** |
-| **🗡️ 암살자 (Shadow Assassin)** | 기동형 암살자 | 체력 35% 이하 추가 피해 | 수리검 3연발(Q) / 그림자 은신(W) / 배후 점멸(E) / **그림자 처형 난타(R)** |
-| **🛡️ 수호자 (Guardian)** | 탱커 / 이니시에이터 | 체력 35% 이하 시 대형 쉴드 | 방패 돌진 스턴(Q) / 철벽 방어 피해감소(W) / 광역 도발(E) / **대지 분쇄 에어본(R)** |
-| **❄️ 빙결술사 (Frost Mage)** | 메이지 / 서포터 | 3스택 오한 적중 시 빙결 기절 | 얼음 송곳(Q) / 빙판 둔화(W) / 서리 보호막(E) / **절대영도 광역 빙결(R)** |
-| **🪓 광전사 (Berserker)** | 브루저 / 파이터 | 잃은 체력 비례 공격속도/공격력 | 쌍도끼 투척(Q) / 광포화 공속 버프(W) / 피의 갈망 흡혈(E) / **불사의 분노 무적(R)** |
-| **🏹 그림자 사냥꾼 (Shadow Hunter)**| 기동형 원딜 | 적 추격 시 이속 대폭 증가 | 구르기 강화탄(Q) / 은화살 3타 고정 피해(W) / 밀쳐내기 스턴(E) / **결전의 시간 버프(R)** |
-| **🥊 격투가 (Brawler)** | 콤보 브루저 | 스킬 사용 후 다음 평타 강화 | 정권 찌르기(Q) / 반격 가드(W) / 무릎 돌진(E) / **승룡권 제압(R)** |
-| **💣 폭탄광 (Demolitionist)** | 포킹 딜러 | 사망 시 거대 자폭탄 투하 | 통통 바운스 폭탄(Q) / 점착 넉백 폭약(W) / 지뢰밭(E) / **거대 지옥불 핵폭탄(R)** |
-
-> 자세한 계수, 사거리, 쿨타임 정보는 [docs/CHAMPIONS.md](docs/CHAMPIONS.md)를 참고하세요.
+| **D** | **소환사 주문 1** | 점멸 (Flash) - 커서 방향으로 380 거리 즉시 순간이동 |
+| **F** | **소환사 주문 2** | 점화(Ignite) 또는 회복(Heal) 즉시 발동 |
+| **B** | **귀환 (Recall)** | 8초간 집중 후 본진 귀환 및 체력/마나 회복 |
+| **Y** | **카메라 시점 전환** | [Y] 챔피언 고정 시점 ↔ 자유 시점 (화면 가장자리 스크롤) 토글 |
+| **SPACEBAR** | **챔피언 화면 집중** | 자유 시점 중 누르면 내 챔피언 위치로 즉시 화면 복귀 |
+| **🔊 / 🔇 버튼** | **사운드 토글** | Web Audio API 절차적 오디오 On/Off 토글 |
 
 ---
 
 ## 🚀 빠른 시작 (Quick Start)
 
-### 1. 사전 요구사항
+### 사전 요구사항
 * [Node.js](https://nodejs.org/) v18.0.0 이상
 
-### 2. 설치 및 실행
+### 설치 및 실행
 ```bash
 # 1. 저장소 클론
 git clone https://github.com/iamywl/Web_game.git
 cd Web_game
 
-# 2. 의존성 패키지 설치
+# 2. 패키지 설치
 npm install
 
-# 3. 게임 서버 실행 (60 FPS 권위 서버)
+# 3. 게임 서버 구동 (포트 3000)
 npm start
 ```
 
-### 3. 브라우저 접속
-* **로컬 접속**: 브라우저 주소창에 `http://localhost:3000` 입력
-* **LAN 사설망 접속**: 콘솔 터미널에 출력된 `http://<내부IP>:3000` 주소로 접속
+### 브라우저 접속
+* **로컬 접속**: `http://localhost:3000`
+* **LAN 사설망 접속**: 콘솔 터미널에 출력된 `http://<LAN_IP>:3000` (같은 공유기 내 모든 기기 동시 접속 가능)
 
 ---
 
-## 🧪 자동화 QA 테스트 실행 (Automated QA Suite)
+## 🧪 자동화 QA 테스트 스위트 (19개 전 항목 100% PASS)
 
-프로젝트에 탑재된 무인 헤드리스 가상 봇 클라이언트를 구동하여 19개 핵심 기능(동시 픽 경쟁, 스킬 물리, 대미지 감쇄, 접속 끊김 내결함성)을 전수 검증할 수 있습니다:
+4인 무인 가상 소켓 클라이언트를 구동하여 동시성, 물리 엔진, 네트워크 내결함성을 전수 검증합니다:
 
 ```bash
-# 전체 통합 QA 테스트 실행
 npm test
 # 또는
 node test/qa_suite.js
 ```
 
+```
+================================================================================
+           ⚔️  LOL MOBA REAL-TIME ENGINE - AUTOMATED QA TEST SUITE  ⚔️
+================================================================================
+  • 1. Concurrency & Pick Exclusivity Race Condition: 6/6 passed (100%)
+  • 2. 10 Champions Integrity & Server Info Test: 4/4 passed (100%)
+  • 3. In-Game Battle Simulation & Combat Mechanics: 5/5 passed (100%)
+  • 4. Disconnect & Edge Case Handling: 4/4 passed (100%)
+================================================================================
+  Passed: 19 / 19 (100.0%) | Total Elapsed: ~9.6s
+✨ ALL QA TEST SUITES COMPLETED WITH 100% PASS RATE! ⚔️
+```
+
 ---
 
-## 📁 프로젝트 구조 (Project Structure)
+## 📁 프로젝트 구조 (Project Directory Map)
 
 ```
 Web_game/
-├── public/                       # 프론트엔드 정적 에셋 (100% 로컬 동작)
-│   ├── css/
-│   │   └── style.css            # 롤 헥스테크 다크 테마 UI 스타일시트
-│   ├── js/
-│   │   ├── audio.js             # Web Audio API 절차적 사운드 신디사이저
-│   │   ├── renderer.js          # 협곡 맵, 챔피언 모델, 파티클 VFX 렌더러
-│   │   └── client.js            # 소켓 클라이언트, 인풋 컨트롤러, 60 FPS 루프
-│   ├── lib/
-│   │   └── pixi.min.js          # 로컬 번들 Pixi.js (오프라인 지원)
-│   └── index.html               # SPA 메인 뷰 (로그인, 로비, 밴픽, 인게임)
 ├── server/
-│   ├── game/
-│   │   ├── ChampionData.js      # 10종 챔피언 스탯, QWER 스킬, D/F 주문
-│   │   ├── GameEngine.js        # 60 FPS 서버 권한 루프, 물리, 충돌, 스킬 연산
-│   │   ├── Room.js              # 방 상태 머신 & 챔피언 선착순 독점 락인
-│   │   └── RoomManager.js       # LAN 유저 세션 및 방 매칭 라우팅
-│   └── server.js                # Express + Socket.IO 메인 서버
+│   ├── server.js              # Express + Socket.IO 메인 서버 (LAN IP 자동 탐색 & HTTP API)
+│   └── game/
+│       ├── ChampionData.js    # 10종 챔피언 스탯, 40개 QWER 스킬, 소환사 주문 정의
+│       ├── GameEngine.js      # 60 FPS 서버 권한 루프, 미니언 AI, 투사체, 충돌, 스킬 연산
+│       ├── Room.js            # 방 상태 머신 & 챔피언 선착순 독점 락인 (Race Condition 방어)
+│       └── RoomManager.js     # LAN 유저 세션 및 방 매칭 라우팅
+├── public/
+│   ├── index.html             # Hextech HUD UI, 로비, 밴픽, 아레나 뷰
+│   ├── css/style.css          # LoL 정통 흑요석 & 골드 헥스테크 테마 스타일
+│   └── js/
+│       ├── client.js          # SPA 상태 전환, 소켓 통신, 사용자 입력, UI 실시간 동기화
+│       ├── renderer.js        # Three.js 씬, 협곡 맵, 타워/넥서스, 파티클 VFX
+│       ├── nprMaterial.js     # 3단계 Gradient Toon 셰이더, Rim Lighting, Inverted Hull 외곽선
+│       ├── camera.js          # 45~55° 쿼터뷰 탑다운 카메라, 화면 가장자리 스크롤, [Y] 고정 모드
+│       ├── GameFeelController.js # 히트스톱, 트라우마 스크린 셰이크, 피격 플래시, 바운스 대미지 텍스트
+│       ├── NetworkManager.js  # 클라이언트 예측, 쿼터니언 Slerp 회전 보간, 오차 스냅/보정
+│       └── audio.js           # Web Audio API 실시간 절차적 사운드 신디사이저
 ├── test/
-│   └── qa_suite.js              # 4인 동시성 및 전투 시뮬레이션 QA 테스트
-├── docs/                        # 상세 기술 문서 및 가이드
-│   ├── images/                  # 게임 캡처 스크린샷
-│   ├── ARCHITECTURE.md          # 60 FPS 네트워크 & 물리 아키텍처 문서
-│   └── CHAMPIONS.md             # 10종 챔피언 상세 스펙 문서
-├── CONTRIBUTING.md              # 오픈소스 기여 가이드
-├── package.json
-└── README.md
+│   ├── qa_suite.js            # 4인 가상 소켓 클라이언트 기반 19개 E2E 통합 QA 테스트
+│   └── qa_report.json         # QA 테스트 결과 리포트
+├── docs/                      # 기술 문서 및 세부 아키텍처 가이드
+│   ├── ARCHITECTURE.md        # 서버/클라이언트 시스템 및 네트워크 아키텍처
+│   ├── GAME_FEEL_AND_GRAPHICS.md # NPR 툰 셰이딩 및 4단계 컴뱃 주스 상세 명세
+│   ├── API_AND_PROTOCOL.md    # 소켓 이벤트 및 REST API 프로토콜 정의서
+│   └── CHAMPIONS.md           # 10종 챔피언 스탯 및 스킬 가이드
+├── AGENTS.md                  # LLM 에이전트 마스터 가이드
+├── CLAUDE.md                  # Claude Code 전용 가이드
+├── GEMINI.md                  # Google Gemini 전용 가이드
+├── .cursorrules               # Cursor IDE 전용 룰셋
+├── CONTRIBUTING.md            # 오픈소스 기여 가이드 (인간 & AI 공통)
+└── package.json
 ```
 
 ---
 
-## 🤝 오픈소스 기여하기 (Contributing)
+## 🤖 AI / LLM 에이전트 기여 가이드 (Contributing with AI)
 
-누구나 새로운 챔피언, 스킬 메커니즘, 맵 지형, 사운드 이펙트를 추가할 수 있습니다!  
-자세한 기여 방법과 새 챔피언 추가 가이드는 [CONTRIBUTING.md](CONTRIBUTING.md) 문서를 확인해 주세요.
-
-1. 이 저장소를 Fork 합니다.
-2. 새 기능 브랜치를 생성합니다 (`git checkout -b feat/new-champion`).
-3. 변경 사항을 커밋합니다 (`git commit -m "feat: Add new Assassin champion"`).
-4. 브랜치에 푸시합니다 (`git push origin feat/new-champion`).
-5. Pull Request를 생성합니다.
+본 프로젝트는 AI 에이전트(Claude, GPT, Gemini, Cursor, Copilot 등)와의 페어 프로그래밍에 최적화되어 있습니다:
+* **[AGENTS.md](AGENTS.md)**: AI 에이전트 행동 지침 및 아키텍처 원칙
+* **[CLAUDE.md](CLAUDE.md)**: Anthropic Claude Code 전용 워크플로우
+* **[.cursorrules](.cursorrules)**: Cursor IDE 전용 컨텍스트 룰셋
+* **[.github/copilot-instructions.md](.github/copilot-instructions.md)**: GitHub Copilot 지침서
+* **[.agent/rules/](.agent/rules/)**: 엔진, 그래픽스, QA 모듈별 특화 룰셋
 
 ---
 

@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>LOL WEB MOBA - 실시간 웹 리그 오브 레전드</title>
   <link rel="stylesheet" href="/css/style.css">
-  <!-- Offline Pixi.js (WebGL rendering) -->
-  <script src="/lib/pixi.min.js"></script>
   <!-- Offline Three.js (3D WebGL MOBA Engine) -->
   <script src="/lib/three.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/lib/three.module.js",
+      "three/addons/": "/lib/three-addons/"
+    }
+  }
+  </script>
   <!-- Socket.IO Client -->
   <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -75,6 +81,7 @@
               <span id="room-count-badge" class="badge">0개 방 운영 중</span>
             </div>
             <div class="toolbar-actions">
+              <button id="btn-quick-practice" class="btn-hextech" style="background: linear-gradient(135deg, #0984e3, #00cec9); color: #fff; font-weight: bold; border-color: #74b9ff;">⚡ 1인 연습 모드 (협곡 즉시 시작)</button>
               <button id="btn-refresh-rooms" class="btn-gold">새로고침</button>
               <button id="btn-open-create-room" class="btn-hextech">+ 방 만들기</button>
             </div>
@@ -173,19 +180,19 @@
             <label>대전 모드</label>
             <div class="mode-select-grid">
               <label class="mode-card active">
-                <input type="radio" name="roomMode" value="1v1" checked>
-                <span class="mode-title">1 vs 1</span>
-                <span class="mode-desc">최대 2인 결투</span>
+                <input type="radio" name="roomMode" value="5v5" checked>
+                <span class="mode-title">소환사의 협곡</span>
+                <span class="mode-desc">정통 3개 라인 & 정글 (5v5)</span>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="roomMode" value="1v1">
+                <span class="mode-title">1 vs 1 결투</span>
+                <span class="mode-desc">단일 라인 결투장</span>
               </label>
               <label class="mode-card">
                 <input type="radio" name="roomMode" value="2v2">
-                <span class="mode-title">2 vs 2</span>
+                <span class="mode-title">2 vs 2 듀오</span>
                 <span class="mode-desc">최대 4인 팀전</span>
-              </label>
-              <label class="mode-card">
-                <input type="radio" name="roomMode" value="custom">
-                <span class="mode-title">사용자 설정</span>
-                <span class="mode-desc">최대 10인 (5v5)</span>
               </label>
             </div>
           </div>
@@ -327,9 +334,10 @@
       <!-- Pixi Canvas Viewport -->
       <div id="game-canvas-container"></div>
 
-      <!-- Top Scoreboard Bar -->
-      <header class="game-scoreboard">
+      <!-- Top Scoreboard Bar (LoL Authentic Layout) -->
+      <header class="game-scoreboard lol-scoreboard-top">
         <div class="score-team blue-score">
+          <span class="team-crest">🛡️</span>
           <span class="team-name">BLUE</span>
           <span id="score-blue-num" class="score-val">0</span>
         </div>
@@ -339,17 +347,30 @@
         <div class="score-team red-score">
           <span id="score-red-num" class="score-val">0</span>
           <span class="team-name">RED</span>
+          <span class="team-crest">⚔️</span>
+        </div>
+
+        <div class="header-divider"></div>
+
+        <div class="personal-kda">
+          <span class="kda-label">KDA</span>
+          <span id="kda-display" class="kda-val">0 / 0 / 0</span>
         </div>
 
         <div class="personal-kda">
-          <span class="kda-label">K / D / A</span>
-          <span id="kda-display" class="kda-val">0 / 0 / 0</span>
+          <span class="kda-label">CS</span>
+          <span id="cs-display" class="kda-val cs-gold">0</span>
+        </div>
+
+        <div class="personal-kda">
+          <span class="kda-label">골드</span>
+          <span id="gold-display" class="kda-val gold-accent">500 💰</span>
         </div>
 
         <div class="perf-stats-box">
           <span id="fps-display" class="fps-tag">60 FPS</span>
           <span id="ping-display" class="ping-tag">1ms</span>
-          <button type="button" id="btn-camera-mode" class="fps-tag" style="cursor: pointer; background: #1e3a5f; border-color: #00d2d3;" title="[Y] 키로 고정/자유 시점 전환">[Y] 고정 시점</button>
+          <button type="button" id="btn-camera-mode" class="btn-hud-control" title="[Y] 키로 고정/자유 시점 전환">[Y] 고정</button>
           <button type="button" id="btn-sound-toggle" class="btn-sound-toggle" title="사운드 켜기/끄기">🔊</button>
         </div>
       </header>
@@ -357,100 +378,175 @@
       <!-- Kill Alert Banner -->
       <div id="kill-banner-container" class="kill-banner-container"></div>
 
-      <!-- Bottom HUD (LOL Hextech Bar) -->
-      <footer class="game-hud">
-        <!-- Champion Avatar & Level -->
-        <div class="hud-hero-portrait">
-          <div id="hud-avatar-icon" class="hero-icon">⚔️</div>
-          <div id="hud-hero-name" class="hero-label">검객</div>
-        </div>
-
-        <!-- Vitals: HP & MP Bars -->
-        <div class="hud-vitals">
-          <div class="bar-container hp-bar-wrap">
-            <div id="hud-hp-fill" class="bar-fill hp-fill" style="width: 100%;"></div>
-            <div id="hud-shield-fill" class="bar-fill shield-fill" style="width: 0%;"></div>
-            <span id="hud-hp-text" class="bar-text">640 / 640</span>
-          </div>
-          <div class="bar-container mp-bar-wrap">
-            <div id="hud-mp-fill" class="bar-fill mp-fill" style="width: 100%;"></div>
-            <span id="hud-mp-text" class="bar-text">300 / 300</span>
-          </div>
-        </div>
-
-        <!-- Skills Bar (Passive, Q, W, E, R, D, F) -->
-        <div class="hud-skills-dock">
-          <!-- Passive -->
-          <div id="hud-slot-p" class="skill-box passive-box" title="패시브">
-            <div id="hud-skill-p-icon" class="skill-icon">P</div>
-            <span class="skill-key-badge">P</span>
-          </div>
-
-          <!-- Q -->
-          <div id="hud-slot-q" class="skill-box active-skill" data-key="Q">
-            <div id="hud-skill-q-icon" class="skill-icon">Q</div>
-            <span class="skill-key-badge">Q</span>
-            <span id="hud-mana-q" class="skill-mana-cost">45</span>
-            <div id="hud-cd-overlay-q" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-q" class="cd-num">0</span>
+      <!-- Bottom HUD (League of Legends Hextech Action Console) -->
+      <footer class="game-hud lol-action-console">
+        <!-- LEFT WING: Champion Portrait & Stats -->
+        <div class="hud-left-panel">
+          <div class="hud-hero-portrait">
+            <div class="hero-portrait-frame">
+              <div id="hud-avatar-icon" class="hero-icon">⚔️</div>
+              <div id="hud-level-badge" class="hero-level-badge">1</div>
             </div>
+            <div id="hud-hero-name" class="hero-label">검객</div>
           </div>
 
-          <!-- W -->
-          <div id="hud-slot-w" class="skill-box active-skill" data-key="W">
-            <div id="hud-skill-w-icon" class="skill-icon">W</div>
-            <span class="skill-key-badge">W</span>
-            <span id="hud-mana-w" class="skill-mana-cost">50</span>
-            <div id="hud-cd-overlay-w" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-w" class="cd-num">0</span>
-            </div>
-          </div>
-
-          <!-- E -->
-          <div id="hud-slot-e" class="skill-box active-skill" data-key="E">
-            <div id="hud-skill-e-icon" class="skill-icon">E</div>
-            <span class="skill-key-badge">E</span>
-            <span id="hud-mana-e" class="skill-mana-cost">55</span>
-            <div id="hud-cd-overlay-e" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-e" class="cd-num">0</span>
-            </div>
-          </div>
-
-          <!-- R (Ultimate) -->
-          <div id="hud-slot-r" class="skill-box ult-skill" data-key="R">
-            <div id="hud-skill-r-icon" class="skill-icon">R</div>
-            <span class="skill-key-badge">R</span>
-            <span id="hud-mana-r" class="skill-mana-cost">100</span>
-            <div id="hud-cd-overlay-r" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-r" class="cd-num">0</span>
-            </div>
-          </div>
-
-          <div class="dock-separator"></div>
-
-          <!-- D (Spell 1) -->
-          <div id="hud-slot-d" class="skill-box spell-box" data-key="D">
-            <div id="hud-spell-d-icon" class="skill-icon">⚡</div>
-            <span class="skill-key-badge">D</span>
-            <div id="hud-cd-overlay-d" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-d" class="cd-num">0</span>
-            </div>
-          </div>
-
-          <!-- F (Spell 2) -->
-          <div id="hud-slot-f" class="skill-box spell-box" data-key="F">
-            <div id="hud-spell-f-icon" class="skill-icon">🔥</div>
-            <span class="skill-key-badge">F</span>
-            <div id="hud-cd-overlay-f" class="cooldown-overlay hidden">
-              <span id="hud-cd-text-f" class="cd-num">0</span>
-            </div>
+          <div class="hud-stats-pane">
+            <div class="stat-item" title="공격력 (Attack Damage)"><span class="stat-icon">🗡️</span><span id="hud-stat-ad">68</span></div>
+            <div class="stat-item" title="방어력 (Armor)"><span class="stat-icon">🛡️</span><span id="hud-stat-armor">34</span></div>
+            <div class="stat-item" title="공격 속도 (Attack Speed)"><span class="stat-icon">🏹</span><span id="hud-stat-as">0.75</span></div>
+            <div class="stat-item" title="이동 속도 (Move Speed)"><span class="stat-icon">👟</span><span id="hud-stat-ms">310</span></div>
           </div>
         </div>
 
-        <!-- Minimap Display -->
-        <div class="hud-minimap-wrap">
-          <canvas id="minimap-canvas" width="180" height="120"></canvas>
+        <!-- CENTER DECK: Skills & Vitals -->
+        <div class="hud-center-deck">
+          <!-- Channeling Cast Bar (Recall, etc.) -->
+          <div id="hud-cast-bar" class="hud-cast-bar hidden">
+            <div class="cast-bar-bg">
+              <div id="hud-cast-fill" class="cast-bar-fill" style="width: 0%;"></div>
+            </div>
+            <div class="cast-bar-text" id="hud-cast-label">귀환 중... 8.0s</div>
+          </div>
+
+          <!-- Skills Row (Passive, Q, W, E, R, Spells D/F, Recall B) -->
+          <div class="hud-skills-dock">
+            <!-- Passive -->
+            <div id="hud-slot-p" class="skill-box passive-box" title="패시브">
+              <div id="hud-skill-p-icon" class="skill-icon">P</div>
+              <span class="skill-key-badge">P</span>
+            </div>
+
+            <!-- Q -->
+            <div id="hud-slot-q" class="skill-box active-skill" data-key="Q">
+              <button class="btn-skill-upgrade hidden" id="btn-upgrade-q" data-key="Q" title="스킬 레벨업 [Ctrl+Q]">▲</button>
+              <div id="hud-skill-q-icon" class="skill-icon">Q</div>
+              <span class="skill-key-badge">Q</span>
+              <span id="hud-mana-q" class="skill-mana-cost">45</span>
+              <div class="skill-rank-pips" id="hud-pips-q">
+                <span class="pip active"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span>
+              </div>
+              <div id="hud-cd-overlay-q" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-q" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <!-- W -->
+            <div id="hud-slot-w" class="skill-box active-skill" data-key="W">
+              <button class="btn-skill-upgrade hidden" id="btn-upgrade-w" data-key="W" title="스킬 레벨업 [Ctrl+W]">▲</button>
+              <div id="hud-skill-w-icon" class="skill-icon">W</div>
+              <span class="skill-key-badge">W</span>
+              <span id="hud-mana-w" class="skill-mana-cost">50</span>
+              <div class="skill-rank-pips" id="hud-pips-w">
+                <span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span>
+              </div>
+              <div id="hud-cd-overlay-w" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-w" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <!-- E -->
+            <div id="hud-slot-e" class="skill-box active-skill" data-key="E">
+              <button class="btn-skill-upgrade hidden" id="btn-upgrade-e" data-key="E" title="스킬 레벨업 [Ctrl+E]">▲</button>
+              <div id="hud-skill-e-icon" class="skill-icon">E</div>
+              <span class="skill-key-badge">E</span>
+              <span id="hud-mana-e" class="skill-mana-cost">55</span>
+              <div class="skill-rank-pips" id="hud-pips-e">
+                <span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span>
+              </div>
+              <div id="hud-cd-overlay-e" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-e" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <!-- R (Ultimate) -->
+            <div id="hud-slot-r" class="skill-box ult-skill" data-key="R">
+              <button class="btn-skill-upgrade hidden" id="btn-upgrade-r" data-key="R" title="궁극기 레벨업 [Ctrl+R]">▲</button>
+              <div id="hud-skill-r-icon" class="skill-icon">R</div>
+              <span class="skill-key-badge">R</span>
+              <span id="hud-mana-r" class="skill-mana-cost">100</span>
+              <div class="skill-rank-pips ult-pips" id="hud-pips-r">
+                <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+              </div>
+              <div id="hud-cd-overlay-r" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-r" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <div class="dock-separator"></div>
+
+            <!-- D (Spell 1) -->
+            <div id="hud-slot-d" class="skill-box spell-box" data-key="D">
+              <div id="hud-spell-d-icon" class="skill-icon">⚡</div>
+              <span class="skill-key-badge">D</span>
+              <div id="hud-cd-overlay-d" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-d" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <!-- F (Spell 2) -->
+            <div id="hud-slot-f" class="skill-box spell-box" data-key="F">
+              <div id="hud-spell-f-icon" class="skill-icon">🔥</div>
+              <span class="skill-key-badge">F</span>
+              <div id="hud-cd-overlay-f" class="cooldown-overlay hidden">
+                <span id="hud-cd-text-f" class="cd-num">0</span>
+              </div>
+            </div>
+
+            <!-- B (Recall) -->
+            <div id="hud-slot-b" class="skill-box recall-box" title="귀환 [B] (8초 집중)">
+              <div class="skill-icon">🌀</div>
+              <span class="skill-key-badge">B</span>
+            </div>
+          </div>
+
+          <!-- Vitals Bars Directly Under Skills (Full-width LoL layout) -->
+          <div class="hud-vitals">
+            <div class="bar-container hp-bar-wrap">
+              <div id="hud-hp-fill" class="bar-fill hp-fill" style="width: 100%;"></div>
+              <div id="hud-shield-fill" class="bar-fill shield-fill" style="width: 0%;"></div>
+              <div id="hud-hp-ticks" class="hp-ticks-grid"></div>
+              <span id="hud-hp-text" class="bar-text">640 / 640</span>
+            </div>
+            <div class="bar-container mp-bar-wrap">
+              <div id="hud-mp-fill" class="bar-fill mp-fill" style="width: 100%;"></div>
+              <span id="hud-mp-text" class="bar-text">300 / 300</span>
+            </div>
+          </div>
         </div>
+
+        <!-- RIGHT WING: 6-Slot Item Inventory & Ward Trinket -->
+        <div class="hud-right-panel">
+          <div class="hud-items-grid">
+            <div class="item-slot" id="hud-item-0" data-slot="0" title="아이템 1 [P 키로 상점]"><span class="slot-num">1</span></div>
+            <div class="item-slot" id="hud-item-1" data-slot="1" title="아이템 2"><span class="slot-num">2</span></div>
+            <div class="item-slot" id="hud-item-2" data-slot="2" title="아이템 3"><span class="slot-num">3</span></div>
+            <div class="item-slot" id="hud-item-3" data-slot="3" title="아이템 4"><span class="slot-num">5</span></div>
+            <div class="item-slot" id="hud-item-4" data-slot="4" title="아이템 5"><span class="slot-num">6</span></div>
+            <div class="item-slot" id="hud-item-5" data-slot="5" title="아이템 6"><span class="slot-num">7</span></div>
+          </div>
+          <div class="item-slot trinket-slot" id="hud-trinket-slot" title="와드 장신구 [4] (클릭 또는 4번 키)">
+            <span class="trinket-icon">👁️</span>
+            <span class="slot-num">4</span>
+            <div id="hud-ward-overlay" class="cooldown-overlay hidden">
+              <span id="hud-ward-text" class="cd-num">0</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <!-- STANDALONE MINIMAP (BOTTOM RIGHT - AUTHENTIC LOL POSITION) -->
+      <div id="hud-minimap-container" class="hud-minimap-container">
+        <div class="minimap-header-bar">
+          <span class="minimap-title">소환사의 협곡</span>
+          <div class="minimap-pings">
+            <span class="ping-btn" title="경고 핑">⚠️</span>
+            <span class="ping-btn" title="지원 요청 핑">🚩</span>
+          </div>
+        </div>
+        <div class="minimap-canvas-frame">
+          <canvas id="minimap-canvas" width="220" height="147"></canvas>
+        </div>
+      </div>
 
         <!-- LoL Hextech Skill Tooltip Popup -->
         <div id="hud-skill-tooltip" class="skill-tooltip-hextech hidden">
@@ -470,6 +566,30 @@
           <div id="tooltip-tip" class="tooltip-extra-tip">💡 팁: 대상에게 적중 시 추가 효과가 발동합니다.</div>
         </div>
       </footer>
+
+      <!-- LoL Hextech Item Shop Modal [P] -->
+      <div id="shop-modal" class="shop-modal-overlay hidden">
+        <div class="shop-modal-content hextech-panel">
+          <div class="shop-header">
+            <div class="shop-title">🛒 헥스테크 상점 (ITEM SHOP) <span class="key-hint">[P] 키로 닫기</span></div>
+            <div class="shop-gold-display">보유 골드: <span id="shop-player-gold" class="gold-val">500</span> 💰</div>
+            <button id="btn-close-shop" class="btn-shop-close">✕</button>
+          </div>
+          <div class="shop-body">
+            <div class="shop-items-section">
+              <div class="section-title">추천 코어 아이템</div>
+              <div id="shop-items-list" class="shop-items-grid"></div>
+            </div>
+            <div class="shop-inventory-section">
+              <div class="section-title">현재 인벤토리 (우클릭/판매 클릭 시 70% 환급)</div>
+              <div id="shop-inventory-list" class="shop-inventory-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Authentic LoL Announcer Banner Overlay -->
+      <div id="announcer-overlay" class="announcer-overlay pointer-events-none"></div>
 
       <!-- Respawn Overlay -->
       <div id="respawn-overlay" class="respawn-overlay hidden">
@@ -497,7 +617,9 @@
   <!-- Scripts -->
   <script src="/js/audio.js"></script>
   <script src="/js/camera.js"></script>
-  <script src="/js/renderer.js"></script>
-  <script src="/js/client.js"></script>
+  <script type="module" src="/js/nprMaterial.js"></script>
+  <script type="module" src="/js/GameFeelController.js"></script>
+  <script type="module" src="/js/renderer.js"></script>
+  <script type="module" src="/js/client.js"></script>
 </body>
 </html>

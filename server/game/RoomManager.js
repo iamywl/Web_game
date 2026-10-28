@@ -28,14 +28,14 @@ class RoomManager {
     return this.users.get(socketId);
   }
 
-  createRoom(name, mode, socketId) {
+  createRoom(name, mode, socketId, mapType) {
     const user = this.users.get(socketId);
     if (!user) return { success: false, error: '등록되지 않은 사용자입니다.' };
     if (user.roomId) return { success: false, error: '이미 참여 중인 방이 있습니다.' };
 
     const roomId = `room_${this.nextRoomId++}`;
     const roomName = (name || '').trim().substring(0, 24) || `${user.nickname}님의 협곡`;
-    const room = new Room(roomId, roomName, mode, user, this.io);
+    const room = new Room(roomId, roomName, mode, user, this.io, mapType);
 
     this.rooms.set(roomId, room);
     user.roomId = roomId;

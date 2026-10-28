@@ -1,101 +1,130 @@
-# 🤝 기여 가이드라인 (Contributing Guidelines)
+# 🤝 기여 가이드라인 (Contributing Guidelines for Humans & LLMs)
 
-`Web MOBA` 프로젝트에 관심을 가져주셔서 감사합니다!  
-이 프로젝트는 누구나 자유롭게 새로운 챔피언, 스킬 매커니즘, 밸런스 조정, 그래픽 효과를 개선할 수 있는 열린 오픈소스 프로젝트입니다.
-
----
-
-## 🛠️ 개발 환경 설정 (Development Setup)
-
-1. 저장소를 Fork 후 로컬에 클론합니다:
-   ```bash
-   git clone https://github.com/iamywl/Web_game.git
-   cd Web_game
-   ```
-2. 패키지를 설치합니다:
-   ```bash
-   npm install
-   ```
-3. 개발 서버를 구동합니다:
-   ```bash
-   npm start
-   ```
-4. 브라우저에서 `http://localhost:3000`으로 접속하여 테스트합니다.
+`Web MOBA` 프로젝트에 오신 것을 환영합니다!  
+본 문서는 개발자 및 **AI 코딩 에이전트(LLM)**가 새로운 챔피언, 스킬 매커니즘, 밸런스 패치, 셰이더 및 시각 효과를 안정적이고 일관성 있게 기여할 수 있도록 작성된 종합 지침서입니다.
 
 ---
 
-## 🦸‍♂️ 새로운 챔피언 추가하는 방법 (How to Add a Champion)
+## 🚀 빠른 시작 (Quick Start)
 
-새로운 챔피언을 추가하려면 다음 단계를 따릅니다:
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 게임 서버 실행 (포트 3000, LAN IP 자동 탐색)
+npm start
+
+# 3. 자동화 QA 테스트 스위트 검증 (19개 전 항목 100% 필수)
+npm test
+```
+
+---
+
+## 🤖 LLM 에이전트 작업 5대 황금률 (Strict AI Invariants)
+
+AI 코딩 어시스턴트(Claude, GPT, Gemini, Cursor, Copilot 등)는 코드를 생성하거나 수정할 때 다음 5대 불변 규칙을 **절대 위반해서는 안 됩니다**:
+
+1. **Zero-GC 원칙 (렌더 루프 및 서버 틱 내부 객체 생성 금지)**:
+   - `requestAnimationFrame` 및 `GameEngine.update()` 내부에서 `new THREE.Vector3()`, `new THREE.Color()`, `new Array()`, 임시 객체 `{}` 생성을 금지합니다.
+   - 반드시 모듈 상단에 선언된 정적 캐시 변수(`_v1`, `_v2`, `_q1` 등)를 재사용하세요.
+2. **NPR 툰 렌더링 강제 (단독 PBR 실사 머티리얼 금지)**:
+   - 캐릭터 및 유닛 메쉬에 `MeshStandardMaterial` 또는 `MeshPhysicalMaterial` 단독 사용을 금지합니다.
+   - 반드시 `MeshToonMaterial` + 3단계 그래디언트 맵 + 림 라이트 셰이더 청크 + 인버티드 헐 외곽선을 적용하세요.
+3. **타격감 안정성 (카메라 진동 규칙)**:
+   - 일반 평타 및 미니언 전투에서는 카메라 셰이크를 절대 트리거하지 마세요.
+   - 치명타 및 궁극기 킬에만 비선형 트라우마($Trauma \in [0, 1]$, 감쇠 $Trauma^2$)를 부여하며, 화면 롤링(`maxShakeRoll`)은 항상 `0.0`을 유지하세요.
+4. **구조물 물리 충돌 및 미니언 AI**:
+   - 미니언이 포탑/넥서스 내부로 파고들지 않도록 하드 충돌 밀어내기(Pushback) 및 포탑 우회 조향(Flank Steering)을 유지하세요.
+5. **UI DOM ID 보존**:
+   - `public/index.html`에 정의된 기존 HUD 요소 ID(`hud-slot-q`, `hud-hp-fill`, `hud-minimap-container` 등)를 임의로 변경하거나 삭제하지 마세요.
+
+---
+
+## 🦸‍♂️ 신규 챔피언 추가 파이프라인 (Champion Addition Recipe)
+
+새로운 챔피언을 추가할 때는 다음 3개 파일을 순서대로 수정합니다:
 
 ### 1단계: 챔피언 스탯 및 스킬 정의 (`server/game/ChampionData.js`)
-`CHAMPIONS` 객체에 고유한 `id`로 새 챔피언 데이터를 추가합니다:
+`CHAMPIONS` 객체에 고유 `id`를 키로 하여 데이터를 등록합니다:
 
 ```javascript
 my_champion: {
   id: 'my_champion',
   name: '신규 챔피언 이름',
   title: 'The Title',
-  role: '역할군 (전사 / 마법사 등)',
-  color: '#hexcode',
-  accentColor: '#hexcode',
-  avatar: '🛡️',
+  role: '전사', // 역할군: 전사, 원거리 딜러, 마법사, 암살자, 탱커, 서포터
+  color: '#3498db',
+  accentColor: '#2980b9',
+  avatar: '⚡',
   stats: {
-    maxHp: 600,
-    hpRegen: 3.0,
-    maxMp: 300,
+    maxHp: 650,
+    hpRegen: 3.5,
+    maxMp: 320,
     mpRegen: 5.0,
-    attackRange: 150,
-    attackDamage: 65,
+    attackRange: 140,
+    attackDamage: 68,
     attackSpeed: 0.75,
-    moveSpeed: 300,
-    armor: 30,
-    magicResist: 30,
+    moveSpeed: 310,
+    armor: 35,
+    magicResist: 32,
     radius: 26
   },
   passive: {
-    name: '패시브 스킬명',
-    desc: '패시브 효과 설명'
+    name: '패시브 이름',
+    desc: '패시브 메커니즘 상세 설명'
   },
   skills: {
-    Q: { name: '스킬명', key: 'Q', type: 'dash_line', cooldown: 6.0, mana: 40, damage: 80, range: 350, desc: '...' },
-    W: { name: '스킬명', key: 'W', type: 'aoe_circle', cooldown: 8.0, mana: 50, damage: 100, radius: 200, desc: '...' },
-    E: { name: '스킬명', key: 'E', type: 'self_buff', cooldown: 10.0, mana: 50, shieldAmount: 150, duration: 3.0, desc: '...' },
-    R: { name: '스킬명', key: 'R', type: 'target_aoe', cooldown: 50.0, mana: 100, damage: 250, range: 500, radius: 180, desc: '...' }
+    Q: { name: 'Q 스킬명', key: 'Q', type: 'skillshot_projectile', cooldown: 6.0, mana: 40, damage: 85, range: 450, radius: 16, desc: '...' },
+    W: { name: 'W 스킬명', key: 'W', type: 'aoe_circle', cooldown: 9.0, mana: 50, damage: 110, radius: 220, desc: '...' },
+    E: { name: 'E 스킬명', key: 'E', type: 'dash_self', cooldown: 11.0, mana: 60, distance: 300, shield: 120, desc: '...' },
+    R: { name: 'R 스킬명', key: 'R', type: 'ultimate_nuke', cooldown: 55.0, mana: 100, damage: 320, range: 600, radius: 200, desc: '...' }
   }
 }
 ```
 
-### 2단계: 서버 엔진 스킬 로직 구현 (`server/game/GameEngine.js`)
-`executeSkill(p, key, skill, tx, ty)` 내부의 챔피언 분기에 새 챔피언 스킬 실행 코드를 추가합니다:
-* **논타깃 투사체**: `this.spawnProjectile({ ... })`
-* **광역 장판기**: `this.aoeZones.push({ ... })`
-* **즉발 광역 폭발**: `this.createAoeBlast(p.id, p.team, p.x, p.y, radius, damage, ccType)`
+### 2단계: 서버 엔진 스킬 실행 로직 (`server/game/GameEngine.js`)
+`executeSkill(p, key, skill, tx, ty)` 내부의 챔피언 분기에 스킬 효과를 구현합니다:
+* **투사체 생성**:
+  ```javascript
+  this.spawnProjectile({
+    ownerId: p.id,
+    team: p.team,
+    type: `${p.champId}_q`,
+    x: p.x,
+    y: p.y,
+    targetX: tx,
+    targetY: ty,
+    speed: 650,
+    radius: skill.radius || 15,
+    damage: skill.damage,
+    range: skill.range,
+    ccType: 'slow',
+    ccDuration: 1.5
+  });
+  ```
+* **즉발 광역 폭발(AoE)**:
+  ```javascript
+  this.createAoeBlast(p.id, p.team, tx, ty, skill.radius, skill.damage, 'knockup', 0.8);
+  ```
 
-### 3단계: 렌더러 아바타 및 VFX 추가 (`public/js/renderer.js`)
-`drawChampionAvatar(ctx, p, teamColor)` 함수 안에 챔피언의 시그니처 무기나 아우라 그리기 코드를 추가합니다.
+### 3단계: 클라이언트 아바타 및 VFX 구현 (`public/js/renderer.js`)
+챔피언 고유의 3D 메쉬 외형, 인버티드 헐 외곽선, 스킬 발사 이펙트를 등록합니다.
 
 ---
 
-## 🧪 자동화 테스트 검증 (Running Tests)
+## 🧪 자동화 검증 절차 (Verification Checklist)
 
-PR을 제출하기 전에 반드시 전체 QA 테스트가 통과하는지 확인하세요:
+모든 코드 기여 전후에 반드시 아래 체크리스트를 통과해야 합니다:
 
-```bash
-# QA 자동화 테스트 스위트 실행
-node test/qa_suite.js
-```
-
-모든 테스트 항목(19/19)이 `[PASS]`를 기록해야 합니다.
-
----
-
-## 📋 커밋 및 풀 리퀘스트 규칙 (Pull Request Guidelines)
-
-* **커밋 메시지 규칙**: Conventional Commits 스타일을 권장합니다.
-  * `feat: Add new champion Thunder Mage`
-  * `fix: Resolve projectile collision at map boundary`
-  * `docs: Update architecture diagram in docs`
-  * `perf: Optimize 60 FPS particle pooling`
-* **코드 스타일**: 가독성 높고 주석이 풍부한 클린 코드를 지향합니다.
-* **오프라인 원칙**: 외부 CDN이나 웹 폰트 등 인터넷 연결이 필요한 외부 의존성을 추가하지 마세요. (폐쇄망 LAN 지원 원칙)
+1. **자동화 QA 테스트**:
+   ```bash
+   node test/qa_suite.js
+   ```
+   - 19개 전 항목 100% PASS 확인
+2. **REST API 상태 점검**:
+   - `http://localhost:3000/api/server-info` HTTP 200 OK
+   - `http://localhost:3000/api/game-data` 스키마 무결성
+3. **가비지 컬렉션 점검**:
+   - `requestAnimationFrame` 및 서버 60Hz 틱 루프 내부 `new` 키워드 부재 확인
+4. **브라우저 콘솔 무결성**:
+   - Uncaught ReferenceError, 404 리소스 누락 제로

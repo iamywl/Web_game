@@ -1,0 +1,44 @@
+# Cursor Rules for Web MOBA (League of Legends Style Engine)
+
+You are an expert game engine architect and senior graphics engineer working on a Pure Vanilla JS, Three.js, and Node.js Web MOBA engine.
+Always adhere to the following strict guidelines when contributing code.
+
+## 1. Project Overview & Philosophy
+- **Goal**: Browser-based League of Legends clone with immediate game feel, responsive controls, NPR/Toon graphics, and authoritative 60 FPS LAN multiplayer.
+- **Tech Stack**: Pure Vanilla JS (ES6+), Three.js (WebGL), Node.js, Express, Socket.IO.
+- **Offline / Zero-Install**: No external CDNs, npm build pipelines, or remote web fonts. Everything runs locally in private LAN.
+
+## 2. Strict Architectural Rules (DO NOT BREAK)
+1. **NPR Graphics Only (NO PBR)**:
+   - NEVER use `MeshStandardMaterial` or `MeshPhysicalMaterial` alone on characters or units (avoids plastic toy look).
+   - Use `MeshToonMaterial` with a 3-step gradient map.
+   - Inject Rim Lighting shader chunks and use Inverted Hull outline meshes (`nprMaterial.js`).
+2. **Zero-GC in 60 FPS Render Loops**:
+   - NEVER allocate objects (`new THREE.Vector3()`, `new THREE.Color()`, `new Array()`) inside `requestAnimationFrame` or the server 60Hz tick loop.
+   - Always reuse cached math scratchpad variables (`_v1`, `_v2`, `_q1`) declared at module tops.
+3. **Combat Juice Pipeline (4-Stage Sync)**:
+   - Hit-Stop: 30-50ms frame freeze on heavy impacts.
+   - Damage Flash: Emissive white (`0xffffff`, intensity 2.0) pulse with exponential decay.
+   - Camera Shake: Trauma-based non-linear decay ($Trauma^2$, $Trauma^3$). NEVER shake camera on basic attacks or minion combat. Keep `maxShakeRoll = 0.0`.
+   - Floating Damage: Canvas popup with $1.4\times$ spawn scale and gravity bounce.
+4. **Authoritative Server & Client-Side Prediction**:
+   - Server (`server/game/GameEngine.js`) is the single source of truth at 60 FPS.
+   - Client (`public/js/client.js` & `NetworkManager.js`) predicts player movement immediately and reconciles via exponential decay lerp for errors $< 0.5$ units.
+   - Champion turning must use `turnRate` (720 deg/s) with quaternion slerp; never snap instantly in 1 frame.
+5. **Turret & Minion Collision / Aggro**:
+   - Minions must detour around turrets (`marchY` flank steering) and maintain stand-off attacking distances.
+   - Never allow minion or champion clipping into structures (use hard structure collision resolution).
+   - Turret Call for Help: Damaging an allied champion under turret range immediately transfers turret aggro to the attacking enemy champion.
+6. **Core LoL Systems Integrity**:
+   - Leveling (1~18), skill points (Q/W/E max 5, R max 3 at 6/11/16).
+   - Hextech Shop (`ItemData.js`, `KeyP`): purchases and sales restricted to fountain ($r \le 350\text{px}$).
+   - Recall (`KeyB`): 8.0s channeling cancelled on movement, damage, or skill cast. Fountain rapid regen.
+   - Bush Stealth: Units in brush are culled in 3D and 2D unless revealed by combat or vision wards (`Digit4`).
+   - Neutral Objectives: River Scuttle Crab (drops 70G/120 EXP) & Elemental Dragon (team +12% AD/AP buff).
+7. **Hextech HUD IDs**:
+   - Preserve all DOM IDs in `public/index.html` (e.g., `hud-slot-q`, `hud-hp-fill`, `hud-stat-ad`, `hud-minimap-container`, `shop-modal`, `hud-cast-bar`).
+
+## 3. Essential Commands
+- Start Server: `node server/server.js` (port 3000)
+- Run QA Tests: `node test/qa_suite.js` (server must be running; must pass 19/19 tests)
+- Health Check: `GET http://localhost:3000/api/server-info`

@@ -709,6 +709,165 @@ async function runCategory4_DisconnectAndEdgeCases() {
 // ==============================================================================
 // REPORT PRINTER & EXPORT
 // ==============================================================================
+
+// ==============================================================================
+// CATEGORY 5: Summoner's Rift 3-Lane, 22-Turret & Full Jungle QA Suite
+// ==============================================================================
+async function runCategory5_SummonersRift3LaneAndJungleEcosystem() {
+  const cat = "5. Summoner's Rift 3-Lane, 22-Turret & Full Jungle QA Suite";
+  logHeader(cat);
+
+  const s1 = createSocket();
+  const s2 = createSocket();
+    await Promise.all([waitForConnect(s1), waitForConnect(s2)]);
+
+  try {
+    // 5.1 Match initialization in Summoner's Rift mode (3200x3200)
+    const tInit = Date.now();
+    await emitPromise(s1, 'registerUser', { nickname: 'Faker_T1' });
+    await emitPromise(s2, 'registerUser', { nickname: 'Chovy_GEN' });
+
+    const createRes = await emitPromise(s1, 'createRoom', {
+      name: 'LCK_Worlds_SR',
+      mode: 'custom',
+      mapType: 'summoners_rift'
+    });
+    const roomId = createRes.room.id;
+
+    await emitPromise(s2, 'joinRoom', { roomId });
+    await emitPromise(s2, 'switchTeam', { team: 'red' });
+    await emitPromise(s2, 'toggleReady');
+
+    await emitPromise(s1, 'startDraft');
+    await emitPromise(s1, 'lockChampion', { championId: 'blademaster' });
+    await emitPromise(s2, 'lockChampion', { championId: 'sniper' });
+
+    const battleData = await waitForEvent(s1, 'battleStarted', 5000);
+    assert(battleData && battleData.mapData, 'battleStarted event must provide mapData');
+    assertEqual(battleData.mapData.width, 3200, 'Summoner\'s Rift width must be 3200');
+    assertEqual(battleData.mapData.height, 3200, 'Summoner\'s Rift height must be 3200');
+    assertEqual(battleData.mapData.isSummonersRift, true, 'isSummonersRift must be true');
+
+    recordTestResult(cat, '5.1 5v5 Summoner\'s Rift initialization (3200x3200 Canvas & Bases)', true, Date.now() - tInit,
+      `SR initialized. Blue Base: (${battleData.mapData.bases.blue.x}, ${battleData.mapData.bases.blue.y}), Red Base: (${battleData.mapData.bases.red.x}, ${battleData.mapData.bases.red.y})`);
+
+    // 5.2 30 Structures Matrix & Point-Symmetry Verification
+    const tStructs = Date.now();
+    const tick = await waitForEvent(s1, 'gameTick', 2000);
+    const structs = tick.structures || [];
+    const turrets = structs.filter(s => s.type === 'turret');
+    const inhibitors = structs.filter(s => s.type === 'inhibitor');
+    const nexuses = structs.filter(s => s.type === 'nexus');
+
+    assertEqual(turrets.length, 22, `Must have exactly 22 turrets (found: ${turrets.length})`);
+    assertEqual(inhibitors.length, 6, `Must have exactly 6 inhibitors (found: ${inhibitors.length})`);
+    assertEqual(nexuses.length, 2, `Must have exactly 2 nexuses (found: ${nexuses.length})`);
+
+    recordTestResult(cat, '5.2 30 Structures Matrix Integrity (22 Turrets, 6 Inhibitors, 2 Nexuses)', true, Date.now() - tStructs,
+      `Audited 30 structures with 100% LoL geometry. Turrets: ${turrets.length}, Inhibitors: ${inhibitors.length}, Nexuses: ${nexuses.length}`);
+
+    // 5.3 Hierarchical Invulnerability Tree Verification
+    const tInvul = Date.now();
+    const blueOuter = structs.find(s => s.id === 'blue_top_outer_turret');
+    const blueInner = structs.find(s => s.id === 'blue_top_inner_turret');
+    const blueInhTurret = structs.find(s => s.id === 'blue_top_inhibitor_turret');
+    const blueInh = structs.find(s => s.id === 'blue_top_inhibitor');
+    const blueNex = structs.find(s => s.id === 'blue_nexus');
+
+    assertEqual(blueOuter.isInvulnerable, false, 'Top Tier 1 (Outer) turret must be vulnerable');
+    assertEqual(blueInner.isInvulnerable, true, 'Top Tier 2 (Inner) turret must be invulnerable while Outer is alive');
+    assertEqual(blueInhTurret.isInvulnerable, true, 'Top Tier 3 (Inhibitor) turret must be invulnerable');
+    assertEqual(blueInh.isInvulnerable, true, 'Top Inhibitor must be invulnerable');
+    assertEqual(blueNex.isInvulnerable, true, 'Nexus must be invulnerable');
+
+    recordTestResult(cat, '5.3 Hierarchical Invulnerability Tree & Defense Line Integrity', true, Date.now() - tInvul,
+      `Outer vulnerable (false), Inner/Inhibitor/Nexus invulnerable (true). Defense tree active.`);
+
+    // 5.4 3-Lane Simultaneous Wave Spawning & Waypoints Telemetry
+    const tWave = Date.now();
+    let observed3LaneMinions = [];
+    const minionPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Timed out waiting for 3-lane minion wave (minions < 18)')), 6000);
+      const minionCollector = (t) => {
+        if (t.minions && t.minions.length >= 18) {
+          clearTimeout(timer);
+          s1.off('gameTick', minionCollector);
+          resolve(t.minions);
+        }
+      };
+      s1.on('gameTick', minionCollector);
+    });
+
+    observed3LaneMinions = await minionPromise;
+
+    const topMinions = observed3LaneMinions.filter(m => m.lane === 'top');
+    const midMinions = observed3LaneMinions.filter(m => m.lane === 'mid');
+    const botMinions = observed3LaneMinions.filter(m => m.lane === 'bot');
+
+    assert(topMinions.length >= 6, `Top lane must have minion wave (observed: ${topMinions.length})`);
+    assert(midMinions.length >= 6, `Mid lane must have minion wave (observed: ${midMinions.length})`);
+    assert(botMinions.length >= 6, `Bot lane must have minion wave (observed: ${botMinions.length})`);
+
+    recordTestResult(cat, '5.4 3-Lane Simultaneous Minion Wave Spawning (Top, Mid, Bot)', true, Date.now() - tWave,
+      `Observed 3-Lane waves: Top (${topMinions.length}), Mid (${midMinions.length}), Bot (${botMinions.length})`);
+
+    // 5.5 Full Jungle 4-Quadrant Ecosystem & Epic Bosses (Baron & Dragon)
+    const tJungle = Date.now();
+    const jungleTick = await waitForEvent(s1, 'gameTick', 2000);
+    const jMonsters = jungleTick.jungleMonsters || [];
+
+    const baron = jMonsters.find(m => m.type === 'baron');
+    const dragon = jMonsters.find(m => m.type === 'dragon');
+    const blueBuffs = jMonsters.filter(m => m.type === 'buff_blue');
+    const redBuffs = jMonsters.filter(m => m.type === 'buff_red');
+    const scuttles = jMonsters.filter(m => m.type === 'scuttle');
+
+    assert(baron && baron.hp >= 9000, 'Baron Nashor must exist with 9000 HP');
+    assert(dragon && dragon.hp >= 4500, 'Elemental Dragon must exist with 4500 HP');
+    assertEqual(blueBuffs.length, 2, 'Must have 2 Blue Buff camps (Blue Top & Red Bot)');
+    assertEqual(redBuffs.length, 2, 'Must have 2 Red Buff camps (Blue Bot & Red Top)');
+    assertEqual(scuttles.length, 2, 'Must have 2 Scuttle Crabs (Top & Bot river)');
+
+    recordTestResult(cat, '5.5 Jungle 4-Quadrant Ecosystem & Epic Bosses (Baron 9000 HP, Dragon, 4 Buffs)', true, Date.now() - tJungle,
+      `Verified Baron (HP 9000), Dragon (HP 4500), 2 Blue buffs, 2 Red buffs, 2 Scuttle crabs in river.`);
+
+    // 5.6 Spatial Geometry & Laning Phase Neutral Zone Verification (Defect Prevention Test)
+    const tSpatial = Date.now();
+    const bMid = structs.find(s => s.id === 'blue_mid_outer_turret');
+    const rMid = structs.find(s => s.id === 'red_mid_outer_turret');
+    const bTop = structs.find(s => s.id === 'blue_top_outer_turret');
+    const rTop = structs.find(s => s.id === 'red_top_outer_turret');
+    const bBot = structs.find(s => s.id === 'blue_bot_outer_turret');
+    const rBot = structs.find(s => s.id === 'red_bot_outer_turret');
+
+    // 1. Distance between mid outer turrets must be >= 1400px (Actual ~1555.6px)
+    const dMid = Math.hypot(rMid.x - bMid.x, rMid.y - bMid.y);
+    assert(dMid >= 1400, `Mid outer turrets distance must be >= 1400px (got ${dMid.toFixed(1)}px)`);
+
+    // 2. Center (1600, 1600) must be outside both turret ranges (Safe laning zone >= 700px)
+    const dCenterB = Math.hypot(1600 - bMid.x, 1600 - bMid.y);
+    const dCenterR = Math.hypot(1600 - rMid.x, 1600 - rMid.y);
+    assert(dCenterB > bMid.range + 200, `Map center must be well outside Blue Mid Outer range (dist: ${dCenterB.toFixed(1)}px, range: ${bMid.range}px)`);
+    assert(dCenterR > rMid.range + 200, `Map center must be well outside Red Mid Outer range (dist: ${dCenterR.toFixed(1)}px, range: ${rMid.range}px)`);
+
+    // 3. Top and Bot outer turrets distance must be >= 1400px
+    const dTop = Math.hypot(rTop.x - bTop.x, rTop.y - bTop.y);
+    const dBot = Math.hypot(rBot.x - bBot.x, rBot.y - bBot.y);
+    assert(dTop >= 1400, `Top outer turrets distance must be >= 1400px (got ${dTop.toFixed(1)}px)`);
+    assert(dBot >= 1400, `Bot outer turrets distance must be >= 1400px (got ${dBot.toFixed(1)}px)`);
+
+    recordTestResult(cat, '5.6 Spatial Geometry & Laning Phase Neutral Zone Verification (Anti-Overlap Invariant)', true, Date.now() - tSpatial,
+      `Audited Outer Turret Distances: Mid=${dMid.toFixed(1)}px (Safe Neutral Zone=${(dMid - bMid.range*2).toFixed(1)}px), Top=${dTop.toFixed(1)}px, Bot=${dBot.toFixed(1)}px. Center clearance: ${dCenterB.toFixed(1)}px.`);
+
+    s1.disconnect();
+    s2.disconnect();
+  } catch (err) {
+    recordTestResult(cat, 'Category 5 Execution', false, 0, null, err);
+    s1.disconnect();
+    s2.disconnect();
+  }
+}
+
 function generateFinalReport() {
   testReport.summary.durationMs = Date.now() - new Date(testReport.startedAt).getTime();
   const passRate = testReport.summary.total > 0
@@ -758,11 +917,24 @@ async function main() {
   console.log(COLORS.bright + COLORS.magenta + '           ⚔️  LOL MOBA REAL-TIME ENGINE - AUTOMATED QA TEST SUITE  ⚔️' + COLORS.reset);
   console.log(COLORS.bright + COLORS.magenta + '================================================================================' + COLORS.reset);
 
+  // Pre-flight Server Liveness Check
+  try {
+    const res = await fetch(`${SERVER_URL}/api/server-info`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    console.error(`\n${COLORS.red}${COLORS.bright}❌ QA TEST SUITE ABORTED: 서버가 구동되어 있지 않습니다.${COLORS.reset}`);
+    console.error(`${COLORS.yellow}   ↳ 대상 서버 (${SERVER_URL})에 연결할 수 없습니다.${COLORS.reset}`);
+    console.error(`${COLORS.cyan}   💡 해결 방법: 별도의 터미널 또는 백그라운드에서 먼저 서버를 실행해주세요:${COLORS.reset}`);
+    console.error(`      ${COLORS.bright}node server/server.js${COLORS.reset}\n`);
+    process.exit(1);
+  }
+
   try {
     await runCategory1_ConcurrencyAndRaceCondition();
     await runCategory2_ChampionsAndServerIntegrity();
     await runCategory3_CombatMechanicsAndSimulation();
     await runCategory4_DisconnectAndEdgeCases();
+    await runCategory5_SummonersRift3LaneAndJungleEcosystem();
   } catch (err) {
     console.error('Fatal QA Suite Error:', err);
   } finally {
