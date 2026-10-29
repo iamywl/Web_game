@@ -1,5 +1,9 @@
 # Original Summoner's Rift environment
 
+## Git LFS checkout
+
+Map GLB files under `public/assets/maps/` are stored with Git LFS. Install Git LFS, then run `git lfs install` and `git lfs pull` after cloning or updating the repository. The working copy must contain the actual GLB, not the small LFS pointer, before starting the game. Existing pre-LFS commits retain their original Git blobs; this conversion does not rewrite shared history.
+
 Extracted from this computer's `C:/Riot Games/League of Legends/Game/DATA/FINAL/Maps/Shipping/Map11.wad.client` on 2026-10-29. The installed `map11.bin` Default map skin references `Maps/MapGeometry/Map11/Base_SRX`. This package uses that current map, rather than the older `Base` geometry.
 
 `map.glb` contains the original default terrain, riverbed, walls, rock formations, vegetation, base platforms, and peripheral scenery. The source file contains 586 meshes across mutually exclusive elemental variants. The installed map metadata sets `InitialVisibilityMask=1`; the delivered file retains that default layer plus shared geometry: 198 meshes, 645,491 triangles, 137 embedded original textures. Textures retain alpha and are encoded as WebP quality 92, capped at 2048 pixels per side. Geometry coordinates and triangles are retained without simplification.
