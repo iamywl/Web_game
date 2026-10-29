@@ -12,6 +12,8 @@ import { GameRenderer } from './renderer.js';
 
   // Global Socket & State
   const socket = io();
+  const skillSnapshotFields = ['garen', 'yasuo', 'airborneRemaining', 'isSilenced', 'level', 'exp', 'maxExp', 'skillRanks', 'skillPoints',
+    'ad', 'armor', 'ap', 'gold', 'items', 'recalling', 'recallProgress', 'isStunned', 'isRooted'];
 
   let localUser = {
     socketId: null,
@@ -676,7 +678,7 @@ import { GameRenderer } from './renderer.js';
         }
 
         // Render at 60~144+ FPS with camera update
-        gameRenderer.render(latestGameState, mouseScreenPos);
+        gameRenderer.render(latestGameState, mouseScreenPos, dt);
       } else {
         lastFrameTime = now;
       }
@@ -687,6 +689,7 @@ import { GameRenderer } from './renderer.js';
 
   socket.on('battleStarted', (data) => {
     isGameActive = true;
+    latestGameState = null;
     draftCountdownOverlay.classList.add('hidden');
     switchScreen('game');
 
@@ -703,6 +706,12 @@ import { GameRenderer } from './renderer.js';
       }
       gameRenderer = new RendererClass('game-canvas-container', cameraController);
     }
+    // A socket can pick a different champion in its next match.
+    gameRenderer.update3DChampions([], 0);
+    gameRenderer.garenEffects.update([], gameRenderer.threePlayerMeshes, 0);
+    gameRenderer.garenAudio.update([]);
+    gameRenderer.yasuoEffects.update([], gameRenderer.threePlayerMeshes, 0, [], []);
+    gameRenderer.yasuoAudio.update([], []);
     if (data.mapData) {
       gameRenderer.setMapData(data.mapData);
     }
@@ -753,18 +762,41 @@ import { GameRenderer } from './renderer.js';
         clientMe.kills = serverMe.kills;
         clientMe.deaths = serverMe.deaths;
         clientMe.assists = serverMe.assists;
+        clientMe.cs = serverMe.cs;
         clientMe.isAlive = serverMe.isAlive;
         clientMe.respawnTimer = serverMe.respawnTimer;
         clientMe.stealth = serverMe.stealth;
+        clientMe.vx = serverMe.vx;
+        clientMe.vy = serverMe.vy;
+        clientMe.angle = serverMe.angle;
+        clientMe.as = serverMe.as;
+        clientMe.moveSpeed = serverMe.moveSpeed;
+        clientMe.inBush = serverMe.inBush;
+        clientMe.bushId = serverMe.bushId;
+        clientMe.revealed = serverMe.revealed;
+        // Keep authoritative skill progression and Garen's timed states in sync.
+        for (const field of skillSnapshotFields) {
+          clientMe[field] = serverMe[field];
+        }
 
         // Reconcile GameFeelController prediction with authoritative server position
         if (gameRenderer && gameRenderer.gameFeelController) {
           gameRenderer.gameFeelController.onServerSnapshot(serverMe.x, serverMe.y);
+          gameRenderer.gameFeelController.onNavigationSnapshot(serverMe.navX, serverMe.navY, serverMe.x, serverMe.y);
+          gameRenderer.gameFeelController.moveSpeed = serverMe.moveSpeed;
+          if (serverMe.garen?.rRemaining > 0) gameRenderer.gameFeelController.stopMoving();
+          if (serverMe.yasuo?.eRemaining > 0 || serverMe.yasuo?.rRemaining > 0) {
+            clientMe.x = serverMe.x; clientMe.y = serverMe.y;
+            gameRenderer.gameFeelController.initPosition(serverMe.x, serverMe.y);
+          }
         }
       }
 
       // Reconcile other players and game state
       if (state.players) {
+        for (let i = latestGameState.players.length - 1; i >= 0; i--) {
+          if (!state.players.some(p => p.id === latestGameState.players[i].id)) latestGameState.players.splice(i, 1);
+        }
         state.players.forEach(sp => {
           if (sp.id !== localUser.socketId) {
             let cp = latestGameState.players ? latestGameState.players.find(p => p.id === sp.id) : null;
@@ -779,6 +811,9 @@ import { GameRenderer } from './renderer.js';
       latestGameState.structures = state.structures;
       latestGameState.minions = state.minions;
       latestGameState.projectiles = state.projectiles;
+      latestGameState.yasuoWalls = state.yasuoWalls;
+      latestGameState.jungleMonsters = state.jungleMonsters;
+      latestGameState.wards = state.wards;
       latestGameState.aoeZones = state.aoeZones;
       latestGameState.events = state.events;
       latestGameState.scores = state.scores;
@@ -835,6 +870,7 @@ import { GameRenderer } from './renderer.js';
 
     if (minimapCanvas) {
       minimapCanvas.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
         if (e.button === 0) {
           isMinimapNavigating = true;
           handleMinimapPan(e);
@@ -848,10 +884,11 @@ import { GameRenderer } from './renderer.js';
           const mapH = (gameRenderer && gameRenderer.mapData && gameRenderer.mapData.height) ? gameRenderer.mapData.height : 1600;
           const targetWorldX = normX * mapW;
           const targetWorldY = normY * mapH;
-          if (networkManager) {
-            networkManager.sendMove(targetWorldX, targetWorldY);
+          if (isGameActive && socket) {
+            socket.emit('playerMove', { x: targetWorldX, y: targetWorldY });
+            gameRenderer.gameFeelController?.issueMoveCommand(targetWorldX, targetWorldY);
             if (gameRenderer) {
-              gameRenderer.addClickRing(targetWorldX, targetWorldY, '#2ecc71');
+              gameRenderer.addClickRing(targetWorldX, targetWorldY, false);
             }
           }
         }
@@ -895,6 +932,7 @@ import { GameRenderer } from './renderer.js';
         let targetX = worldPos.x;
         let targetY = worldPos.y;
         const myPlayer = latestGameState.players.find(p => p.id === localUser.socketId);
+        if (myPlayer?.yasuo?.eRemaining > 0 || myPlayer?.yasuo?.rRemaining > 0) return;
 
         if (myPlayer) {
           // Check enemy players (Direct click on champion hitbox)
@@ -938,6 +976,16 @@ import { GameRenderer } from './renderer.js';
                   targetY = s.y;
                 }
               }
+            }
+          }
+        }
+
+        if (myPlayer) {
+          const meshTarget = gameRenderer.pickCombatTarget(e.clientX, e.clientY, myPlayer.team);
+          if (meshTarget) { clickedTarget = meshTarget.id; targetX = meshTarget.x; targetY = meshTarget.y; }
+          if (!clickedTarget) for (const monster of latestGameState.jungleMonsters || []) {
+            if (monster.isAlive && Math.hypot(monster.x - worldPos.x, monster.y - worldPos.y) <= monster.radius) {
+              clickedTarget = monster.id; targetX = monster.x; targetY = monster.y; break;
             }
           }
         }
@@ -987,8 +1035,7 @@ import { GameRenderer } from './renderer.js';
             socket.emit('castSpell', { slot: activeAimKey, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
             if (activeAimKey === 'D' && window.soundEngine) window.soundEngine.playFlash();
           } else {
-            socket.emit('castSkill', { key: activeAimKey, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
-            playChampionSkillSound(localUser.selectedChampId, activeAimKey);
+            requestChampionSkill(activeAimKey, worldPos);
           }
           activeAimKey = null;
           gameRenderer.clearSkillAim();
@@ -1000,6 +1047,38 @@ import { GameRenderer } from './renderer.js';
       if (!isGameActive || !gameRenderer) return;
       const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
       socket.emit('placeWard', { x: Math.round(worldPos.x), y: Math.round(worldPos.y) });
+    }
+
+    function requestChampionSkill(key, worldPos) {
+      const isGaren = localUser.selectedChampId === 'garen';
+      const isYasuo = localUser.selectedChampId === 'yasuo';
+      let targetId;
+      if ((isGaren && key === 'R') || (isYasuo && (key === 'E' || key === 'R'))) {
+        const me = latestGameState?.players?.find(p => p.id === localUser.socketId);
+        let nearest = 55;
+        for (const player of latestGameState?.players || []) {
+          if (!player.isAlive || player.team === me?.team || player.stealth ||
+              (player.inBush && !player.revealed && !me?.inBush)) continue;
+          if (isYasuo && key === 'R' && !(player.airborneRemaining > 0)) continue;
+          const distance = Math.hypot(player.x - worldPos.x, player.y - worldPos.y);
+          if (distance < nearest) { nearest = distance; targetId = player.id; }
+        }
+        if (isYasuo && key === 'E') {
+          for (const units of [latestGameState?.minions, latestGameState?.jungleMonsters]) {
+            for (const unit of units || []) {
+              if (!(unit.hp > 0) || unit.team === me?.team) continue;
+              const distance = Math.hypot(unit.x - worldPos.x, unit.y - worldPos.y);
+              if (distance < nearest) { nearest = distance; targetId = unit.id; }
+            }
+          }
+        }
+        if (!targetId) return;
+      }
+      socket.emit('castSkill', { key, targetId, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
+      if (!isGaren && !isYasuo) {
+        gameRenderer.triggerSkillVfx(localUser.socketId, localUser.selectedChampId, key, worldPos.x, worldPos.y);
+        playChampionSkillSound(localUser.selectedChampId, key);
+      }
     }
 
     // Keyboard Shortcuts (Q, W, E, R, D, F, A, S, Y, Space, B, P, 4, Ctrl+Q/W/E/R)
@@ -1015,17 +1094,10 @@ import { GameRenderer } from './renderer.js';
       }
 
       if (['Q', 'W', 'E', 'R'].includes(key)) {
+        if (e.repeat) return;
         // Quick Cast towards cursor
         const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
-        socket.emit('castSkill', {
-          key: key,
-          targetX: Math.round(worldPos.x),
-          targetY: Math.round(worldPos.y)
-        });
-        if (gameRenderer) {
-          gameRenderer.triggerSkillVfx(localUser.socketId, localUser.selectedChampId, key, worldPos.x, worldPos.y);
-        }
-        playChampionSkillSound(localUser.selectedChampId, key);
+        requestChampionSkill(key, worldPos);
       } else if (['D', 'F'].includes(key)) {
         // Quick Cast Summoner Spells
         const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
@@ -1102,7 +1174,7 @@ import { GameRenderer } from './renderer.js';
     }
 
     function playChampionSkillSound(champId, key) {
-      if (!window.soundEngine) return;
+      if (!window.soundEngine || champId === 'garen' || champId === 'yasuo') return;
       if (champId === 'sniper') window.soundEngine.playGunshot(key === 'R');
       else if (champId === 'pyromancer') window.soundEngine.playFireBlast();
       else if (champId === 'demolitionist') window.soundEngine.playExplosion(key === 'R');
@@ -1116,12 +1188,18 @@ import { GameRenderer } from './renderer.js';
       const slot = document.getElementById(`hud-slot-${key.toLowerCase()}`);
       if (slot) {
         slot.addEventListener('click', () => {
-          const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
-          socket.emit('castSkill', { key, targetX: Math.round(worldPos.x), targetY: Math.round(worldPos.y) });
-          if (gameRenderer) {
-            gameRenderer.triggerSkillVfx(localUser.socketId, localUser.selectedChampId, key, worldPos.x, worldPos.y);
+          if (localUser.selectedChampId === 'yasuo') {
+            activeAimKey = key;
+            gameRenderer.setSkillAim({ type: 'circle', range: key === 'R' ? 1400 : 475, radius: key === 'W' ? 150 : 45 });
+            return;
           }
-          playChampionSkillSound(localUser.selectedChampId, key);
+          if (localUser.selectedChampId === 'garen' && key === 'R') {
+            activeAimKey = 'R';
+            gameRenderer.setSkillAim({ type: 'circle', range: 400, radius: 45 });
+            return;
+          }
+          const worldPos = gameRenderer.screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
+          requestChampionSkill(key, worldPos);
         });
       }
     });
@@ -1185,6 +1263,8 @@ import { GameRenderer } from './renderer.js';
 
   const CHAMPION_SKILL_ICONS = {
     blademaster: { P: '⚔️', Q: '💨', W: '🌀', E: '🛡️', R: '⚡' },
+    garen: { P: '💚', Q: '⚔️', W: '🛡️', E: '🌀', R: '🗡️' },
+    yasuo: { P: '💨', Q: '🌪️', W: '🌊', E: '💨', R: '⚔️' },
     sniper: { P: '👁️', Q: '🎯', W: '🌫️', E: '👟', R: '🔭' },
     pyromancer: { P: '🔥', Q: '☄️', W: '🌋', E: '🛡️', R: '💥' },
     frost_mage: { P: '❄️', Q: '🧊', W: '🌨️', E: '💎', R: '🔮' },
@@ -1285,8 +1365,12 @@ import { GameRenderer } from './renderer.js';
         if (manaEl) manaEl.textContent = sk.mana;
         slot.addEventListener('mouseenter', () => {
           const costStr = sk.mana ? `마나: ${sk.mana}` : '소모값 없음';
-          const tipStr = `사거리: ${sk.range || sk.radius || 300}px | 피해 계수: ${(sk.damageRatio || 1.0) * 100}% AD/AP`;
-          displaySkillTooltip(slot, k, sk.name, costStr, sk.cooldown, sk.desc, tipStr);
+          const rank = latestGameState?.players?.find(p => p.id === localUser.socketId)?.skillRanks?.[k] || 1;
+          const tipStr = champId === 'yasuo' ? (k === 'R' ? '공중에 뜬 적 챔피언 위에 커서를 두고 R · 6레벨부터 습득' :
+            k === 'E' ? '적 유닛 위에 커서를 두고 E · 돌진 중 Q로 원형 공격' : k === 'Q' ? '2회 적중 후 다음 Q는 회오리 · 중첩은 6초 유지' : '커서 방향으로 장막 · 포탑 공격 제외') : champId === 'garen' ? (k === 'R' ? '6레벨부터 습득 · 적 챔피언 위에 커서를 두고 R' :
+            k === 'E' ? '이동 중 사용 가능 · 1초 후 E 재입력으로 종료' : k === 'Q' ? '다음 기본 공격을 강화합니다.' : '이동·회전 중에도 사용할 수 있습니다.') :
+            `사거리: ${sk.range || sk.radius || 300}px | 피해 계수: ${(sk.damageRatio || 1.0) * 100}% AD/AP`;
+          displaySkillTooltip(slot, k, sk.name, costStr, sk.cooldowns?.[rank - 1] ?? sk.cooldown, sk.desc, tipStr);
         });
         slot.addEventListener('mouseleave', hideSkillTooltip);
       }
@@ -1447,7 +1531,7 @@ import { GameRenderer } from './renderer.js';
 
       // HP & MP Fill
       const hpPct = Math.max(0, Math.min(100, (me.hp / me.maxHp) * 100)).toFixed(1);
-      const mpPct = Math.max(0, Math.min(100, (me.mp / me.maxMp) * 100)).toFixed(1);
+      const mpPct = me.yasuo ? Math.min(100, me.yasuo.flow).toFixed(1) : me.maxMp > 0 ? Math.max(0, Math.min(100, (me.mp / me.maxMp) * 100)).toFixed(1) : '0';
       const shieldPct = Math.max(0, Math.min(100, ((me.shield || 0) / me.maxHp) * 100)).toFixed(1);
 
       setHudWidth('hud-hp-fill', `${hpPct}%`);
@@ -1455,7 +1539,7 @@ import { GameRenderer } from './renderer.js';
       setHudText('hud-hp-text', `${me.hp} / ${me.maxHp} ${me.shield ? `(+${me.shield})` : ''}`);
 
       setHudWidth('hud-mp-fill', `${mpPct}%`);
-      setHudText('hud-mp-text', `${me.mp} / ${me.maxMp}`);
+      setHudText('hud-mp-text', me.yasuo ? `기류 ${Math.floor(me.yasuo.flow)} / 100 · Q ${me.yasuo.qStacks}/2${me.yasuo.qStacks === 2 ? ' 회오리 준비' : ''}` : me.maxMp > 0 ? `${me.mp} / ${me.maxMp}` : '자원 소모 없음');
 
       // Skill Upgrade Buttons [▲]
       ['Q', 'W', 'E', 'R'].forEach(k => {
@@ -1469,7 +1553,7 @@ import { GameRenderer } from './renderer.js';
               else if (curRank === 1 && me.level >= 11) canUpgrade = true;
               else if (curRank === 2 && me.level >= 16) canUpgrade = true;
             } else {
-              if (curRank < 5) canUpgrade = true;
+              if (curRank < 5 && ((!['garen', 'yasuo'].includes(localUser.selectedChampId)) || me.level >= curRank * 2 + 1)) canUpgrade = true;
             }
           }
           if (canUpgrade) {
@@ -1707,6 +1791,10 @@ import { GameRenderer } from './renderer.js';
   // Battle Ended
   socket.on('battleEnded', (data) => {
     isGameActive = false;
+    gameRenderer?.garenAudio.update([]);
+    gameRenderer?.garenEffects.update([], gameRenderer.threePlayerMeshes, 0);
+    gameRenderer?.yasuoAudio.update([], []);
+    gameRenderer?.yasuoEffects.update([], gameRenderer.threePlayerMeshes, 0, [], []);
     const modal = document.getElementById('gameover-modal');
     const title = document.getElementById('gameover-banner-text');
     const desc = document.getElementById('gameover-desc-text');

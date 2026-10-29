@@ -4,7 +4,7 @@
 **Pure JavaScript & Three.js Real-Time 60 FPS Multiplayer MOBA Engine**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/Node.js-v22.13%2B-green.svg)](https://nodejs.org/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-v4.8-blue.svg)](https://socket.io/)
 [![Three.js](https://img.shields.io/badge/Graphics-Three.js%20(NPR%20Toon)-ff69b4.svg)](https://threejs.org/)
 [![Frame Rate](https://img.shields.io/badge/Engine-60%20FPS%20Locked-brightgreen.svg)](#)
@@ -17,6 +17,8 @@
 [🎮 빠른 시작](#-빠른-시작-quick-start) • [🛡️ 챔피언 도감](docs/CHAMPIONS.md) • [🏗️ 시스템 아키텍처](docs/ARCHITECTURE.md) • [🎨 그래픽스 & 타격감](docs/GAME_FEEL_AND_GRAPHICS.md) • [📡 네트워크 프로토콜](docs/API_AND_PROTOCOL.md) • [🤝 오픈소스 기여](CONTRIBUTING.md)
 
 </div>
+
+원본 소환사의 협곡은 **2v2 / 5v5 / 커스텀**에서 적용됩니다. 1v1은 기존 단일 라인 맵을 유지합니다. 현재 설치된 LoL의 지형·미니맵·구조물·정글 몬스터를 사용하며, 원본 이동 격자로 벽 충돌과 우회 경로를 계산합니다. 상세 범위와 검증은 [협곡 통합 기록](docs/SUMMONERS_RIFT_INTEGRATION.md)을 참고하세요.
 
 ---
 
@@ -121,7 +123,7 @@ Web_game/
 ├── server/
 │   ├── server.js              # Express + Socket.IO 메인 서버 (LAN IP 자동 탐색 & HTTP API)
 │   └── game/
-│       ├── ChampionData.js    # 10종 챔피언 스탯, 40개 QWER 스킬, 소환사 주문 정의
+│       ├── ChampionData.js    # 기존 10종 + 독립 가렌/야스오: 12종 챔피언, 48개 QWER 스킬
 │       ├── GameEngine.js      # 60 FPS 서버 권한 루프, 미니언 AI, 투사체, 충돌, 스킬 연산
 │       ├── Room.js            # 방 상태 머신 & 챔피언 선착순 독점 락인 (Race Condition 방어)
 │       └── RoomManager.js     # LAN 유저 세션 및 방 매칭 라우팅
@@ -143,7 +145,7 @@ Web_game/
 │   ├── ARCHITECTURE.md        # 서버/클라이언트 시스템 및 네트워크 아키텍처
 │   ├── GAME_FEEL_AND_GRAPHICS.md # NPR 툰 셰이딩 및 4단계 컴뱃 주스 상세 명세
 │   ├── API_AND_PROTOCOL.md    # 소켓 이벤트 및 REST API 프로토콜 정의서
-│   └── CHAMPIONS.md           # 10종 챔피언 스탯 및 스킬 가이드
+│   └── CHAMPIONS.md           # 12종 챔피언 스탯 및 스킬 가이드
 ├── AGENTS.md                  # LLM 에이전트 마스터 가이드
 ├── CLAUDE.md                  # Claude Code 전용 가이드
 ├── GEMINI.md                  # Google Gemini 전용 가이드
@@ -168,3 +170,9 @@ Web_game/
 ## 📄 라이선스 (License)
 
 이 프로젝트는 [MIT License](LICENSE)에 따라 오픈소스로 배포됩니다.
+
+### 독립 야스오 추가
+기존 캐릭터와 가렌을 유지하고 `yasuo`를 별도 선택 항목으로 추가했습니다. 원본 모델·13개 애니메이션·17개 이펙트 텍스처·17개 효과음을 사용하며, 이동/평타/QWER와 Q3→R, E-Q를 서버 판정으로 연결했습니다. [조작·구현 범위·검증 기록](docs/YASUO_INTEGRATION.md)을 참고하세요.
+
+### 원본 미니언·포탑
+양 팀의 근접·원거리·대포·슈퍼 미니언 8종과 블루/레드 포탑에 원본 모델·텍스처·애니메이션을 연결했습니다. 기존 AI·공격·피해·웨이브·캐릭터를 유지하며, 사망/파괴 및 재경기 정리를 포함합니다. [적용 범위와 실제 경기 검증](docs/ORIGINAL_UNITS_INTEGRATION.md)을 참고하세요.

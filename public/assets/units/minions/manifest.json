@@ -1,0 +1,987 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Maps/Shipping/Map11.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "1.0.0+d36a532"
+  },
+  "selectionEvidence": "Texture and animation paths matched by little-endian 64-bit WAD path hashes embedded in each character skin0.bin and animations/skin0.bin. Material labels read from SKN submeshes.",
+  "scope": "Original base model, skin texture and referenced idle/run/attack/death animations. No gameplay code or audio.",
+  "models": [
+    {
+      "id": "blue-melee",
+      "team": "blue",
+      "type": "melee",
+      "file": "blue-melee.glb",
+      "sourceCharacter": "sru_orderminionmelee",
+      "bytes": 2146088,
+      "sha256": "745a575709ac1fbef5cd28201548c7a2499f7703fb425458c974c1c8305a4d97",
+      "joints": 43,
+      "vertices": 789,
+      "materials": [
+        "lambert1"
+      ],
+      "bounds": {
+        "min": [
+          -110.35979461669922,
+          1.8849561214447021,
+          -52.98505783081055
+        ],
+        "max": [
+          81.10015106201172,
+          103.90170288085938,
+          82.55706787109375
+        ]
+      },
+      "clips": [
+        {
+          "name": "minion_melee_attack",
+          "duration": 0.9000000357627869
+        },
+        {
+          "name": "minion_melee_attack2",
+          "duration": 0.9000000357627869
+        },
+        {
+          "name": "minion_melee_attack3",
+          "duration": 0.9000000357627869
+        },
+        {
+          "name": "minion_melee_attack3b",
+          "duration": 0.9000000357627869
+        },
+        {
+          "name": "minion_melee_death",
+          "duration": 2.9666669368743896
+        },
+        {
+          "name": "minion_melee_death2",
+          "duration": 2.8000001907348633
+        },
+        {
+          "name": "minion_melee_death3",
+          "duration": 2.9000000953674316
+        },
+        {
+          "name": "minion_melee_death4",
+          "duration": 2.866666793823242
+        },
+        {
+          "name": "minion_melee_idle",
+          "duration": 0.9666666984558105
+        },
+        {
+          "name": "minion_melee_run",
+          "duration": 0.7666667103767395
+        }
+      ],
+      "roles": {
+        "idle": [
+          "minion_melee_idle"
+        ],
+        "run": [
+          "minion_melee_run"
+        ],
+        "attack": [
+          "minion_melee_attack",
+          "minion_melee_attack2",
+          "minion_melee_attack3",
+          "minion_melee_attack3b"
+        ],
+        "death": [
+          "minion_melee_death",
+          "minion_melee_death2",
+          "minion_melee_death3",
+          "minion_melee_death4"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/order_minion_melee.skn",
+          "sha256": "9cb600f741532979226f0c02e57987acdf7286e816e115870d091ae303383ac2"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/order_minion_melee.skl",
+          "sha256": "b55a58eede1f852023b5e8c53e5ce2677b3c07b67c281602bf57d5a986a22e63"
+        },
+        {
+          "path": "data/characters/sru_orderminionmelee/skins/skin0.bin",
+          "sha256": "4803a1df3bfad0d1a9d328ae1410bec2271031b8b894d956fa4c9f68987913f8"
+        },
+        {
+          "path": "data/characters/sru_orderminionmelee/animations/skin0.bin",
+          "sha256": "820703fcd4c0f18173c850ac51f298fdccbfb46c5257c5f2d1dccf66ab3134cd"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/orderminion_melee_tx_cm.tex",
+          "sha256": "b6e450516b4f1586d32acae87e4a9de2571be51c67cd5cfbe9d0065353c86904"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_attack.anm",
+          "sha256": "25648e112b3d672757523035141f56f3b1b31a453c47cd507a1d6c97b69d9f4b"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_attack2.anm",
+          "sha256": "0bcc5aa98832d7e498d9ae3ba774d31a5317eec18149e40b159f352865d965d6"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_attack3.anm",
+          "sha256": "ce9c993471b268126b2ce9cd29c6c96d59a8d13c0ba2d81af6bfc90c64d8a8ad"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_attack3b.anm",
+          "sha256": "4b3c0f4d6f9b5a9600cdee2562bcadf4e0b75768e77bac2597203565bb218ad6"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death.anm",
+          "sha256": "386fbc7cb9ccd29f6323778d77435cf41020274d08aeb4ff9568d3786a020bbd"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death2.anm",
+          "sha256": "7a3ee5f20ebfc60fd94370f2c601e3ad1e2eabc3fef24f6bce71b1f18848045c"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death3.anm",
+          "sha256": "06f31ecc9422f4e41faf08cdbee6ab81eeb817f75538d3c28af372efbd8c6215"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death4.anm",
+          "sha256": "dca864473da871c131c01fb6adc9ac50ddfcdb23f401b335ecd432a2f0cc463b"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_idle.anm",
+          "sha256": "1d8daf259fddd2109dbfeb42cb52fd183e3f75677b501ea14feecc5f8dbff0f8"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_run.anm",
+          "sha256": "954b1afc41ceb383f923ce7200c144841a0c9a64fd3f3ad9212673eb52635308"
+        }
+      ]
+    },
+    {
+      "id": "blue-ranged",
+      "team": "blue",
+      "type": "ranged",
+      "file": "blue-ranged.glb",
+      "sourceCharacter": "sru_orderminionranged",
+      "bytes": 1829604,
+      "sha256": "fbd33ad7d4755cd96f951c760464aaf2ee383fce47d826ab0318378ca239b6d5",
+      "joints": 43,
+      "vertices": 802,
+      "materials": [
+        "lambert1"
+      ],
+      "bounds": {
+        "min": [
+          -99.65575408935547,
+          2.777740001678467,
+          -58.54724884033203
+        ],
+        "max": [
+          62.123207092285156,
+          96.76921844482422,
+          88.14901733398438
+        ]
+      },
+      "clips": [
+        {
+          "name": "minion_caster_attack1",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "minion_caster_attack2",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "minion_caster_death",
+          "duration": 3.0333335399627686
+        },
+        {
+          "name": "minion_caster_death2",
+          "duration": 2.9000000953674316
+        },
+        {
+          "name": "minion_caster_death3",
+          "duration": 2.8333334922790527
+        },
+        {
+          "name": "minion_caster_idle",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "minion_caster_run",
+          "duration": 1.5666667222976685
+        }
+      ],
+      "roles": {
+        "idle": [
+          "minion_caster_idle"
+        ],
+        "run": [
+          "minion_caster_run"
+        ],
+        "attack": [
+          "minion_caster_attack1",
+          "minion_caster_attack2"
+        ],
+        "death": [
+          "minion_caster_death",
+          "minion_caster_death2",
+          "minion_caster_death3"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/order_minion_caster.skn",
+          "sha256": "44654d4d6ee543bc6587740b4d54f6f06712958bb797f9b56384535a108de680"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/order_minion_caster.skl",
+          "sha256": "8526a2669f8e9c2d3d40063b7d1d9c443a80f7624bdc57e045762b90b06ad693"
+        },
+        {
+          "path": "data/characters/sru_orderminionranged/skins/skin0.bin",
+          "sha256": "daef66466defdec7df13709924a724c24e5df2e37cc4cc5766f331312aabc129"
+        },
+        {
+          "path": "data/characters/sru_orderminionranged/animations/skin0.bin",
+          "sha256": "9083903223ac3376ae95d8cd79a926beb98001e0ddefabafb309ace1d72637f9"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/orderminion_caster_tx_cm.tex",
+          "sha256": "393c4a04a066767aed41ffd431ebcb252ae1f4d878aa348782d7dd227683b16b"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_attack1.anm",
+          "sha256": "d7c13e235035aec81a4796ee7105c1d95193fe9e4fad7163931a2930ca023159"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_attack2.anm",
+          "sha256": "79817b2bad6f492f950b4ff6b5d8e92d7547189f3f7f9c9c0af0b4d9f0619b74"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_death.anm",
+          "sha256": "46b1ebc1cb35a0ba6f820e6366a2ae9e5c2981e8c85d16a4dfc7b46c819a52ad"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_death2.anm",
+          "sha256": "a6da9136394b9caa2a3f14691d84454d99cd753da81834e2c56b1e6499db1ea3"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_death3.anm",
+          "sha256": "33bb541cee8323df9f5a3ca819376969d0807b64b9ce73b8ae3b55a86d4e37f5"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_idle.anm",
+          "sha256": "ebd4d3f72a96599f0f457c38b1c469fbdcd5d364a6dc02f46cafe90ae74b9fc2"
+        },
+        {
+          "path": "assets/characters/sru_orderminionranged/skins/base/animations/minion_caster_run.anm",
+          "sha256": "103089a165381ca3ae1393837200568b264ac8588e84665a4a09b51f630a76e8"
+        }
+      ]
+    },
+    {
+      "id": "blue-siege",
+      "team": "blue",
+      "type": "siege",
+      "file": "blue-siege.glb",
+      "sourceCharacter": "sru_orderminionsiege",
+      "bytes": 1697336,
+      "sha256": "5934b23584028a5492cf3e2572b8816742c9e00a72232dcbc91d61b31c3ab4b5",
+      "joints": 40,
+      "vertices": 1426,
+      "materials": [
+        "Cannon_Order_Mat",
+        "Minion_Order_Mat"
+      ],
+      "bounds": {
+        "min": [
+          -66.9466323852539,
+          -0.08306000381708145,
+          -105.6270980834961
+        ],
+        "max": [
+          66.9466323852539,
+          132.55479431152344,
+          93.098388671875
+        ]
+      },
+      "clips": [
+        {
+          "name": "cannon_order_attack1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_order_attack2",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_order_attack3",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_order_death1",
+          "duration": 3.3000001907348633
+        },
+        {
+          "name": "cannon_order_idle1",
+          "duration": 3.9666669368743896
+        },
+        {
+          "name": "cannon_order_run1",
+          "duration": 3.9666669368743896
+        }
+      ],
+      "roles": {
+        "idle": [
+          "cannon_order_idle1"
+        ],
+        "run": [
+          "cannon_order_run1"
+        ],
+        "attack": [
+          "cannon_order_attack1",
+          "cannon_order_attack2",
+          "cannon_order_attack3"
+        ],
+        "death": [
+          "cannon_order_death1"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/order_minion_siege.skn",
+          "sha256": "d4288705530c4dc4b1354125a7cd8b068c5334f4f1d9f0a8731e387f33ac7afa"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/order_minion_siege.skl",
+          "sha256": "c3e4bd79783b52b027f7fe7caaee5c0cca03c3571f20bb078f1a0b154e428bf3"
+        },
+        {
+          "path": "data/characters/sru_orderminionsiege/skins/skin0.bin",
+          "sha256": "363ed42ac00e898f228de6d76eaaa098cc28332132afd76ecc6b5164259a6a39"
+        },
+        {
+          "path": "data/characters/sru_orderminionsiege/animations/skin0.bin",
+          "sha256": "8f07f870b95727f07efc7dcff3c8207011c935ff44a57e06b17d692c3a5702dd"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/order_minion_siege_tx_cm.tex",
+          "sha256": "519e5d9af50b91f961e0ab119ee2758d3b2a8c58d683987e66e3e172c956b206"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_attack1.anm",
+          "sha256": "20c055e331ade3779509471cf40e769addc74245309ecab2df0ec34fb3883e43"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_attack2.anm",
+          "sha256": "f8d578446dcc12e19937edfbe30db5d1c7f41cd986604aafa6b8e423d3ff6106"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_attack3.anm",
+          "sha256": "b70f267092cf79cd34703fe3e288af2cd3c8727566b28f0b0006d6d9a541ebf7"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_death1.anm",
+          "sha256": "4b97c412251d54682da62cbd0f6535e571c1716e0606e72d3d61abc3f8a39d54"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_idle1.anm",
+          "sha256": "7727493165aa733d92f87f4b2f538b2ae48a46f1f0ff32a95a3211bb8cb0364b"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsiege/skins/base/animations/cannon_order_run1.anm",
+          "sha256": "edd8f8e45cfad661ad225f6f507400d3f4ab37860c87b89487b52bd89309c60e"
+        }
+      ]
+    },
+    {
+      "id": "blue-super",
+      "team": "blue",
+      "type": "super",
+      "file": "blue-super.glb",
+      "sourceCharacter": "sru_orderminionsuper",
+      "bytes": 2145640,
+      "sha256": "035e42be43fa3f587e017537148c6f98b818aa68e5cd75f44c68e55088699554",
+      "joints": 58,
+      "vertices": 2701,
+      "materials": [
+        "Order_Mat"
+      ],
+      "bounds": {
+        "min": [
+          -107.35000610351562,
+          -0.6394999623298645,
+          -27.44676971435547
+        ],
+        "max": [
+          102.41709899902344,
+          155.80149841308594,
+          136.02899169921875
+        ]
+      },
+      "clips": [
+        {
+          "name": "superminion_blue_attack1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_blue_attack2",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_blue_death",
+          "duration": 4.633333683013916
+        },
+        {
+          "name": "superminion_blue_death2",
+          "duration": 3.9666669368743896
+        },
+        {
+          "name": "superminion_blue_idle",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_blue_run",
+          "duration": 1.6000001430511475
+        }
+      ],
+      "roles": {
+        "idle": [
+          "superminion_blue_idle"
+        ],
+        "run": [
+          "superminion_blue_run"
+        ],
+        "attack": [
+          "superminion_blue_attack1",
+          "superminion_blue_attack2"
+        ],
+        "death": [
+          "superminion_blue_death",
+          "superminion_blue_death2"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/blue_minion_superminion.skn",
+          "sha256": "a1ce974e3a8045a972e3182a22825f0c7d4c1430564135946a6dce19afc513ff"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/blue_minion_superminion.skl",
+          "sha256": "0d50e47a1de92b18891d2b00033f139ac591967993a3feef2a69c65942ef6bac"
+        },
+        {
+          "path": "data/characters/sru_orderminionsuper/skins/skin0.bin",
+          "sha256": "2ea085291376089b97c57dccbcb5688d495eab5cc57a83300c8f0ec5aade66d2"
+        },
+        {
+          "path": "data/characters/sru_orderminionsuper/animations/skin0.bin",
+          "sha256": "9215908e479e7df098aba99afb4f134a51d29d1a91999113b8b8e47093f2463e"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/blue_superminion_tx_cm.tex",
+          "sha256": "cb9e737666f2ff373bb9813b247f04adbfe7cffc7b2e0776e9167c4531aed821"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_attack1.anm",
+          "sha256": "6f638a6b4fd9c5bcfd80a7eeb3a8c25b1855955c61ab6d343e0a6239b9b51902"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_attack2.anm",
+          "sha256": "0ade21192f775eb6960b3c50c069457a6f7a6e8587a6aef6206aeb0eb2310ac7"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_death.anm",
+          "sha256": "b642b82198a8e367b404893e83aa6691b52c26f84035a4e8cba8b0b620e1022a"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_death2.anm",
+          "sha256": "f5a2f54275fec4fa7cf1bc1e849a0902c86fb417ce9da9446a8240bbfbae8804"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_idle.anm",
+          "sha256": "b275c2a82c85b71e17f9d3584bde794ef3e1d10cb28f8e338cc2c0814bc1a9d0"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_run.anm",
+          "sha256": "f77ec337b45ce761255fc4652030c1e90d3e72504e764fa8a997a634764d8221"
+        }
+      ]
+    },
+    {
+      "id": "red-melee",
+      "team": "red",
+      "type": "melee",
+      "file": "red-melee.glb",
+      "sourceCharacter": "sru_chaosminionmelee",
+      "bytes": 1687156,
+      "sha256": "32e7b782c7283c83e1b1708b313efb56de9c3ff58080d0d3dbdb1e0bf10b256f",
+      "joints": 43,
+      "vertices": 925,
+      "materials": [
+        "RedMinion_Caster_MD_Default3"
+      ],
+      "bounds": {
+        "min": [
+          -122.90589141845703,
+          -5.963611125946045,
+          -45.651123046875
+        ],
+        "max": [
+          76.6884994506836,
+          123.77499389648438,
+          113.52069854736328
+        ]
+      },
+      "clips": [
+        {
+          "name": "minion_melee_attack",
+          "duration": 0.9333333969116211
+        },
+        {
+          "name": "minion_melee_attack2",
+          "duration": 0.9333333969116211
+        },
+        {
+          "name": "minion_melee_attack3",
+          "duration": 0.9333333969116211
+        },
+        {
+          "name": "minion_melee_death",
+          "duration": 2.9666669368743896
+        },
+        {
+          "name": "minion_melee_death2",
+          "duration": 2.8000001907348633
+        },
+        {
+          "name": "minion_melee_death3",
+          "duration": 2.9000000953674316
+        },
+        {
+          "name": "minion_melee_idle",
+          "duration": 0.9666666984558105
+        },
+        {
+          "name": "minion_melee_run",
+          "duration": 0.7666667103767395
+        }
+      ],
+      "roles": {
+        "idle": [
+          "minion_melee_idle"
+        ],
+        "run": [
+          "minion_melee_run"
+        ],
+        "attack": [
+          "minion_melee_attack",
+          "minion_melee_attack2",
+          "minion_melee_attack3"
+        ],
+        "death": [
+          "minion_melee_death",
+          "minion_melee_death2",
+          "minion_melee_death3"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/chaos_minion_melee.skn",
+          "sha256": "385353d2448d07ab63ad24366ba7105e0882930aeb9d8b8b2793308c715fedb0"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/chaos_minion_melee.skl",
+          "sha256": "e5dbfef4f0e334f9b1837d6782eec6f7d0db8ce9dbe43ace9c136d2b75ec558b"
+        },
+        {
+          "path": "data/characters/sru_chaosminionmelee/skins/skin0.bin",
+          "sha256": "e420dfb094b5d51385c94a1616c079c877530164c6a9748ef1bcfc2b5c405221"
+        },
+        {
+          "path": "data/characters/sru_chaosminionmelee/animations/skin0.bin",
+          "sha256": "1a0cfda3f2fde241165f31534da57756c9d298396af76e9ac244c3b4a48a24e9"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/chaosminion_melee_tx_cm.tex",
+          "sha256": "190d1ed78685d0ae095c3507af62cef54b21e46d4801598eefe13649cf72a2e6"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/animations/minion_melee_attack.anm",
+          "sha256": "a31bdfdbee19678308e27310a04456e8d183137b1b2cead4bde3a99e9374177b"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/animations/minion_melee_attack2.anm",
+          "sha256": "663292d8120f0be3148478258834f4c7a8c02627a91df2436a3b472bc8d8f756"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionmelee/skins/base/animations/minion_melee_attack3.anm",
+          "sha256": "20a6a389264d5f9c43a48c618ecefbef21942eec6a3c1e4b6216d480ca48ed93"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death.anm",
+          "sha256": "386fbc7cb9ccd29f6323778d77435cf41020274d08aeb4ff9568d3786a020bbd"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death2.anm",
+          "sha256": "7a3ee5f20ebfc60fd94370f2c601e3ad1e2eabc3fef24f6bce71b1f18848045c"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_death3.anm",
+          "sha256": "06f31ecc9422f4e41faf08cdbee6ab81eeb817f75538d3c28af372efbd8c6215"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_idle.anm",
+          "sha256": "1d8daf259fddd2109dbfeb42cb52fd183e3f75677b501ea14feecc5f8dbff0f8"
+        },
+        {
+          "path": "assets/characters/sru_orderminionmelee/skins/base/animations/minion_melee_run.anm",
+          "sha256": "954b1afc41ceb383f923ce7200c144841a0c9a64fd3f3ad9212673eb52635308"
+        }
+      ]
+    },
+    {
+      "id": "red-ranged",
+      "team": "red",
+      "type": "ranged",
+      "file": "red-ranged.glb",
+      "sourceCharacter": "sru_chaosminionranged",
+      "bytes": 1669992,
+      "sha256": "91d3ce62f2c58c3e5ef4ed976c0e737f206182fe335097f45c6c718908e3cf0e",
+      "joints": 46,
+      "vertices": 755,
+      "materials": [
+        "RedMinion_Caster_MD_Default3"
+      ],
+      "bounds": {
+        "min": [
+          -69.40308380126953,
+          3.9042820930480957,
+          -57.78854751586914
+        ],
+        "max": [
+          108.0208969116211,
+          93.2293701171875,
+          90.56126403808594
+        ]
+      },
+      "clips": [
+        {
+          "name": "minion_caster_attack",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "minion_caster_attack2",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "minion_caster_chaos_death",
+          "duration": 3.1666667461395264
+        },
+        {
+          "name": "minion_caster_chaos_death_2",
+          "duration": 3.366666793823242
+        },
+        {
+          "name": "minion_caster_idle",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "minion_caster_run",
+          "duration": 1.5666667222976685
+        }
+      ],
+      "roles": {
+        "idle": [
+          "minion_caster_idle"
+        ],
+        "run": [
+          "minion_caster_run"
+        ],
+        "attack": [
+          "minion_caster_attack",
+          "minion_caster_attack2"
+        ],
+        "death": [
+          "minion_caster_chaos_death",
+          "minion_caster_chaos_death_2"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/chaos_minion_caster.skn",
+          "sha256": "836d25566a27ccb2342258e0c86a5db94a067da7903fbc6f2697bf40518e17cf"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/chaos_minion_caster.skl",
+          "sha256": "27e4ffbf5d764208c5ccc5896d17592abd7362440b237cb9b5fba21d4a149f0f"
+        },
+        {
+          "path": "data/characters/sru_chaosminionranged/skins/skin0.bin",
+          "sha256": "252d7727b14dbdba8059529258bdc3638938058243a5af1a19bad1866c398e4a"
+        },
+        {
+          "path": "data/characters/sru_chaosminionranged/animations/skin0.bin",
+          "sha256": "365a2637f98223df16fdb289d56b5ac970dc5fdf3e80dadafe0cefac31857f68"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/red_caster_tx_cm.tex",
+          "sha256": "8f767e66545ecec5e746223eeb1583517b1b50469ec7e391eab68547707ecc9f"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_attack.anm",
+          "sha256": "f02bc79e5889c08a3f27313de0b5ff87e437d3590be96d41c6ac6ced7681f708"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_attack2.anm",
+          "sha256": "8da3acc53f1747b87a08a1a750fc232d76768ff66d2e761972034d4ae4ba803a"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_chaos_death.anm",
+          "sha256": "9674ded481350009b867f01663eb64ba629436f5ace76ac4d43c45f7a7993922"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_chaos_death_2.anm",
+          "sha256": "4715df6a8807bc0eca321975919d85c095b6cad67dcbe88a2e682e84e54ddb2f"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_idle.anm",
+          "sha256": "6f92752419030d07c449ddf6000c672a2d0c6cb13ee81fb57be9f194cf54c28d"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionranged/skins/base/animations/minion_caster_run.anm",
+          "sha256": "16f43b1bfb8780d1cb2231453a3936f95e263fce8b1021b092b569ed4bd0c6d2"
+        }
+      ]
+    },
+    {
+      "id": "red-siege",
+      "team": "red",
+      "type": "siege",
+      "file": "red-siege.glb",
+      "sourceCharacter": "sru_chaosminionsiege",
+      "bytes": 1694700,
+      "sha256": "b6014d311dd71d9ca56dc67463ef1b98482a1ba0229619bc81c0c5a5fe1a22da",
+      "joints": 40,
+      "vertices": 1264,
+      "materials": [
+        "Cannon_Chaos_Mat"
+      ],
+      "bounds": {
+        "min": [
+          -65.19918823242188,
+          -1.1128499507904053,
+          -112.40149688720703
+        ],
+        "max": [
+          63.74340057373047,
+          133.8542022705078,
+          116.5281982421875
+        ]
+      },
+      "clips": [
+        {
+          "name": "cannon_chaos_attack1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_chaos_attack2",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_chaos_attack3",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "cannon_chaos_death1",
+          "duration": 3.3000001907348633
+        },
+        {
+          "name": "cannon_chaos_idle1",
+          "duration": 3.9666669368743896
+        },
+        {
+          "name": "cannon_chaos_run1",
+          "duration": 3.9666669368743896
+        }
+      ],
+      "roles": {
+        "idle": [
+          "cannon_chaos_idle1"
+        ],
+        "run": [
+          "cannon_chaos_run1"
+        ],
+        "attack": [
+          "cannon_chaos_attack1",
+          "cannon_chaos_attack2",
+          "cannon_chaos_attack3"
+        ],
+        "death": [
+          "cannon_chaos_death1"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/chaos_minion_siege.skn",
+          "sha256": "5ff119782619eef5f344b579037b1b9eb2682742c14c3e415a3347cdc4c7d65e"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/chaos_minion_siege.skl",
+          "sha256": "ffb78ad37c484af23937cbbd92e66af33882dc963e1646d8fc29ec8e1d45848e"
+        },
+        {
+          "path": "data/characters/sru_chaosminionsiege/skins/skin0.bin",
+          "sha256": "d7e8f5cd6703dad48337f206f5941bb84abe6471a1663f5333d6e3c55c0c58dd"
+        },
+        {
+          "path": "data/characters/sru_chaosminionsiege/animations/skin0.bin",
+          "sha256": "7b8d7c61aede9a464e735e69fd245ffef370fc10513fcb4d1105a0de000955c8"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/chaos_minion_siege_tx_cm.tex",
+          "sha256": "4de294116499c185f3dd11134120c08647492cda5e69b1ba1851023e84f9066a"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_attack1.anm",
+          "sha256": "db33ffbe757c69d9ab37f420aef42a9c9c0b17f04c8bce52f96caca69d1a7c83"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_attack2.anm",
+          "sha256": "fda2733dea9579a695a73aafb5805fc5d96122bd44f3144c063f5a8c8e2c1c91"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_attack3.anm",
+          "sha256": "706265933768532402aaf818ebefe9b87fdae216ebf108f8982d02d74cc3efe8"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_death1.anm",
+          "sha256": "cde56ab85566a98ef71ba661e6b46c43fe89acbf83e042150da38fb10c5ad720"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_idle1.anm",
+          "sha256": "e315d27274331967b954f1d3c35b8037d7fc5aabf170ecf6eac1d01079ff1489"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsiege/skins/base/animations/cannon_chaos_run1.anm",
+          "sha256": "4bfde438a4c7ba082a7d7cb1795f53d42c6d90d1089692bac293ccdf02cf8220"
+        }
+      ]
+    },
+    {
+      "id": "red-super",
+      "team": "red",
+      "type": "super",
+      "file": "red-super.glb",
+      "sourceCharacter": "sru_chaosminionsuper",
+      "bytes": 2242796,
+      "sha256": "a8edc6cbded2d7634ed62dd1bcc7a8777401108d3597e4374ed7339f66957a81",
+      "joints": 62,
+      "vertices": 2242,
+      "materials": [
+        "Chaos_Mat"
+      ],
+      "bounds": {
+        "min": [
+          -107.28739929199219,
+          3.6541500091552734,
+          -41.166439056396484
+        ],
+        "max": [
+          103.05369567871094,
+          164.31307983398438,
+          132.2598876953125
+        ]
+      },
+      "clips": [
+        {
+          "name": "superminion_blue_idle",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_red_attack1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_red_attack2",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "superminion_red_death",
+          "duration": 4.633333683013916
+        },
+        {
+          "name": "superminion_red_death2",
+          "duration": 3.9666669368743896
+        },
+        {
+          "name": "superminion_red_run",
+          "duration": 1.6000001430511475
+        }
+      ],
+      "roles": {
+        "idle": [
+          "superminion_blue_idle"
+        ],
+        "run": [
+          "superminion_red_run"
+        ],
+        "attack": [
+          "superminion_red_attack1",
+          "superminion_red_attack2"
+        ],
+        "death": [
+          "superminion_red_death",
+          "superminion_red_death2"
+        ]
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/red_minion_superminion.skn",
+          "sha256": "c69be79f1638a9bd0c26bfeb9e394ba2840a677ed3b33c17e3a0e4c817563b44"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/red_minion_superminion.skl",
+          "sha256": "33ce03641c5d6978ec49c611dd3733f107d7716747cdc0488e1d3acedcc7a5c8"
+        },
+        {
+          "path": "data/characters/sru_chaosminionsuper/skins/skin0.bin",
+          "sha256": "07ba2aa3e3791f9d3951998a8ba3069f1104ab4607e812a7e873cb1c1f5ec702"
+        },
+        {
+          "path": "data/characters/sru_chaosminionsuper/animations/skin0.bin",
+          "sha256": "cdd8d2c012db173a151082fbbec82b4061e02c5cc76878a2b4f371e584c71840"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/red_superminion_tx_cm.tex",
+          "sha256": "10b6fae0f198ddc8e0b12e22095843bd748bbf06f8036fbb60170e8a7030cff4"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/animations/superminion_red_attack1.anm",
+          "sha256": "9125e56417c0ab6c49bef5b88cc1ecbef13332889d72046933eae9e57923e688"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/animations/superminion_red_attack2.anm",
+          "sha256": "3a8452f2656ad6ec849fd00161194bbfd0b9e51efd962919816b5d5d2d38b58e"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/animations/superminion_red_death.anm",
+          "sha256": "f506389ed9b678c9554fe735067cf7eb0ac9da11d5c3e348b6de69460309f1c9"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/animations/superminion_red_death2.anm",
+          "sha256": "8f581f6efbefeeca39837140d7200ecf6d8c5c47964672c7eb42e2ce285d8c5f"
+        },
+        {
+          "path": "assets/characters/sru_chaosminionsuper/skins/base/animations/superminion_red_run.anm",
+          "sha256": "e69270d70f038ec307a85b0c6948bcb41cce34b6b7322002b494455046d669f0"
+        },
+        {
+          "path": "assets/characters/sru_orderminionsuper/skins/base/animations/superminion_blue_idle.anm",
+          "sha256": "b275c2a82c85b71e17f9d3584bde794ef3e1d10cb28f8e338cc2c0814bc1a9d0"
+        }
+      ]
+    }
+  ]
+}

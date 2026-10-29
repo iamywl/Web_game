@@ -1,6 +1,6 @@
 /**
  * ChampionData.js
- * 10 Distinct Champions and Summoner Spells configuration
+ * 12 Distinct Champions and Summoner Spells configuration
  */
 
 const CHAMPIONS = {
@@ -76,6 +76,72 @@ const CHAMPIONS = {
         airborneDuration: 1.2,
         desc: '대상 지점으로 도약하여 폭발적인 난무를 펼쳐 적들을 1.2초간 에어본(공중 띄움)시키고 막대한 피해를 입힙니다.'
       }
+    }
+  },
+
+  garen: {
+    id: 'garen',
+    name: '가렌',
+    title: 'Garen · 데마시아의 힘',
+    role: '전사 / 탱커 (Fighter / Tank)',
+    color: '#3474c7', accentColor: '#d7b56d', avatar: '⚔️',
+    stats: {
+      maxHp: 690, hpRegen: 1.6, maxMp: 0, mpRegen: 0,
+      attackRange: 150, attackDamage: 69, attackSpeed: 0.625,
+      moveSpeed: 340, armor: 38, magicResist: 32, radius: 26
+    },
+    passive: {
+      name: '인내 (Perseverance)',
+      desc: '적 챔피언·포탑·에픽 몬스터에게 피해를 받은 뒤 8초 동안 쉬면 최대 체력에 비례해 회복합니다.'
+    },
+    skills: {
+      Q: {
+        name: '결정타 (Decisive Strike)', key: 'Q', type: 'self_buff',
+        cooldown: 8, cooldowns: [8, 8, 8, 8, 8], mana: 0,
+        duration: 8, speedBonus: 0.35, damage: 30, damageRatio: 0.5,
+        desc: '둔화를 해제하고 이동 속도가 35% 증가합니다. 8초 안의 다음 기본 공격이 추가 물리 피해와 1.5초 침묵을 적용합니다. 기본 공격 대기시간을 초기화합니다.'
+      },
+      W: {
+        name: '용기 (Courage)', key: 'W', type: 'self_buff',
+        cooldown: 22, cooldowns: [22, 19.5, 17, 14.5, 12], mana: 0,
+        duration: 2, shieldAmount: 65, damageReduction: 0.3,
+        desc: '처치로 방어력·마법 저항력이 최대 30 증가합니다. 사용 시 잠시 보호막과 강인함을 얻고, 2~5초 동안 받는 물리·마법 피해가 30% 감소합니다.'
+      },
+      E: {
+        name: '심판 (Judgment)', key: 'E', type: 'self_buff',
+        cooldown: 9, cooldowns: [9, 8.25, 7.5, 6.75, 6], mana: 0,
+        duration: 3, radius: 325, range: 325, damage: 4, damageRatio: 0.32,
+        desc: '3초 동안 이동하며 회전해 주변 적에게 반복 물리 피해를 줍니다. 가장 가까운 적은 25% 추가 피해, 6회 맞은 챔피언은 25% 방어력 감소. 1초 후 재사용하면 종료합니다.'
+      },
+      R: {
+        name: '데마시아의 정의 (Demacian Justice)', key: 'R', type: 'target_enemy',
+        cooldown: 120, cooldowns: [120, 100, 80], mana: 0,
+        range: 400, damage: 150, castTime: 0.5,
+        desc: '사거리 내 적 챔피언에게 0.5초 후 150/300/450 + 잃은 체력의 25/30/35% 고정 피해를 줍니다. 유효한 챔피언을 지정해야 사용할 수 있습니다.'
+      }
+    }
+  },
+
+  yasuo: {
+    id: 'yasuo', name: '야스오', title: 'Yasuo · 용서받지 못한 자',
+    role: '전사 / 암살자 (Fighter / Assassin)', color: '#45bfd5', accentColor: '#94e5ed', avatar: '🌪️',
+    stats: { maxHp: 590, hpRegen: 1.3, maxMp: 0, mpRegen: 0, attackRange: 175,
+      attackDamage: 60, attackSpeed: 0.697, moveSpeed: 345, armor: 32, magicResist: 32, radius: 26 },
+    passive: { name: '낭인의 길 (Way of the Wanderer)',
+      desc: '이동으로 기류를 쌓습니다. 기류가 가득 차면 챔피언·몬스터 피해를 받을 때 보호막을 얻습니다. 아이템 치명타 확률이 증가합니다.' },
+    skills: {
+      Q: { name: '강철 폭풍 (Steel Tempest)', key: 'Q', type: 'yasuo_thrust', mana: 0,
+        cooldown: 4, cooldowns: [4,4,4,4,4], range: 475, damage: 20, damageRatio: 1.05,
+        desc: '전방을 찔러 물리 피해를 줍니다. 적중으로 2중첩을 쌓으면 다음 Q는 적을 띄우는 회오리입니다. E 도중에는 원형 베기로 바뀝니다.' },
+      W: { name: '바람 장막 (Wind Wall)', key: 'W', type: 'yasuo_wall', mana: 0,
+        cooldown: 25, cooldowns: [25,23,21,19,17], range: 400, duration: 4,
+        desc: '바라보는 방향에 4초 동안 적 투사체를 막는 장막을 만듭니다. 포탑 공격과 근접 공격은 막지 못합니다.' },
+      E: { name: '질풍검 (Sweeping Blade)', key: 'E', type: 'target_enemy', mana: 0,
+        cooldown: 0.5, cooldowns: [0.5,0.4,0.3,0.2,0.1], range: 475, damage: 60,
+        desc: '적 챔피언·미니언·몬스터를 통과해 돌진하며 마법 피해를 줍니다. 같은 대상에게는 10/9/8/7/6초 동안 다시 돌진할 수 없습니다.' },
+      R: { name: '최후의 숨결 (Last Breath)', key: 'R', type: 'target_airborne', mana: 0,
+        cooldown: 70, cooldowns: [70,50,30], range: 1400, damage: 200, duration: 1,
+        desc: '공중에 뜬 적 챔피언에게 이동해 주변 공중의 적을 붙잡고 물리 피해를 줍니다. 기류가 가득 차며 Q 중첩은 초기화됩니다.' }
     }
   },
 

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Garen QWER integration fixture</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#101b24;color:#e4eaf0;font:14px system-ui;display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100vh}main{position:relative}canvas{width:100%;height:100%;display:block}header{position:absolute;top:25px;left:30px;pointer-events:none}h1{font-size:25px;letter-spacing:3px;margin:0}header p{color:#ceb77a;font-size:12px}aside{background:#17242d;padding:24px;overflow:auto;border-left:1px solid #33444d}button{border:1px solid #716445;background:#28322f;color:#f5dca4;padding:12px;margin:0 7px 10px 0;cursor:pointer;border-radius:4px}button:disabled{opacity:.5}#run-tests{display:block;width:100%;margin:15px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;max-height:48vh;overflow:auto}#status{color:#d8bf7d}.note{font-size:12px;line-height:1.8;color:#96aab6}body[data-status=PASS] #status{color:#94e6ae}body[data-status=FAIL] #status{color:#ff9999}</style>
+<main><canvas id="scene"></canvas><header><h1>GAREN · QWER</h1><p>EXTRACTED ANIMATION / TEXTURE / AUDIO · WEB RECONSTRUCTION</p></header></main>
+<aside><h2>스킬 통합 검증</h2><div id="showcase"><button data-skill="Q">Q 결정타</button><button data-skill="W">W 용기</button><button data-skill="E">E 심판</button><button data-skill="R">R 정의</button></div><button id="pause">화면 정지</button><p id="demo-state">Loading…</p><p class="note">원본 스킨 리소스를 실제 게임 모듈로 재생합니다. 파티클 조합은 웹에서 재구성했습니다. 사운드는 아래 검증 버튼을 누르면 활성화됩니다.</p><button id="run-tests" disabled>통합 검증 실행</button><p id="status">모델·텍스처 준비 중…</p><pre id="result">Not started</pre></aside>
+<script type="module">
+import * as THREE from 'three';
+import { GarenAnimation, loadGarenAsset } from '/js/garenModel.js';
+import { GarenEffects } from '/js/garenEffects.js';
+import { GarenAudio } from '/js/garenAudio.js';
+const canvas=document.getElementById('scene'),resultEl=document.getElementById('result');
+const errors=[],checks=[];let report={status:'READY',checks,errors};
+const assert=(name,pass,detail=null)=>checks.push({name,pass:!!pass,detail});
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(1);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x101b24);
+scene.add(new THREE.HemisphereLight(0xe5efff,0x647955,2));
+const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(100,180,120);scene.add(light);
+const grid=new THREE.GridHelper(900,36,0x7c7452,0x283c46);scene.add(grid);
+const camera=new THREE.PerspectiveCamera(45,1,.1,3000);
+function cameraFor(key){if(key==='E'){camera.position.set(240,310,360);camera.lookAt(0,20,0);}else if(key==='R'){camera.position.set(330,280,580);camera.lookAt(40,175,0);}else{camera.position.set(125,100,180);camera.lookAt(0,35,0);}}
+function resize(){renderer.setSize(canvas.parentElement.clientWidth,innerHeight,false);camera.aspect=canvas.width/canvas.height;camera.updateProjectionMatrix();}resize();window.addEventListener('resize',resize);
+renderer.debug.onShaderError=(gl,program,vs,fs)=>errors.push({shader:gl.getProgramInfoLog(program),vertex:gl.getShaderInfoLog(vs),fragment:gl.getShaderInfoLog(fs)});
+window.addEventListener('error',event=>errors.push({message:event.message}));
+window.addEventListener('unhandledrejection',event=>errors.push({rejection:String(event.reason)}));
+const group=new THREE.Group();scene.add(group);
+const effects=new GarenEffects(scene);
+const player={id:'garen-fixture',isAlive:true,x:0,y:0,garen:{qRemaining:0,wRemaining:0,eRemaining:0,rRemaining:0}};
+const players=[player],meshes={[player.id]:group};
+let rig,audio,engine,testing=false,demoKey='E',demoElapsed=0,paused=false,last=performance.now();
+const event=(key,phase='cast',extra={})=>({type:'garenSkill',playerId:player.id,key,phase,duration:key==='Q'?8:key==='E'?3:key==='W'?2:.5,radius:325,x:0,y:0,targetX:key==='R'?65:0,targetY:0,...extra});
+function reset(){rig.update(false,.01,310,false);rig.update(false,.15,310,true);effects.clear(player.id);audio?.stop(player.id);player.isAlive=true;Object.keys(player.garen).forEach(k=>player.garen[k]=0);group.position.set(0,0,0);group.rotation.y=0;}
+function apply(ev){rig.skill(ev);effects.trigger(ev,player,group);audio?.trigger(ev);}
+function startDemo(key){if(testing||!rig)return;reset();demoKey=key;demoElapsed=0;paused=false;document.getElementById('pause').textContent='화면 정지';cameraFor(key);player.garen[key.toLowerCase()+'Remaining']=key==='Q'?8:key==='E'?3:key==='W'?2:.5;apply(event(key));document.getElementById('demo-state').textContent=`${key} · ${key==='E'?'이동 가능한 회전 / 반경 325':key==='R'?'궁극기 시전과 낙하 검':key==='W'?'방어 효과 / 이동 유지':'강화 이동 후 내려치기'}`;}
+function meshOf(){let mesh;rig.root.traverse(o=>{if(o.isSkinnedMesh&&!o.userData.isOutline)mesh=o;});return mesh;}
+function pose(){rig.root.updateMatrixWorld(true);const mesh=meshOf();mesh.skeleton.update();const result=[],v=new THREE.Vector3();for(let i=0;i<mesh.geometry.attributes.position.count;i+=19){mesh.getVertexPosition(i,v).applyMatrix4(mesh.matrixWorld);result.push(v.x,v.y,v.z);}return result;}
+const difference=(a,b)=>Math.max(...a.map((v,i)=>Math.abs(v-b[i])));
+function motion(name,moving,dt,speed=310){const before=pose();rig.update(moving,dt,speed);const after=pose(),delta=difference(before,after);assert(name,after.every(Number.isFinite)&&delta>.001,{worldVertexDelta:delta});}
+async function initAudio(){if(engine)return;const ctx=new AudioContext();const masterGain=ctx.createGain();masterGain.gain.value=.35;const analyser=ctx.createAnalyser();analyser.fftSize=2048;masterGain.connect(analyser);analyser.connect(ctx.destination);engine={ctx,masterGain,analyser,isMuted:false,ensureContext(){if(ctx.state==='suspended')ctx.resume();}};await ctx.resume();audio=new GarenAudio(engine);await audio.ready;}
+function energy(){const values=new Float32Array(engine.analyser.fftSize);engine.analyser.getFloatTimeDomainData(values);return Math.max(...values.map(Math.abs));}
+async function runTests(){
+  if(testing)return;testing=true;checks.length=0;errors.length=0;report={status:'RUNNING',checks,errors};document.body.dataset.status='RUNNING';document.getElementById('run-tests').disabled=true;document.getElementById('status').textContent='검증 중…';
+  try{
+    reset();await initAudio();await effects.ready;
+    assert('all 17 original effect textures loaded',Object.keys(effects.textures).length===17&&Object.values(effects.textures).every(t=>t.image.width>0&&t.image.height>0),{count:Object.keys(effects.textures).length});
+    assert('all 8 skeletal clips loaded',rig.actions.length===8,{names:rig.actions.map(a=>a.getClip().name)});
+    assert('all 9 original audio files decoded',Object.keys(audio.buffers).length===9&&Object.values(audio.buffers).every(b=>b.numberOfChannels===1&&b.sampleRate>0&&b.duration>1),{durations:Object.fromEntries(Object.entries(audio.buffers).map(([k,b])=>[k,b.duration]))});
+    assert('decoded audio contains nonzero PCM',Object.values(audio.buffers).every(b=>b.getChannelData(0).some(x=>Math.abs(x)>.0001)));
+    rig.skill(event('Q'));rig.update(true,.15,418.5);assert('Q movement uses actual run_spell1',rig.current===4);motion('Q movement deforms skinned vertices',true,.2,418.5);
+    const qfx=effects.trigger(event('Q'),player,group);player.garen.qRemaining=7;effects.update(players,meshes,.1);assert('Q flare binds to weapon bone',qfx.anchor?.name==='Buffbone_Glb_Weapon_1');
+    rig.skill(event('Q','hit'));rig.update(false,.1,310);assert('Q empowered strike uses actual spell1',rig.current===5);motion('Q strike deforms skinned vertices',false,.15);
+    rig.attack(1);assert('basic attack cannot override active Q strike',rig.current===5);
+    reset();rig.update(true,.15,310);const wIndex=rig.current;rig.skill(event('W'));rig.update(true,.1,310);assert('W overlay preserves moving animation',rig.current===wIndex&&wIndex===1);
+    player.garen.wRemaining=2;effects.trigger(event('W'),player,group);effects.update(players,meshes,.1);assert('W creates layered shield with mapped textures',effects.active.length===1&&effects.active[0].layers.length>=3&&effects.active[0].layers.every(l=>l.material.map));
+    reset();rig.skill(event('E'));rig.update(true,.15,310);assert('moving E uses actual spell3 spin',rig.current===6);motion('E spin deforms skinned vertices while moving',true,.2);rig.attack(3);assert('basic attacks do not interrupt E',rig.current===6);
+    player.garen.eRemaining=3;const efx=effects.trigger(event('E'),player,group);group.position.set(45,0,20);effects.update(players,meshes,.2);assert('E follows player and uses radius 325',efx.root.position.x===45&&efx.root.position.z===20&&efx.layers[0].width===650);
+    assert('E bright blade trail stays near model and outer boundary stays faint',efx.layers[0].opacity<=.1&&efx.layers.some(l=>l.width<=150&&l.opacity>=.9)&&efx.anchor?.name==='Weapon');
+    const freezePose=pose(),freezeRemaining=rig.eRemaining;rig.update(true,0,310);assert('hit-stop freezes skill animation',difference(freezePose,pose())<1e-8&&rig.eRemaining===freezeRemaining);
+    rig.skill(event('R'));rig.update(true,.1,310);assert('R cast takes priority over moving E',rig.current===7);motion('R cast deforms skinned vertices',false,.15);rig.attack(2);assert('basic attack cannot override R',rig.current===7);
+    rig.skill(event('R','cancel'));rig.update(true,.01,310);assert('R cancellation releases cast priority',rig.rRemaining===0&&rig.current===6);
+    rig.skill(event('E','cancel'));rig.update(true,.15,310);assert('E cancellation returns to run',rig.eRemaining===0&&rig.current===1);
+    effects.trigger(event('E','cancel'),player,group);assert('E cancellation removes spin effects',!effects.active.some(e=>e.key==='E'));
+    reset();const rfx=effects.trigger(event('R'),player,group);effects.update(players,meshes,.2);const height=rfx.layers[1].object.position.y;effects.update(players,meshes,.15);assert('R sword descends toward target',rfx.layers[1].object.position.y<height&&rfx.root.position.x===65);
+    effects.trigger(event('R','hit'),player,group);effects.trigger(event('R','end'),player,group);assert('R hit tail survives same-tick end event',effects.active.some(e=>e.key==='R'&&e.phase==='hit'));
+    audio.play('q-cast',player.id,'Q');await wait(180);assert('actual WebAudio source produces output',audio.active.size>0&&energy()>0,{contextState:engine.ctx.state,peak:energy()});
+    audio.stop(player.id);await wait(120);assert('audio stop releases source records',audio.active.size===0);
+    engine.isMuted=true;engine.masterGain.gain.value=0;audio.play('q-cast',player.id,'Q');assert('muted engine suppresses new original sounds',audio.active.size===0);await wait(60);assert('muted master produces silent output',energy()<1e-6);engine.isMuted=false;engine.masterGain.gain.value=.35;
+    audio.trigger(event('E'));assert('E starts cast and active one-shot',audio.active.size===2&&[...audio.active].some(s=>s.name==='e-loop'));
+    audio.trigger(event('E','hit'));audio.trigger(event('E','hit'));assert('same-frame E target hits share one sound', [...audio.active].filter(s=>s.name==='e-hit').length===1);await wait(140);audio.trigger(event('E','hit'));assert('later E tick can play another hit', [...audio.active].filter(s=>s.name==='e-hit').length===2);
+    audio.trigger(event('E','cancel'));await wait(120);assert('E cancel stops active bed',![...audio.active].some(s=>s.key==='E'));audio.stop(player.id);await wait(120);
+    audio.trigger(event('R','hit'));audio.trigger(event('R','end'));assert('R impact audio survives same-tick end', [...audio.active].some(s=>s.name==='r-hit'&&s.key==='tail'));
+    player.isAlive=false;rig.update(false,.1,310,false);effects.update(players,meshes,.1);audio.update(players);await wait(40);assert('death clears skill state, effects and audio',rig.current===-1&&rig.qRemaining===0&&rig.eRemaining===0&&rig.rRemaining===0&&effects.active.length===0&&audio.active.size===0);
+    player.isAlive=true;rig.update(false,.15,310,true);assert('respawn returns to idle',rig.current===0&&!rig.dead);
+    cameraFor('E');player.garen.eRemaining=3;rig.skill(event('E'));effects.trigger(event('E'),player,group);rig.update(true,.2,310);effects.update(players,meshes,.2);renderer.render(scene,camera);assert('model and particle shaders render without errors',errors.length===0&&renderer.info.render.calls>=5,{drawCalls:renderer.info.render.calls});
+    reset();report.status=checks.every(c=>c.pass)&&errors.length===0?'PASS':'FAIL';
+  }catch(error){errors.push({message:error.message,stack:error.stack});report.status='FAIL';}
+  testing=false;document.body.dataset.status=report.status;document.getElementById('status').textContent=`${report.status} · ${checks.filter(c=>c.pass).length}/${checks.length}`;resultEl.textContent=JSON.stringify(report,null,2);document.getElementById('run-tests').disabled=false;console.info('GAREN_SKILL_TEST',JSON.stringify(report));startDemo('E');
+}
+document.getElementById('run-tests').onclick=runTests;
+document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>startDemo(b.dataset.skill));
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'재생':'화면 정지';};
+try{const asset=await loadGarenAsset();rig=new GarenAnimation(asset);group.add(rig.root);group.userData.garen=rig;await effects.ready;document.body.dataset.ready='true';document.getElementById('run-tests').disabled=false;document.getElementById('status').textContent='준비 완료 · 검증 실행을 누르세요';startDemo('E');}catch(error){errors.push({message:error.message});document.body.dataset.ready='error';resultEl.textContent=JSON.stringify(errors);}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(rig&&!testing&&!paused){const old=demoElapsed;demoElapsed+=dt;for(const k of Object.keys(player.garen))player.garen[k]=Math.max(0,player.garen[k]-dt);if(demoKey==='Q'&&old<1.2&&demoElapsed>=1.2){player.garen.qRemaining=0;apply(event('Q','hit'));}if(demoKey==='R'&&old<.5&&demoElapsed>=.5){apply(event('R','hit'));apply(event('R','end'));}rig.update(demoKey!=='R'&&(demoKey!=='Q'||demoElapsed<1.2),dt,demoKey==='Q'?418.5:310);effects.update(players,meshes,dt);if(demoElapsed>4)startDemo(demoKey);}renderer.render(scene,camera);}requestAnimationFrame(frame);
+</script></html>
+
+

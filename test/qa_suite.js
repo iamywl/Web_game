@@ -4,7 +4,7 @@
  * ==============================================================================
  * Comprehensive End-to-End & Integration QA Verification:
  *  1. Concurrency & Pick Exclusivity Race Condition (4 Simultaneous Headless Sockets)
- *  2. 10 Champions Integrity & Server LAN Info Test
+ *  2. 12 Champions Integrity & Server LAN Info Test
  *  3. In-Game Battle Simulation & Combat Mechanics (Movement, Skills, Cooldowns, Projectiles, Hit Detection)
  *  4. Disconnect Resiliency & Edge Case Handling (Draft Disconnect, In-Game Forfeit, Validations)
  * ==============================================================================
@@ -269,10 +269,10 @@ async function runCategory1_ConcurrencyAndRaceCondition() {
 }
 
 // ==============================================================================
-// CATEGORY 2: 10 Champions & Server Integrity Test
+// CATEGORY 2: 12 Champions & Server Integrity Test
 // ==============================================================================
 async function runCategory2_ChampionsAndServerIntegrity() {
-  const cat = '2. 10 Champions Integrity & Server Info Test';
+  const cat = '2. 12 Champions Integrity & Server Info Test';
   logHeader(cat);
 
   const startTotal = Date.now();
@@ -306,18 +306,18 @@ async function runCategory2_ChampionsAndServerIntegrity() {
     assert(gameData.spells && typeof gameData.spells === 'object', 'Summoner spells dictionary must exist');
 
     const champKeys = Object.keys(gameData.champions);
-    assertEqual(champKeys.length, 10, 'Exactly 10 distinct champions must be defined');
+    assertEqual(champKeys.length, 12, 'Original ten champions plus independent Garen and Yasuo must be defined');
 
     const expectedChampions = [
       'blademaster', 'sniper', 'pyromancer', 'shadow_assassin', 'guardian',
-      'frost_mage', 'berserker', 'shadow_hunter', 'brawler', 'demolitionist'
+      'frost_mage', 'berserker', 'shadow_hunter', 'brawler', 'demolitionist', 'garen', 'yasuo'
     ];
 
     for (const expectedId of expectedChampions) {
       assert(gameData.champions[expectedId], `Champion '${expectedId}' must exist in champion database`);
     }
 
-    recordTestResult(cat, '2.2 GET /api/game-data schema and 10 champion entries existence', true, Date.now() - tGameData,
+    recordTestResult(cat, '2.2 GET /api/game-data schema and 12 champion entries existence', true, Date.now() - tGameData,
       `Champions verified (${champKeys.length}): ${champKeys.join(', ')}`);
 
     // 2.3 Detailed Champion Stats, Skills & Passive Integrity
@@ -343,9 +343,12 @@ async function runCategory2_ChampionsAndServerIntegrity() {
       // 2. Stats
       assert(champ.stats && typeof champ.stats === 'object', `${id} must have stats object`);
       for (const statName of requiredStats) {
-        assert(typeof champ.stats[statName] === 'number' && champ.stats[statName] > 0,
-          `Champion ${id} must have positive numeric stat '${statName}', got ${champ.stats[statName]}`);
+        const mayBeZero = statName === 'maxMp' || statName === 'mpRegen';
+        assert(typeof champ.stats[statName] === 'number' && Number.isFinite(champ.stats[statName]) &&
+          (mayBeZero ? champ.stats[statName] >= 0 : champ.stats[statName] > 0),
+          `Champion ${id} has invalid numeric stat '${statName}': ${champ.stats[statName]}`);
       }
+      if (champ.stats.maxMp === 0) assertEqual(champ.stats.mpRegen, 0, `${id} manaless champions must not regenerate mana`);
 
       // 3. Passive
       assert(champ.passive && typeof champ.passive === 'object', `${id} must have passive object`);
@@ -373,8 +376,8 @@ async function runCategory2_ChampionsAndServerIntegrity() {
       }
     }
 
-    recordTestResult(cat, '2.3 In-depth verification of stats, 40 skills (Q, W, E, R) and passives', true, Date.now() - tStats,
-      `Audited 10 champions, ${totalSkillsAudited} skills, 10 passives with 100% data integrity.`);
+    recordTestResult(cat, '2.3 In-depth verification of stats, 48 skills (Q, W, E, R) and passives', true, Date.now() - tStats,
+      `Audited ${champKeys.length} champions, ${totalSkillsAudited} skills, ${champKeys.length} passives with 100% data integrity.`);
 
     // 2.4 Summoner Spells Integrity
     const tSpells = Date.now();
@@ -840,24 +843,22 @@ async function runCategory5_SummonersRift3LaneAndJungleEcosystem() {
     const bBot = structs.find(s => s.id === 'blue_bot_outer_turret');
     const rBot = structs.find(s => s.id === 'red_bot_outer_turret');
 
-    // 1. Distance between mid outer turrets must be >= 1400px (Actual ~1555.6px)
+    // Source geometry replaces the old hand-authored >=1400 spacing rule.
+    const sourcePlacements = require('../public/assets/maps/summoners-rift/placements.json');
+    for (const [actual, sourceId] of [[bMid, 'blue_mid_outer'], [rMid, 'red_mid_outer'], [bTop, 'blue_top_outer'], [rTop, 'red_top_outer'], [bBot, 'blue_bot_outer'], [rBot, 'red_bot_outer']]) {
+      const expected = sourcePlacements.structures.find(p => p.id === sourceId);
+      assert(Math.hypot(actual.x - expected.x, actual.y - expected.y) < 0.01, `${sourceId} must match original placement`);
+    }
     const dMid = Math.hypot(rMid.x - bMid.x, rMid.y - bMid.y);
-    assert(dMid >= 1400, `Mid outer turrets distance must be >= 1400px (got ${dMid.toFixed(1)}px)`);
-
-    // 2. Center (1600, 1600) must be outside both turret ranges (Safe laning zone >= 700px)
-    const dCenterB = Math.hypot(1600 - bMid.x, 1600 - bMid.y);
-    const dCenterR = Math.hypot(1600 - rMid.x, 1600 - rMid.y);
-    assert(dCenterB > bMid.range + 200, `Map center must be well outside Blue Mid Outer range (dist: ${dCenterB.toFixed(1)}px, range: ${bMid.range}px)`);
-    assert(dCenterR > rMid.range + 200, `Map center must be well outside Red Mid Outer range (dist: ${dCenterR.toFixed(1)}px, range: ${rMid.range}px)`);
-
-    // 3. Top and Bot outer turrets distance must be >= 1400px
     const dTop = Math.hypot(rTop.x - bTop.x, rTop.y - bTop.y);
     const dBot = Math.hypot(rBot.x - bBot.x, rBot.y - bBot.y);
-    assert(dTop >= 1400, `Top outer turrets distance must be >= 1400px (got ${dTop.toFixed(1)}px)`);
-    assert(dBot >= 1400, `Bot outer turrets distance must be >= 1400px (got ${dBot.toFixed(1)}px)`);
-
-    recordTestResult(cat, '5.6 Spatial Geometry & Laning Phase Neutral Zone Verification (Anti-Overlap Invariant)', true, Date.now() - tSpatial,
-      `Audited Outer Turret Distances: Mid=${dMid.toFixed(1)}px (Safe Neutral Zone=${(dMid - bMid.range*2).toFixed(1)}px), Top=${dTop.toFixed(1)}px, Bot=${dBot.toFixed(1)}px. Center clearance: ${dCenterB.toFixed(1)}px.`);
+    for (const [blue, red, distance] of [[bMid, rMid, dMid], [bTop, rTop, dTop], [bBot, rBot, dBot]]) {
+      assert(distance > blue.range + red.range + 150, `Opposing original towers must leave a neutral combat gap: ${distance}`);
+    }
+    assert(battleData.mapData.navigation?.cols === 295 && battleData.mapData.navigation?.rows === 296, 'Original collision grid must accompany source map');
+    assert(battleData.mapData.originalMap?.url.endsWith('/map.glb'), 'Original map asset must be active');
+    recordTestResult(cat, '5.6 Original Map11 placements, collision grid and neutral lane gaps', true, Date.now() - tSpatial,
+      `Source outer distances Mid=${dMid.toFixed(1)}, Top=${dTop.toFixed(1)}, Bot=${dBot.toFixed(1)}. Mid safe gap=${(dMid - bMid.range - rMid.range).toFixed(1)}.`);
 
     s1.disconnect();
     s2.disconnect();

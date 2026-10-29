@@ -1,0 +1,32 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Original jungle models QA</title><link rel="icon" href="data:,"><script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#172129;color:#e6e6d7;font:16px system-ui}canvas{display:block}header{position:absolute;top:20px;left:25px}#result{position:absolute;bottom:15px;left:25px;white-space:pre-wrap;font-size:12px;max-height:160px;overflow:auto}</style><header><h2>ORIGINAL JUNGLE MONSTERS · 9 TYPES</h2><p>Baron · Infernal dragon · Blue buff / Red buff · Scuttle · Gromp / Wolves · Raptors · Krugs</p></header><pre id="result">Loading…</pre>
+<script type="module">
+import * as THREE from 'three';import {UnitModel,loadUnitAsset} from '/js/unitModels.js';
+const checks=[],errors=[],models=[],assert=(name,pass,detail)=>checks.push({name,pass:!!pass,detail});window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x172129);const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,4000);camera.position.set(40,950,1050);camera.lookAt(0,40,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.debug.onShaderError=(gl,p)=>errors.push(gl.getProgramInfoLog(p));document.body.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xe8f6ff,0x646d55,2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(100,300,80);scene.add(sun);const floor=new THREE.Mesh(new THREE.PlaneGeometry(2300,2300),new THREE.MeshLambertMaterial({color:0x34464a}));floor.rotation.x=-Math.PI/2;floor.position.y=-.2;scene.add(floor);scene.add(new THREE.GridHelper(1500,60,0x63766e,0x3e5455));
+function pose(rig){rig.root.updateMatrixWorld(true);const points=[],v=new THREE.Vector3();for(const m of rig.meshes){if(!m.visible||!m.isSkinnedMesh)continue;m.skeleton.update();for(let i=0;i<m.geometry.attributes.position.count;i+=37){m.getVertexPosition(i,v).applyMatrix4(m.matrixWorld);points.push(v.x,v.y,v.z);}}return points;}
+try{
+ const manifest=await(await fetch('/assets/units/jungle/manifest.json')).json();
+ for(const [index,record]of manifest.models.entries()){
+  const asset=await loadUnitAsset('jungle','neutral',record.id),rig=new UnitModel(asset,'jungle',record.id),key=record.id;
+  rig.root.position.set((index%3-1)*340,0,(Math.floor(index/3)-1)*330);rig.root.rotation.y=Math.PI/5;scene.add(rig.root);
+  assert(key+' source metadata and original textured rig',rig.sourceMetadata.type===key&&rig.meshes.every(m=>m.material.isMeshToonMaterial&&m.material.map.image.width>0));
+  assert(key+' original skin scale',Math.abs(rig.root.scale.x-record.metadata.sourceScale*3200/15000)<1e-8);
+  assert(key+' correct living mesh visibility',rig.meshes.every(m=>m.visible===!record.metadata.initialHidden.includes(m.userData.unitPart.toLowerCase())));
+  assert(key+' selects authored idle',rig.current===record.metadata.idle);
+  if(rig.run){rig.sync({hp:100,isAlive:true,vx:100,vy:0,speed:150},.1);const first=pose(rig);rig.sync({hp:100,isAlive:true,vx:100,vy:0,speed:150},.3);const second=pose(rig);assert(key+' source movement deforms mesh',rig.current===rig.run&&first.some((v,i)=>Math.abs(v-second[i])>.01));}
+  else assert(key+' stationary model does not fabricate run animation',key==='baron');
+  if(rig.attacks.length){rig.sync({hp:100,isAlive:true,attackSequence:0,as:1},.1);rig.sync({hp:100,isAlive:true,attackSequence:1,as:1},.1);assert(key+' server strike chooses source attack',rig.attacks.includes(rig.current));const time=rig.actions[rig.current].time;rig.sync({hp:100,isAlive:true,attackSequence:1,as:1},.05);assert(key+' repeated packet does not restart attack',rig.actions[rig.current].time>time);}
+  else assert(key+' peaceful crab has no fabricated attack',key==='scuttle');
+  for(const clip of asset.animations){rig.mixer.stopAllAction();rig.actions[clip.name].reset().play();rig.mixer.update(Math.max(.01,clip.duration*.4));assert(key+' '+clip.name+' has finite skinned vertices',pose(rig).every(Number.isFinite));}
+  rig.sync({hp:0,isAlive:false},.1);assert(key+' death state uses original clip when present',rig.dead&&(!rig.deaths.length||rig.current===rig.deaths[0]));
+  rig.sync({hp:0,isAlive:false},30);assert(key+' completed corpse hidden',rig.finished&&!rig.root.visible);
+  rig.sync({hp:100,isAlive:true,attackSequence:0},.1);assert(key+' respawn restores original idle and intact meshes',!rig.dead&&!rig.finished&&rig.root.visible&&rig.current===rig.idle&&rig.meshes.every(m=>m.visible===!record.metadata.initialHidden.includes(m.userData.unitPart.toLowerCase())));
+  rig.root.updateMatrixWorld(true);const box=new THREE.Box3();rig.root.traverse(m=>{if(m.isSkinnedMesh&&m.visible&&!m.userData.isOutline){m.computeBoundingBox();box.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld));}});
+  models.push({type:key,scale:rig.root.scale.x,height:box.max.y,minY:box.min.y,bones:record.joints,clips:record.animations.length,visible:rig.meshes.filter(m=>m.visible).map(m=>m.userData.unitPart)});
+ }
+ renderer.compile(scene,camera);renderer.render(scene,camera);assert('All nine original models render without shader errors',errors.length===0&&renderer.info.render.calls>=18,{calls:renderer.info.render.calls});
+}catch(e){errors.push({message:e.message,stack:e.stack});}
+const report={status:checks.every(c=>c.pass)&&!errors.length?'PASS':'FAIL',passed:checks.filter(c=>c.pass).length,total:checks.length,checks,models,errors};window.report=report;document.body.dataset.status=report.status;document.getElementById('result').textContent=report.status+' '+report.passed+'/'+report.total+' · '+JSON.stringify(models);console.log('JUNGLE_MODELS_TEST '+JSON.stringify(report));
+</script></html>

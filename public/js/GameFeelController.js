@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import './mapNavigation.js';
 
 // Zero-GC를 위한 전역 캐시 변수
 const _vTarget = new THREE.Vector3();
@@ -17,6 +18,9 @@ export class GameFeelController {
     this.destination = new THREE.Vector3().copy(playerMesh.position);
     this.isMoving = false;
     this.walkCycle = 0;
+    this.navigation = options.navigation || null;
+    this.radius = options.radius || 22;
+    this.path = null; this.pathIndex = 0;
 
     // 타격감: 히트스톱
     this.hitStopTimer = 0;
@@ -48,6 +52,12 @@ export class GameFeelController {
    * 1. 조작감: 우클릭 즉시 로컬 이동 개시 (0ms 인풋 랙)
    */
   issueMoveCommand(targetX, targetZ) {
+    if (this.navigation) {
+      this.path = this.navigation.findPath(this.predictedPosition.x, this.predictedPosition.z, targetX, targetZ, this.radius);
+      this.pathIndex = 0;
+      if (!this.path.length) { this.stopMoving(); return; }
+      targetX = this.path[0].x; targetZ = this.path[0].y;
+    }
     this.destination.set(targetX, 0, targetZ);
     this.isMoving = true;
 
@@ -66,6 +76,7 @@ export class GameFeelController {
    * 이동 중지 명령
    */
   stopMoving() {
+    this.path = null;
     this.destination.copy(this.predictedPosition);
     this.isMoving = false;
   }
@@ -84,6 +95,14 @@ export class GameFeelController {
       this.predictedPosition.x = this.predictedPosition.x * 0.82 + serverX * 0.18;
       this.predictedPosition.z = this.predictedPosition.z * 0.82 + serverZ * 0.18;
     }
+  }
+
+  onNavigationSnapshot(x, y, serverX, serverY) {
+    if (!this.navigation || !Number.isFinite(x) || !Number.isFinite(y)) return;
+    this.destination.set(x, 0, y);
+    this.path = null;
+    this.isMoving = Math.hypot(x - serverX, y - serverY) > 3;
+    if (!this.navigation.isWalkable(this.predictedPosition.x, this.predictedPosition.z, this.radius)) this.predictedPosition.set(serverX, 0, serverY);
   }
 
   /**
@@ -176,8 +195,10 @@ export class GameFeelController {
       const distance = _vMoveDir.length();
 
       if (distance < 4.0) {
-        this.isMoving = false;
         this.predictedPosition.copy(this.destination);
+        if (this.path && ++this.pathIndex < this.path.length) {
+          this.destination.set(this.path[this.pathIndex].x, 0, this.path[this.pathIndex].y);
+        } else this.isMoving = false;
       } else {
         _vMoveDir.normalize();
 
@@ -190,14 +211,18 @@ export class GameFeelController {
 
         // 예측 위치 이동
         const step = Math.min(distance, this.moveSpeed * delta);
-        this.predictedPosition.addScaledVector(_vMoveDir, step);
+        if (this.navigation) {
+          this.navigation.move(this.predictedPosition.x, this.predictedPosition.z,
+            this.predictedPosition.x + _vMoveDir.x * step, this.predictedPosition.z + _vMoveDir.z * step, this.radius);
+          this.predictedPosition.x = this.navigation.resultX; this.predictedPosition.z = this.navigation.resultY;
+        } else this.predictedPosition.addScaledVector(_vMoveDir, step);
         this.walkCycle += 0.28;
       }
     }
 
     // 메쉬 위치 동기화 (자연스러운 걷기 바운스 적용)
-    const walkBob = this.isMoving ? Math.sin(this.walkCycle) * 2.5 : 0;
-    this.player.position.set(this.predictedPosition.x, walkBob, this.predictedPosition.z);
+    const walkBob = this.isMoving && !this.player.userData.garen ? Math.sin(this.walkCycle) * 2.5 : 0;
+    this.player.position.set(this.predictedPosition.x, walkBob + (this.navigation?.heightAt(this.predictedPosition.x, this.predictedPosition.z) || 0), this.predictedPosition.z);
 
     // [카메라 셰이크 처리: Trauma^2 비선형 감쇠 진동]
     if (this.trauma > 0) {

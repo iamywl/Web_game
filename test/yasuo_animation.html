@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yasuo original asset integration QA</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#101c27;color:#e4eaf0;font:14px system-ui;display:grid;grid-template-columns:minmax(0,1fr) 360px;height:100vh}main{position:relative}canvas{width:100%;height:100%;display:block}header{position:absolute;top:25px;left:30px;pointer-events:none}h1{font-size:27px;letter-spacing:3px;margin:0}header p{color:#ceb77a;font-size:12px}aside{background:#172832;padding:24px;overflow:auto;border-left:1px solid #33444d}button{border:1px solid #716445;background:#283a42;color:#e4dcac;padding:10px;margin:0 5px 8px 0;cursor:pointer;border-radius:4px}button:disabled{opacity:.5}#run-tests{display:block;width:100%;margin:15px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;max-height:47vh;overflow:auto}#status{color:#d8bf7d}.note{font-size:12px;line-height:1.8;color:#96aab6}body[data-status=PASS] #status{color:#94e6ae}body[data-status=FAIL] #status{color:#ff9999}</style>
+<main><canvas id="scene"></canvas><header><h1>YASUO · BASE SKIN</h1><p>EXTRACTED MODEL / 13 ANIMATIONS / ORIGINAL SFX</p></header></main>
+<aside><h2>야스오 · 원본 리소스 검증</h2><div><button data-demo="idle">기본</button><button data-demo="move">이동</button><button data-demo="AA">평타</button><button data-demo="Q">Q 찌르기</button><button data-demo="Q3">Q 회오리</button><button data-demo="EQ">EQ 회전</button><button data-demo="W">W 장막</button><button data-demo="E">E 질풍검</button><button data-demo="R">R 최후의 숨결</button></div><button id="pause">화면 정지</button><p id="demo-state"></p><p class="note">원본 모델·애니메이션·텍스처·효과음을 실제 게임 모듈로 재생합니다. 파티클과 플레이 흐름은 웹에서 재구성했습니다.</p><button id="run-tests" disabled>검증 실행 · 사운드 활성화</button><p id="status">Loading…</p><pre id="result">Not started</pre></aside>
+<script type="module">
+import * as THREE from 'three';
+import { YasuoAnimation,loadYasuoAsset,attachYasuoModel } from '/js/yasuoModel.js';
+import { YasuoEffects } from '/js/yasuoEffects.js';
+import { YasuoAudio } from '/js/yasuoAudio.js';
+const checks=[],errors=[],assert=(name,pass,detail)=>checks.push({name,pass:!!pass,...(detail===undefined?{}:{detail})}),wait=ms=>new Promise(r=>setTimeout(r,ms));
+window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+const canvas=document.getElementById('scene'),webgl=new THREE.WebGLRenderer({canvas,antialias:true});webgl.setPixelRatio(1);
+webgl.debug.onShaderError=(gl,p,v,f)=>errors.push({shader:gl.getProgramInfoLog(p),vertex:gl.getShaderInfoLog(v),fragment:gl.getShaderInfoLog(f)});
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x101c27);scene.add(new THREE.HemisphereLight(0xe5efff,0x647955,2));
+const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(100,180,120);scene.add(light);scene.add(new THREE.GridHelper(800,40,0x7b7151,0x283e48));
+const camera=new THREE.PerspectiveCamera(40,1,.1,3000),group=new THREE.Group();scene.add(group);
+function cameraFor(key){if(key==='W'||key==='Q3'){camera.position.set(200,180,420);camera.lookAt(0,35,70);}else{camera.position.set(90,74,155);camera.lookAt(0,32,0);}}
+function resize(){webgl.setSize(canvas.parentElement.clientWidth,innerHeight,false);camera.aspect=canvas.width/canvas.height;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);
+const player={id:'yasuo-fixture',championId:'yasuo',team:'blue',x:0,y:0,angle:Math.PI/2,isAlive:true,yasuo:{eRemaining:0,rRemaining:0,shieldRemaining:0}},players=[player],meshes={[player.id]:group};
+let asset,rig,audio,engine,effects=new YasuoEffects(scene),testing=false,paused=false,demo='idle',elapsed=0,last=performance.now(),walls=[],projectiles=[];
+const event=(key,phase='cast',extra={})=>({type:'yasuoSkill',playerId:player.id,key,phase,x:player.x,y:player.y,targetX:0,targetY:70,angle:Math.PI/2,duration:key==='R'?1:key==='E'?.3:.35,...extra});
+function visibleMeshes(r=rig){const result=[];r.root.traverse(o=>{if(o.isSkinnedMesh&&o.visible&&!o.userData.isOutline)result.push(o);});return result;}
+function pose(r=rig){r.root.updateMatrixWorld(true);const out=[],v=new THREE.Vector3();for(const m of visibleMeshes(r)){m.skeleton.update();for(let i=0;i<m.geometry.attributes.position.count;i+=31){m.getVertexPosition(i,v).applyMatrix4(m.matrixWorld);out.push(v.x,v.y,v.z);}}return out;}
+const difference=(a,b)=>Math.max(...a.map((x,i)=>Math.abs(x-b[i])));
+function motion(name,moving,dt=.1){const a=pose();rig.update(moving,dt,345);const b=pose(),delta=difference(a,b);assert(name,b.every(Number.isFinite)&&delta>.001,{worldVertexDelta:delta});}
+function reset(){rig.update(false,.01,345,false);rig.update(false,.1,345,true);effects.clear(player.id);audio?.stop(player.id);player.isAlive=true;player.x=player.y=0;player.yasuo.eRemaining=player.yasuo.rRemaining=0;walls=[];projectiles=[];group.position.set(0,0,0);group.rotation.y=0;effects.update(players,meshes,0,walls,projectiles);}
+function apply(ev){rig.skill(ev);effects.trigger(ev,player,group);audio?.trigger(ev);}
+async function initAudio(){if(engine)return;const ctx=new AudioContext(),masterGain=ctx.createGain(),analyser=ctx.createAnalyser();masterGain.gain.value=.35;analyser.fftSize=2048;masterGain.connect(analyser);analyser.connect(ctx.destination);engine={ctx,masterGain,analyser,isMuted:false,ensureContext(){if(ctx.state==='suspended')ctx.resume();}};await ctx.resume();audio=new YasuoAudio(engine);await audio.ready;}
+function energy(){const data=new Float32Array(engine.analyser.fftSize);engine.analyser.getFloatTimeDomainData(data);return Math.max(...data.map(Math.abs));}
+function startDemo(key){if(testing||!rig)return;reset();demo=key;elapsed=0;paused=false;cameraFor(key);document.getElementById('pause').textContent='화면 정지';document.getElementById('demo-state').textContent=key+' · 원본 애니메이션';
+ if(key==='AA'){rig.attack(1);audio?.attack(player.id);}
+ else if(key!=='idle'&&key!=='move'){apply(event(key==='Q3'||key==='EQ'?'Q':key,'cast',{variant:key==='Q3'?'tornado':key==='EQ'?'circle':undefined}));}
+ if(key==='W')walls=[{id:'wall-demo',ownerId:player.id,playerId:player.id,team:'blue',x:0,y:80,angle:Math.PI/2,width:300,remaining:4,duration:4}];
+ if(key==='Q3')projectiles=[{id:'tornado-demo',ownerId:player.id,playerId:player.id,sourceId:player.id,type:'yasuo_tornado',x:0,y:50,angle:Math.PI/2,radius:45}];
+}
+async function runTests(){
+ if(testing)return;testing=true;checks.length=0;errors.length=0;document.body.dataset.status='RUNNING';document.getElementById('run-tests').disabled=true;
+ try{
+ reset();await initAudio();await effects.ready;
+ assert('All 13 original skeletal clips loaded',rig.actions.length===13,{names:rig.actions.map(a=>a.getClip().name)});
+ assert('Model contains 114-joint skeleton',[...rig.skeletons].some(s=>s.bones.length===114));
+ const sourceMeshes=[];asset.scene.traverse(o=>{if(o.isSkinnedMesh)sourceMeshes.push(o);});
+ assert('All 3 original material texture maps decode',sourceMeshes.length===3&&sourceMeshes.every(m=>m.material.map?.image.width>0),{materials:sourceMeshes.map(m=>({name:m.material.name,width:m.material.map?.image.width,height:m.material.map?.image.height}))});
+ const hidden=[];rig.root.traverse(o=>{if(o.material?.name==='Yasuo_Instrument_Mat')hidden.push(o);});
+ assert('Combat hides original instrument mesh',hidden.length===1&&hidden.every(m=>!m.visible));
+ assert('Only body and sword meshes render',visibleMeshes().length===2);
+ const other=new YasuoAnimation(asset);const originalPose=pose(other),otherBody=other.bodyMaterial;
+ assert('Cloned characters own independent bones',[...rig.skeletons][0].bones[0]!==[...other.skeletons][0].bones[0]);
+ assert('Cloned characters own independent materials',rig.bodyMaterial!==otherBody&&rig.bodyMaterial.map===otherBody.map);
+ motion('Idle deforms actual skinned vertices',false,.25);rig.update(true,.12,345);assert('Move selects run clip',rig.current===1);motion('Run deforms actual body and sword vertices',true,.12);
+ assert('Animating one clone does not move the second',difference(originalPose,pose(other))<1e-8);
+ reset();for(let n=0;n<4;n++){rig.attack(1);assert('AA variant '+(n+1)+' selects original clip',rig.current===2+n);motion('AA variant '+(n+1)+' moves skinned vertices',false,.12);rig.update(false,2,345);}
+ rig.attack(4);assert('Attack speed changes original clip time scale',rig.attackRemaining<=.226&&rig.actions[rig.current].getEffectiveTimeScale()>1);
+ rig.update(true,.05,345);assert('Movement cancels basic attack recovery',rig.current===1&&rig.attackRemaining===0);
+ reset();for(const [variant,index] of [[undefined,6],[undefined,7],['tornado',8],['circle',9]]){rig.skill(event('Q','cast',{variant}));assert('Q '+(variant||index)+' selects expected clip',rig.current===index);motion('Q '+(variant||index)+' deforms skinned vertices',true,.12);rig.attack(2);assert('Basic attack cannot override Q '+(variant||index),rig.current===index);rig.update(false,1,345);}
+ for(const [key,index] of [['W',10],['E',11],['R',12]]){reset();rig.skill(event(key));assert(key+' selects original clip',rig.current===index);motion(key+' deforms original body and sword',key!=='R',.1);rig.attack(2);assert('Basic attack cannot override '+key,rig.current===index);}
+ const frozen=pose(),remaining=rig.rRemaining;rig.update(true,0,345);assert('Hit-stop freezes vertices and R timer',difference(frozen,pose())<1e-8&&rig.rRemaining===remaining);
+ rig.skill(event('R','cancel'));rig.update(true,.1,345);assert('R cancel releases animation lock',rig.current===1&&rig.rRemaining===0);
+ rig.skill(event('E'));rig.skill(event('E','cancel'));rig.update(true,.1,345);assert('E cancel returns to run',rig.current===1&&rig.eRemaining===0);
+ assert('All 17 particle textures loaded',Object.keys(effects.textures).length===17&&Object.values(effects.textures).every(t=>t.image?.width>0));
+ assert('All 17 original sounds decoded',Object.keys(audio.buffers).length===17&&Object.values(audio.buffers).every(b=>b.duration>0&&b.getChannelData(0).some(x=>Math.abs(x)>.0001)),{count:Object.keys(audio.buffers).length});
+ audio.attack(player.id);await wait(150);assert('Attack plays a real audible WebAudio source',audio.active.size>0&&energy()>0,{peak:energy()});audio.stop(player.id);await wait(130);assert('Stop releases WebAudio sources',audio.active.size===0);
+ engine.isMuted=true;engine.masterGain.gain.value=0;audio.attack(player.id);assert('Muted engine does not start original audio',audio.active.size===0);await wait(70);assert('Muted output is silent',energy()<1e-6);engine.isMuted=false;engine.masterGain.gain.value=.35;
+ audio.trigger(event('R'));assert('R starts original cast and active sounds',[...audio.active].some(s=>s.name==='r-cast')&&[...audio.active].some(s=>s.name==='r-active'));
+ audio.trigger(event('R','hit'));audio.trigger(event('R','end'));assert('R landing sound survives same-tick end',[...audio.active].some(s=>s.name==='r-hit'&&s.key==='tail'));
+ audio.stop(player.id);await wait(130);
+ reset();for(const key of ['Q','W','E','R']){const before=effects.active.length;effects.trigger(event(key),player,group);assert(key+' creates original-texture feedback',effects.active.length>before);}
+ effects.trigger(event('R','hit'),player,group);effects.trigger(event('R','end'),player,group);assert('R impact effect survives same-tick end',effects.active.some(e=>e.key==='R'&&e.phase==='hit'));
+ await snapshotTests();
+ player.isAlive=false;rig.update(false,.1,345,false);effects.update(players,meshes,.1,[],[]);audio.update(players,[]);await wait(130);assert('Death clears animation state',rig.current===-1&&rig.rRemaining===0&&rig.eRemaining===0);assert('Death clears active effects and audio',effects.active.length===0&&audio.active.size===0);
+ player.isAlive=true;rig.update(false,.1,345,true);assert('Respawn returns to idle',rig.current===0&&!rig.dead);
+ const sharedTexture=rig.bodyMaterial.map;other.dispose();assert('Disposing clone preserves survivor texture and skeleton',other.disposed&&rig.bodyMaterial.map===sharedTexture&&!rig.disposed);
+ const pending=new THREE.Group();pending.userData.disposed=true;await attachYasuoModel(pending);assert('Disposed owner skips late model attachment',!pending.userData.yasuo);
+ reset();webgl.compile(scene,camera);webgl.render(scene,camera);await wait(60);assert('Actual model and outline shaders render without errors',errors.length===0&&webgl.info.render.calls>=5,{drawCalls:webgl.info.render.calls});
+ }catch(e){errors.push({message:e.message,stack:e.stack});}
+ testing=false;const report={status:checks.every(c=>c.pass)&&!errors.length?'PASS':'FAIL',passed:checks.filter(c=>c.pass).length,total:checks.length,checks,errors};
+ document.body.dataset.status=report.status;document.getElementById('status').textContent=report.status+' · '+report.passed+'/'+report.total;document.getElementById('result').textContent=JSON.stringify(report,null,2);document.getElementById('run-tests').disabled=false;console.log('YASUO_ANIMATION_TEST '+JSON.stringify(report));startDemo('idle');
+}
+async function snapshotTests(){
+ reset();const wall={id:'w1',ownerId:player.id,playerId:player.id,x:0,y:80,angle:Math.PI/2,width:300,remaining:4};
+ effects.trigger(event('W'),player,group);effects.update(players,meshes,.1,[wall],[]);
+ const w=effects.active.find(e=>e.snapshotId==='w1');
+ assert('Server wall replaces cast copy without duplicate',effects.active.length===1&&w?.snapshotKind==='wall');
+ wall.remaining=3;effects.update(players,meshes,.1,[wall],[]);
+ assert('Wall reuses mesh across snapshots',effects.active[0]===w&&w.root.position.z===80);
+ const tornado={id:'q3',ownerId:player.id,type:'yasuo_tornado',x:0,y:100,angle:Math.PI/2};
+ effects.trigger(event('Q','cast',{variant:'tornado'}),player,group);effects.update(players,meshes,.1,[wall],[tornado]);
+ assert('One authoritative tornado and one wall render',effects.active.length===2&&effects.active.some(e=>e.snapshotId==='q3'));
+ tornado.y=200;effects.update(players,meshes,.1,[wall],[tornado]);
+ assert('Tornado follows authoritative position',effects.active.find(e=>e.snapshotId==='q3')?.root.position.z===200);
+ effects.update(players,meshes,.1,[],[]);assert('Expired wall and projectile release their meshes',effects.active.length===0);
+ audio.trigger(event('W'));audio.update(players,[wall]);assert('Wall ambience plays while wall exists',[...audio.active].some(s=>s.name==='w-wall'&&!s.stopped));
+ audio.update(players,[]);await wait(130);assert('Expired wall stops its ambience',![...audio.active].some(s=>s.name==='w-wall'));
+ audio.stop(player.id);
+}
+document.getElementById('run-tests').onclick=runTests;document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>startDemo(b.dataset.demo));document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'재생':'화면 정지';};
+try{asset=await loadYasuoAsset();rig=new YasuoAnimation(asset);group.add(rig.root);group.userData.yasuo=rig;await effects.ready;document.body.dataset.ready='true';document.getElementById('run-tests').disabled=false;document.getElementById('status').textContent='준비 완료';startDemo('idle');}catch(e){errors.push({message:e.message,stack:e.stack});document.body.dataset.ready='error';document.getElementById('result').textContent=JSON.stringify(errors);}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(rig&&!testing&&!paused){const prior=elapsed;elapsed+=dt;if(demo==='Q3'&&projectiles[0])projectiles[0].y=50+elapsed*85;if(demo==='R'&&prior<1&&elapsed>=1){apply(event('R','hit'));apply(event('R','end'));}if(demo==='E'&&elapsed<.3){player.x=elapsed*140;group.position.x=player.x;}rig.update(demo==='move',dt,345);effects.update(players,meshes,dt,walls,projectiles);audio?.update(players,walls);if(elapsed>4&&demo!=='idle')startDemo(demo);}webgl.render(scene,camera);}requestAnimationFrame(frame);
+</script>
+
+

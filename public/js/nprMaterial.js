@@ -38,23 +38,24 @@ export const toonRamp = createToonRampTexture();
  * 커스텀 셰이더 청크로 Rim Light(외곽 발광)를 주입하여 배경과 챔피언을 시각적으로 명확히 분리
  */
 export function createChampionMaterial(colorHex, emissiveHex = 0x000000, options = {}) {
+  const { rimColor, rimPower, rimStrength, ...materialOptions } = options;
   const mat = new THREE.MeshToonMaterial({
     color: colorHex,
     gradientMap: toonRamp,
     emissive: emissiveHex,
     emissiveIntensity: options.emissiveIntensity || 0.0,
     wireframe: false,
-    ...options
+    ...materialOptions
   });
 
   // 커스텀 셰이더 청크: LoL 스타일 림 라이팅 (Rim Lighting) 주입
   const rimColorHex = options.rimColor || 0xd2e3fc;
-  const rimPower = options.rimPower || 3.2;
+  const rimExponent = rimPower ?? 3.2;
 
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uRimColor = { value: new THREE.Color(rimColorHex) };
-    shader.uniforms.uRimPower = { value: rimPower };
-    shader.uniforms.uRimStrength = { value: options.rimStrength || 0.55 };
+    shader.uniforms.uRimPower = { value: rimExponent };
+    shader.uniforms.uRimStrength = { value: rimStrength ?? 0.55 };
 
     shader.fragmentShader = `
       uniform vec3 uRimColor;

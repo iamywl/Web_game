@@ -1,0 +1,197 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Champions/Garen.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "2025-02-28-d36a532"
+  },
+  "scope": "Original base-skin texture images decoded locally. Web effect geometry/timing/composition is reconstructed, not the original particle graph.",
+  "files": [
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_q_cas_flare.tex",
+      "sha256": "aafa54bf08c8925866dde2389dc737e53cfc12fc4d54f494a2363b7c67bb7d9c",
+      "output": "q_cas_flare.png",
+      "outputSha256": "ba857e61595953a7af84d5d28afb94e981722ee79dd41b806f33f9e7ece709c4",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 20707
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_q_tar_slash.tex",
+      "sha256": "380177ca0ef5ae640ed99a53072d99afba7434d4be3f12188435cc96e81d280b",
+      "output": "q_tar_slash.png",
+      "outputSha256": "a285c233220d243345b8c01d51262afc502ec2be3384f549b5de77e9e733dc93",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 53828
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_q_wpn_trail.tex",
+      "sha256": "a60376b33914476d9e50b43639446df6bbb6c94d524014879814070f9a64b4f0",
+      "output": "q_wpn_trail.png",
+      "outputSha256": "2f5139de76fc936d8213a8ff99af40ca14937a448861fe3f965793905132d38e",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 5658
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_q_hit_flash.tex",
+      "sha256": "cc54f304f75733aabdbdc08a8988d833995534b468b94944f981d14b05a6c62a",
+      "output": "q_hit_flash.png",
+      "outputSha256": "5e7ebced39922a00edd7eecb0d5e1e0be949eff2a803f712047dd1fde3752771",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 25026
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_w_shield_txt.tex",
+      "sha256": "7e31afc5c4bf4f625709ddf52163387a42c15ad000a589739a9628a4e8388af4",
+      "output": "w_shield_txt.png",
+      "outputSha256": "3ab0d635db04f59a8cfde2d77d04b20a59e3bb07c33ae3d5d4accca6b98c8a23",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 73757
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_w_ground_glow.tex",
+      "sha256": "2925f5b43af40fcaeea6788bbef0a5966f10c22b67ce4594d2177e2592982d28",
+      "output": "w_ground_glow.png",
+      "outputSha256": "a21eac9a7147c255ef4b0c5c56d8f2ba6f67266318f2dd4956018d07a672ec28",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 12294
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_w_wings.tex",
+      "sha256": "5a04cef50d2bb60e51d114a2011ccb25b9ae486331888791e87f589e61e36119",
+      "output": "w_wings.png",
+      "outputSha256": "db605f09e4c26040fed33d32b016422d3b35d2abfc2ab3d5c3c1cac70388a03f",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 59253
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_w_glow_hoop.tex",
+      "sha256": "655058cd9fe53ac41585e8fe93530aa4863111f1ff1a70b1700955efb45f0079",
+      "output": "w_glow_hoop.png",
+      "outputSha256": "d5d28c2e642078d0b381f04aad84a4cd591624ecbab28666428964ac2b92ff40",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 8388
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_w_glow_glint.tex",
+      "sha256": "43e5ca2b2af56b80b0e4977e9db7ea45bfdf83d8be655033ab07cabde6c5e11a",
+      "output": "w_glow_glint.png",
+      "outputSha256": "6956f0612f7a21ef738ade844e9e2b16d3af4a466aaf3f8178378f57dd24740a",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 15022
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_e_spin_topdown.tex",
+      "sha256": "0c792c3ed311f856bd1f1a25280e75625d64d82564cfb052b5f18472ca11d088",
+      "output": "e_spin_topdown.png",
+      "outputSha256": "b083f7d7248f1963b12e9672f022e3c3bb672df31b481a4aa1e690e6b5fcd568",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 116835
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_e_spin_edge.tex",
+      "sha256": "522d4bae335281f2e1af48adc9bdc5dcb84b1efe762d902a3e649db1631c2017",
+      "output": "e_spin_edge.png",
+      "outputSha256": "f071e4da9685492599b15fbb8ff11093acf952bb320221fd4563816b840dc930",
+      "dimensions": [
+        512,
+        256
+      ],
+      "bytes": 34390
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_e_sword_trail.tex",
+      "sha256": "b57906a29a5cda0e0edfaa69bf3e4432a15e8aa242b044c407b6ab21f720c3b3",
+      "output": "e_sword_trail.png",
+      "outputSha256": "b248704e3206d424e4bb724c6d52b403ea0b1cc9bccaabc573c1ab50e1eabed9",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 120749
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_r_sword_plane.tex",
+      "sha256": "28f87895cd72ba4a52fae2163958e91cbea56b13551fdab07e0c99844adccd52",
+      "output": "r_sword_plane.png",
+      "outputSha256": "e126a685656d16bfeddc586d3be1bb8fdb45ed3415d577f5d938d88dbe0df4fd",
+      "dimensions": [
+        256,
+        512
+      ],
+      "bytes": 76934
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_r_ground_decal.tex",
+      "sha256": "d7a96d510c366a726125934e7a4bac7de9175b9e572af565d757d1de820bd81c",
+      "output": "r_ground_decal.png",
+      "outputSha256": "087604898ac7d2332f5c3f3a154f9e9990ce031e5a26c82bb88e4490418bde1a",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 163115
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_r_impact_dome.tex",
+      "sha256": "2b2e41202d8bc7419bfdfe7345c01155ea075385b3f8f4b56b6eb6c8fed1869a",
+      "output": "r_impact_dome.png",
+      "outputSha256": "7fab02fe7d708a24db139f81a63295559b65af32c6656b3e771dab65642e1e92",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 49392
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_r_explosion_scroll.tex",
+      "sha256": "6c441a059b07053afd34901e6c6315ad5ce633f3d4dfa5a069e4aa959ea5208e",
+      "output": "r_explosion_scroll.png",
+      "outputSha256": "85189046cb92f037073b537e2197e169d6f64ad81b4444c93d3e8dbb26e7471a",
+      "dimensions": [
+        32,
+        256
+      ],
+      "bytes": 2028
+    },
+    {
+      "path": "assets/characters/garen/skins/base/particles/garen_base_r_lightbar.tex",
+      "sha256": "c61b3becc23cf5c6cf64099e5daeba4eae570a4482eb879c5b6fadde5bfb4bfa",
+      "output": "r_lightbar.png",
+      "outputSha256": "438df2e2043c0d5706b0888aa9dcee8ecc5df667d2faf5bf1aa6e1a2f4632bd3",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 49354
+    }
+  ]
+}

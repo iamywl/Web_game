@@ -1,0 +1,39 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Original nexus/inhibitor lifecycle QA</title><link rel="icon" href="data:,"><script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#172129;color:#e6e6d7;font:16px system-ui}canvas{display:block}header{position:absolute;top:20px;left:25px}#result{position:absolute;bottom:15px;left:25px;white-space:pre-wrap;font-size:11px;max-height:200px;overflow:auto}</style><header><h2>Original structures · UnitModel lifecycle QA</h2><p>Intact → original death → original intact inhibitor respawn</p></header><pre id="result">Loading…</pre>
+<script type="module">
+import * as THREE from 'three';import {UnitModel,loadUnitAsset,attachUnitModel,disposeUnitGroup,unitModelUrl} from '/js/unitModels.js';
+const checks=[],errors=[],assert=(name,pass)=>checks.push({name,pass:!!pass});window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x172129);const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,3000);camera.position.set(20,530,620);camera.lookAt(0,30,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.debug.onShaderError=(gl,p)=>errors.push(gl.getProgramInfoLog(p));document.body.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xe8f6ff,0x646d55,2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(100,300,80);scene.add(sun);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),new THREE.MeshLambertMaterial({color:0x34464a}));floor.rotation.x=-Math.PI/2;floor.position.y=-.2;scene.add(floor);
+const states=[];function pose(rig){rig.root.updateMatrixWorld(true);const points=[],v=new THREE.Vector3();for(const mesh of rig.meshes){if(!mesh.visible||!mesh.isSkinnedMesh)continue;mesh.skeleton.update();for(let i=0;i<mesh.geometry.attributes.position.count;i+=53){mesh.getVertexPosition(i,v).applyMatrix4(mesh.matrixWorld);points.push(v.x,v.y,v.z);}}return points;}
+try{
+ for(const [row,kind] of ['nexus','inhibitor'].entries())for(const [column,team] of ['blue','red'].entries()){
+  const key=kind+'-'+team,group=new THREE.Group();group.position.set(column?150:-150,0,row?150:-100);scene.add(group);
+  for(const name of ['shield','rangeMesh','laser']){const control=new THREE.Object3D();control.name=name;group.userData[name]=control;group.add(control);}
+  const fallback=new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshBasicMaterial());group.add(fallback);
+  const rig=await attachUnitModel(group,kind,team);states.push({key,group,rig});
+  assert(key+' URL maps to original team asset',unitModelUrl(kind,team).includes('/'+(kind==='inhibitor'?'inhibitors':kind)+'/'+team+'.glb'));
+  assert(key+' attaches with source map scale',rig&&rig.isStructure&&Math.abs(rig.root.scale.x-3200/15000)<1e-9);
+  assert(key+' preserves controls and removes fallback',['shield','rangeMesh','laser'].every(n=>group.userData[n].parent===group)&&!fallback.parent);
+  assert(key+' intact visibility and texture',rig.meshes.every(m=>m.visible===(m.userData.unitPart!=='Destroyed'))&&rig.bodyMaterial.map?.image?.width>0&&rig.bodyMaterial.isMeshToonMaterial);
+  assert(key+' chooses living idle',rig.current===rig.idle&&!/dead|death/.test(rig.current));
+  rig.sync({hp:100,isAlive:true,vx:400,vy:400},.1);assert(key+' stays idle despite movement telemetry',rig.current===rig.idle);
+  rig.sync({hp:0,isAlive:false},.05);assert(key+' death swaps mesh and original death clip',rig.dead&&rig.deaths.includes(rig.current)&&rig.meshes.every(m=>m.visible===(m.userData.unitPart==='Destroyed')));
+  const a=pose(rig);rig.sync({hp:0,isAlive:false},.8);const b=pose(rig);assert(key+' death deforms original skeleton',a.length===b.length&&a.some((v,i)=>Math.abs(v-b[i])>.01));
+  const time=rig.actions[rig.current].time;rig.sync({hp:0,isAlive:false},.1);assert(key+' repeated dead snapshots do not restart clip',rig.actions[rig.current].time>time);
+  rig.sync({hp:0,isAlive:false},20);assert(key+' finished death remains attached as rubble',rig.finished&&rig.root.parent===group&&rig.meshes.some(m=>m.visible));
+  if(kind==='inhibitor'){
+   const originalRoot=rig.root;rig.sync({hp:100,isAlive:true},.1);
+   assert(key+' authoritative respawn restores living idle',!rig.dead&&!rig.finished&&!rig.deathStarted&&rig.current===rig.idle&&rig.meshes.every(m=>m.visible===(m.userData.unitPart!=='Destroyed')));
+   assert(key+' respawn reuses its instance and mesh',rig.root===originalRoot&&group.userData.unit===rig);
+   rig.sync({hp:0,isAlive:false},.1);assert(key+' can die again after respawn',rig.dead&&!rig.finished&&rig.current===rig.deaths[0]);
+   rig.sync({hp:100,isAlive:true},.1);
+  }
+ }
+ const asset=await loadUnitAsset('nexus','blue'),twin=new UnitModel(asset,'nexus');assert('New instance has independent skeleton',twin.meshes[0].skeleton!==states[0].rig.meshes[0].skeleton);twin.dispose();assert('Disposal preserves surviving shared texture',states[0].rig.meshes[0].material.map.image.width>0);
+ const late=new THREE.Group(),pending=attachUnitModel(late,'inhibitor','red');late.userData.disposed=true;await pending;assert('Disposed owner rejects late asset attachment',!late.userData.unit);
+ const removed=new THREE.Group();await attachUnitModel(removed,'inhibitor','blue');const oldRig=removed.userData.unit;disposeUnitGroup(removed);assert('Group cleanup disposes rig and detaches all children',oldRig.disposed&&removed.children.length===0);
+ renderer.compile(scene,camera);renderer.render(scene,camera);assert('All final states render without shader errors',errors.length===0&&renderer.info.render.calls>4);
+}catch(e){errors.push({message:e.message,stack:e.stack});}
+const report={status:checks.every(c=>c.pass)&&!errors.length?'PASS':'FAIL',passed:checks.filter(c=>c.pass).length,total:checks.length,checks,errors};window.report=report;document.body.dataset.status=report.status;document.getElementById('result').textContent=JSON.stringify(report,null,2);console.log('SR_STRUCTURE_TEST '+JSON.stringify(report));
+</script></html>

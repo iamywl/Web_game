@@ -1,0 +1,15 @@
+<!doctype html><html><meta charset="utf-8"><title>Original turret asset QA</title><link rel="icon" href="data:,"><script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#172129;color:#e6e6d7;font:16px system-ui}canvas{display:block}header{position:absolute;top:20px;left:25px}p{font-size:13px}#result{position:absolute;bottom:15px;left:25px;white-space:pre-wrap}</style><header><h2>ORIGINAL TURRETS · BLUE / RED</h2><p>Back: intact Base · Front: Rubble + original Broken3 animation</p></header><div id="result">Loading…</div>
+<script type="module">
+import * as THREE from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {clone} from 'three/addons/utils/SkeletonUtils.js';import {createChampionMaterial} from '/js/nprMaterial.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x172129);const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,3000);camera.position.set(400,350,650);camera.lookAt(0,65,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);document.body.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xe8f6ff,0x646d55,2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(100,300,80);scene.add(sun);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),new THREE.MeshLambertMaterial({color:0x34464a}));floor.rotation.x=-Math.PI/2;floor.position.y=-.2;scene.add(floor);scene.add(new THREE.GridHelper(900,30,0x63766e,0x3e5455));
+const errors=[];window.addEventListener('error',e=>errors.push(e.message));const report={models:[],errors};
+for(const [i,team] of ['blue','red'].entries()){
+const asset=await new GLTFLoader().loadAsync('/assets/structures/turrets/'+team+'.glb');
+for(const dead of [false,true]){const root=clone(asset.scene);root.scale.setScalar(.28);root.position.set(i?130:-130,0,dead?130:-130);scene.add(root);const meshNames=[];root.traverse(m=>{if(!m.isSkinnedMesh)return;const name=m.material.name;m.visible=dead?['Rubble','RubbleBase','Broken3'].includes(name):['Base','Cloth1','Cloth2'].includes(name);m.material=createChampionMaterial(0xffffff,0,{map:m.material.map,rimStrength:.08});m.material.name=name;m.frustumCulled=false;if(m.visible)meshNames.push(name);});const mixer=new THREE.AnimationMixer(root),clip=asset.animations.find(c=>c.name===(dead?'break3':'idle1'));mixer.clipAction(clip).play();mixer.update(dead?2.5:.01);root.updateMatrixWorld(true);report.models.push({team,dead,visible:meshNames,clip:clip.name,joints:asset.parser.json.skins[0].joints.length});}
+}
+renderer.render(scene,camera);report.status=errors.length?'FAIL':'PASS';document.body.dataset.status=report.status;document.getElementById('result').textContent=JSON.stringify(report);console.log('TURRET_ASSET_QA '+JSON.stringify(report));
+</script></html>
+
+

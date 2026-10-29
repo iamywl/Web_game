@@ -1,0 +1,53 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Original minions / turrets integration QA</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#10212a;color:#e5eef2;font:14px system-ui}canvas{display:block}header{position:absolute;top:24px;left:28px}h1{margin:0;font-size:24px}header p{color:#b2c9cf}aside{position:absolute;right:20px;top:24px;width:300px;background:#10212aee;padding:20px;max-height:82vh;overflow:auto}pre{font-size:11px;white-space:pre-wrap}button{padding:10px;background:#305465;color:white;border:1px solid #98c9d4;cursor:pointer}#status{color:#f9d68b}body[data-status=PASS] #status{color:#8beeb1}</style>
+<canvas id="canvas"></canvas><header><h1>원본 미니언 · 포탑</h1><p>8종 미니언 / 양 팀 포탑 · 실제 게임 렌더러</p><button id="combat">이동 / 공격</button> <button id="destroy">사망 / 파괴</button> <button id="reset">다시 생성</button></header><aside><h2 id="status">검증 중…</h2><pre id="result"></pre></aside>
+<script type="module">
+import * as THREE from 'three';
+import { GameRenderer } from '/js/renderer.js';
+import { UnitModel,loadUnitAsset,attachUnitModel } from '/js/unitModels.js';
+const checks=[],errors=[],assert=(name,pass,detail)=>checks.push({name,pass:!!pass,detail}),wait=ms=>new Promise(r=>setTimeout(r,ms));
+addEventListener('error',e=>errors.push(e.message));addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x10212a);scene.add(new THREE.HemisphereLight(0xf3faff,0x526c65,2));const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(100,400,300);scene.add(light);scene.add(new THREE.GridHelper(800,32,0x607f8d,0x25414d));
+const canvas=document.getElementById('canvas'),webgl=new THREE.WebGLRenderer({canvas,antialias:true});webgl.setSize(innerWidth,innerHeight);webgl.debug.onShaderError=(gl,p)=>errors.push(gl.getProgramInfoLog(p));
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,3000);camera.position.set(0,260,640);camera.lookAt(50,65,0);
+const renderer=Object.create(GameRenderer.prototype);Object.assign(renderer,{scene,threeMinionMeshes:{},threeStructureMeshes:{},minionAnimStates:{},animationTimer:0,localPlayerId:'viewer'});
+let minions=[],structures=[],running=false,ready=false,elapsed=0,last=performance.now();const state={players:[{id:'viewer',x:0,y:0,hp:1000}],minions};
+function make(){renderer.clearUnitModels();minions=[];structures=[];for(const [n,team] of ['blue','red'].entries()){
+ for(const [i,type] of ['melee','caster','cannon','super'].entries())minions.push({id:team+'-'+type,team,type,x:-230+i*100,y:n*85,angle:Math.PI/2,hp:400,maxHp:400,vx:0,vy:0,speed:150,as:1,attackSequence:0,isAttacking:false});
+ structures.push({id:'turret-'+team,team,type:'turret',x:n===0?-200:140,y:-155,radius:46,hp:2500,maxHp:2500,isAlive:true,isInvulnerable:n===1,attackSequence:0,targetId:null});
+ }state.minions=minions;renderer.update3DStructures(structures,state,0);renderer.update3DMinions(minions,0);}
+async function attached(){for(let i=0;i<500;i++){if(Object.values(renderer.threeMinionMeshes).every(g=>g.userData.unit)&&Object.values(renderer.threeStructureMeshes).every(g=>g.userData.unit))return;await wait(10);}throw Error('Unit attachment timed out');}
+function pose(rig){rig.root.updateMatrixWorld(true);const a=[],v=new THREE.Vector3();for(const m of rig.meshes){if(!m.visible||!m.isSkinnedMesh)continue;m.skeleton.update();for(let i=0;i<m.geometry.attributes.position.count;i+=23){m.getVertexPosition(i,v).applyMatrix4(m.matrixWorld);a.push(v.x,v.y,v.z);}}return a;}
+const difference=(a,b)=>Math.max(...a.map((v,i)=>Math.abs(v-b[i])));
+try{
+ make();await attached();
+ assert('All 8 minion variants attach through production renderer',Object.keys(renderer.threeMinionMeshes).length===8);
+ assert('Both original turret skins attach',Object.values(renderer.threeStructureMeshes).every(g=>g.userData.unit.kind==='turret'));
+ for(const m of minions){const rig=renderer.threeMinionMeshes[m.id].userData.unit;
+  assert(m.id+' has textured NPR meshes and original idle/run/attack/death',rig.meshes.every(o=>o.material.isMeshToonMaterial&&o.material.map?.image?.width>0)&&rig.idle&&rig.run&&rig.attacks.length&&rig.deaths.length);
+  rig.sync(m,.1);m.vx=150;const a=pose(rig);rig.sync(m,.2);assert(m.id+' server movement selects and deforms run',rig.current===rig.run&&difference(a,pose(rig))>.01);
+  m.vx=0;m.attackSequence++;rig.sync(m,.05);assert(m.id+' real strike selects original attack',rig.attacks.includes(rig.current));
+  const time=rig.actions[rig.current].time;rig.sync(m,.05);assert(m.id+' repeated snapshot does not restart swing',rig.actions[rig.current].time>time);
+ }
+ const sample=renderer.threeMinionMeshes['blue-melee'].userData.unit;const twin=new UnitModel(await loadUnitAsset('minion','blue','melee'),'minion','melee');
+ assert('Instances isolate bones and damage-flash materials',[...sample.skeletons][0].bones[0]!==[...twin.skeletons][0].bones[0]&&sample.bodyMaterial!==twin.bodyMaterial&&sample.bodyMaterial.map===twin.bodyMaterial.map);twin.dispose();assert('Disposal retains survivor shared texture',!sample.disposed&&sample.bodyMaterial.map.image.width>0);
+ for(const s of structures){const group=renderer.threeStructureMeshes[s.id],rig=group.userData.unit;
+  assert(s.team+' intact turret shows Base and original faction cloth',rig.meshes.filter(m=>m.visible).every(m=>['Base','Cloth1','Cloth2'].includes(m.userData.unitPart)));
+  s.targetId='viewer';s.attackSequence=1;renderer.update3DStructures(structures,state,.1);assert(s.team+' firing retains targeting laser',group.userData.laser.visible&&rig.lastAttackSequence===1);
+  s.hp=0;s.isAlive=false;renderer.update3DStructures(structures,state,.1);assert(s.team+' death plays original Break3 with rubble',rig.dead&&/break3/i.test(rig.current)&&group.visible&&rig.meshes.some(m=>m.visible&&m.userData.unitPart==='Rubble'));
+  assert(s.team+' dead turret removes gameplay overlays',!group.userData.laser.visible&&!group.userData.rangeMesh.visible&&!group.userData.shield.visible);
+  renderer.update3DStructures(structures,state,3);assert(s.team+' finished destruction retains only rubble',rig.finished&&rig.meshes.filter(m=>m.visible).every(m=>['Rubble','RubbleBase'].includes(m.userData.unitPart)));
+ }
+ renderer.update3DMinions([],0);assert('Removed minions become visual corpses',Object.values(renderer.threeMinionMeshes).every(g=>g.userData.dying&&g.userData.unit.dead));
+ const corpse=renderer.threeMinionMeshes['blue-melee'];const before=pose(corpse.userData.unit);renderer.update3DMinions([],.25);assert('Corpse death deforms original mesh after removal',difference(before,pose(corpse.userData.unit))>.01);
+ for(let i=0;i<60;i++)renderer.update3DMinions([],.1);assert('Completed deaths dispose all meshes and animation state',Object.keys(renderer.threeMinionMeshes).length===0&&Object.keys(renderer.minionAnimStates).length===0&&corpse.userData.unit.disposed);
+ const pending=new THREE.Group();const load=attachUnitModel(pending,'minion','red','melee');pending.userData.disposed=true;await load;assert('Late asset cannot attach to disposed owner',!pending.userData.unit);
+ const oldTower=renderer.threeStructureMeshes['turret-blue'];renderer.clearUnitModels();assert('Map reset disposes structures and clears registry',oldTower.userData.disposed&&oldTower.userData.unit.disposed&&Object.keys(renderer.threeStructureMeshes).length===0);
+ make();await attached();assert('Next match creates fresh intact turret with same ID',renderer.threeStructureMeshes['turret-blue']!==oldTower&&!renderer.threeStructureMeshes['turret-blue'].userData.unit.dead);
+ renderer.update3DStructures(structures,state,.1);renderer.update3DMinions(minions,.1);webgl.compile(scene,camera);webgl.render(scene,camera);assert('Actual textured skinned meshes and outlines render without errors',errors.length===0&&webgl.info.render.calls>20,{drawCalls:webgl.info.render.calls});
+}catch(e){errors.push({message:e.message,stack:e.stack});}
+const report={status:checks.every(c=>c.pass)&&!errors.length?'PASS':'FAIL',passed:checks.filter(c=>c.pass).length,total:checks.length,checks,errors};document.body.dataset.status=report.status;document.getElementById('status').textContent=report.status+' · '+report.passed+'/'+report.total;document.getElementById('result').textContent=JSON.stringify(report,null,2);console.log('UNIT_MODELS_TEST '+JSON.stringify(report));ready=true;
+document.getElementById('combat').onclick=()=>{running=!running;};document.getElementById('destroy').onclick=()=>{running=false;minions=[];state.minions=minions;for(const s of structures){s.isAlive=false;s.hp=0;}};document.getElementById('reset').onclick=()=>{running=false;make();};
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;if(ready){elapsed+=dt;renderer.animationTimer=elapsed;if(running)for(const m of minions){m.vx=elapsed%3<1.5?150:0;if(elapsed%3>=1.5&&m.attackSequence<Math.floor(elapsed/3)+1)m.attackSequence=Math.floor(elapsed/3)+1;}renderer.update3DStructures(structures,state,dt);renderer.update3DMinions(minions,dt);}webgl.render(scene,camera);}requestAnimationFrame(frame);
+</script></html>

@@ -1,0 +1,23 @@
+<!doctype html><html><meta charset="utf-8"><title>Summoner's Rift structure assets</title><link rel="icon" href="data:,"><script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#172129;color:#e6e6d7;font:16px system-ui}canvas{display:block}header{position:absolute;top:20px;left:25px}p{font-size:13px}#result{position:absolute;bottom:15px;left:25px;white-space:pre-wrap;font-size:12px;max-width:95vw}</style><header><h2>ORIGINAL NEXUS & INHIBITORS · BLUE / RED</h2><p>Top: nexus / Bottom: inhibitors · Original idle and death poses</p></header><div id="result">Loading…</div>
+<script type="module">
+import * as THREE from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {clone} from 'three/addons/utils/SkeletonUtils.js';import {createChampionMaterial} from '/js/nprMaterial.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x172129);const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,3000);camera.position.set(40,730,680);camera.lookAt(0,25,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);document.body.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xe8f6ff,0x646d55,2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(100,300,80);scene.add(sun);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),new THREE.MeshLambertMaterial({color:0x34464a}));floor.rotation.x=-Math.PI/2;floor.position.y=-.2;scene.add(floor);scene.add(new THREE.GridHelper(1100,44,0x63766e,0x3e5455));
+const report={models:[],errors:[]};window.addEventListener('error',e=>report.errors.push(e.message));
+for(const [row,kind] of ['nexus','inhibitors'].entries()){
+ const manifest=await (await fetch('/assets/structures/'+kind+'/manifest.json')).json();
+ for(const [column,team] of ['blue','red'].entries()){
+  const asset=await new GLTFLoader().loadAsync('/assets/structures/'+kind+'/'+team+'.glb'),record=manifest.models.find(m=>m.team===team);
+  const names=kind==='nexus'?(team==='blue'?['nexus_idle','nexus_death']:['sruap_chaosnexus_idle','sruap_chaosnexus_death']):(team==='blue'?['inhibitor_idle1','inhibitor_death']:['sruap_chaosinhibitor_idle_normal','sruap_chaosinhibitor_death']);
+  for(const [index,dead] of [false,true].entries()){
+   const root=clone(asset.scene);root.scale.setScalar(3200/15000);root.position.set(-360+(column*2+index)*240,0,row?150:-150);scene.add(root);const visible=[];
+   root.traverse(m=>{if(!m.isSkinnedMesh)return;const name=m.material.name;m.visible=dead?name==='Destroyed':record.initialVisible.includes(name);m.material=createChampionMaterial(0xffffff,0,{map:m.material.map,rimStrength:.08});m.material.name=name;m.frustumCulled=false;if(m.visible)visible.push(name);});
+   const mixer=new THREE.AnimationMixer(root),clip=asset.animations.find(c=>c.name===names[index]);if(!clip)throw new Error('Missing clip '+names[index]);mixer.clipAction(clip).play();mixer.update(dead?clip.duration*.9:.1);root.updateMatrixWorld(true);
+   const bounds=new THREE.Box3();root.traverse(m=>{if(m.isSkinnedMesh&&m.visible){m.computeBoundingBox();bounds.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld));}});
+   report.models.push({kind,team,dead,visible,clip:clip.name,joints:asset.parser.json.skins[0].joints.length,height:bounds.max.y,minY:bounds.min.y});
+  }
+ }
+}
+renderer.render(scene,camera);report.status=report.errors.length?'FAIL':'PASS';window.report=report;document.body.dataset.status=report.status;document.getElementById('result').textContent=report.status+' · '+report.models.length+' source model states · '+report.errors.length+' errors';
+</script></html>

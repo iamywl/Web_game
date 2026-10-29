@@ -264,7 +264,7 @@ class CameraController {
   clampToBounds() {
     const viewW = this.width / this.zoom;
     const viewH = this.height / this.zoom;
-    const margin = 120; // Allow slight padding around map perimeter
+    const margin = this.allowEdgeFocus ? Math.max(viewW, viewH) * 0.5 : 120;
     const minX = -margin;
     const maxX = Math.max(0, this.mapWidth - viewW + margin);
     const minY = -margin;

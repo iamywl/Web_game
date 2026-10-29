@@ -1,0 +1,2501 @@
+{
+  "source": "data/maps/mapgeometry/map11/base_srx.mapgeo",
+  "materials": "data/maps/mapgeometry/map11/base_srx.materials.bin",
+  "sourceMapgeoSha256": "9045242f675505a516dfc7f73a168dd61730184c126b99331a752275d7a1b3c0",
+  "originalMeshes": 586,
+  "defaultMeshes": 198,
+  "primitives": 198,
+  "triangles": 645491,
+  "images": 137,
+  "bytes": 88776336,
+  "mapSha256": "bdabbf3eb0c37dd2bb8567035c018d0da0f79c849c9353e5192a58279369a69e",
+  "initialVisibilityMask": 1,
+  "flipX": false,
+  "coordinateTransform": {
+    "x": "sourceX * (3200/15000)",
+    "y": "sourceY * (3200/15000)",
+    "z": "3200 - sourceZ * (3200/15000)"
+  },
+  "textures": [
+    {
+      "name": "ground_e2_chaosbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_d2_chaosbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_b4_orderbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_e1_chaosbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_b3_orderblue_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_c1_chaostop_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_a1_alcovetop_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_c5_orderbot_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_d4_dragonpit_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_e4_chaosbot_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_d3_chaosblue_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_a3_ordertop_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_b2_baronpit_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_a4_orderbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_a5_orderbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_e5_alcovebot_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_c2_chaosred_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_d1_chaosbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_c4_orderred_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_d5_orderbot_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_vista_a",
+      "sourceSize": [
+        2048,
+        1024
+      ],
+      "webSize": [
+        2048,
+        1024
+      ]
+    },
+    {
+      "name": "worlds_ground_c3_midlane_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "worlds_ground_b5_orderbase_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_a2_ordertop_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_b1_chaostop_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_g",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_e3_chaosbot_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_vista_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_f_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_e_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_g_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_i_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_spawn_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_e_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_b",
+      "sourceSize": [
+        2048,
+        1024
+      ],
+      "webSize": [
+        2048,
+        1024
+      ]
+    },
+    {
+      "name": "chaos_spawn_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "hol2026_periph_top_h_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_spawn_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_spawn_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "periph_topalcove_a_1bitalpha",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "chaos_top_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_top_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_topriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_base_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_krug_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_top_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_d_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "periph_chaosbase_f_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "sru_brush",
+      "sourceSize": [
+        256,
+        256
+      ],
+      "webSize": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "periph_top_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_red_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_red_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_base_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_mid_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_topriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_raptor_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_baronriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_gromp_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_midriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_mid_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_gromp_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_mid_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_wolf_a_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_bot_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_top_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_blue_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_j_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_midriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_midriver_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_blue_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_mid_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_gromp_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_orderbase_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_wolf_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_midriver_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "periph_top_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_top_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_mid_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_gromp_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_i_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_dragonriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_raptor_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_dragon_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_bot_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_f_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_dragon_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_base_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_orderbase_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_mid_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_botriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_red_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_h_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_red_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_botalcove_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_krug_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_botriver_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_e_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_base_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_bot_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_spawn_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_bot_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_bot_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_bot_c_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "periph_orderbase_d_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_spawn_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_orderbase_c_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "periph_bot_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_spawn_c_1bitalpha",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "webSize": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "hol_statue_tris_2026",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_b2_baronpit_tunnel_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "earth_order_gromp_a",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "webSize": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "earth_chaos_gromp_a",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "webSize": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "hol_kaisaplatform_a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "sodapop_propkit_c",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "ground_b2_baronpit_walled_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "plinths_a",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "webSize": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "ground_b2_baronpit_upgraded_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "ground_d4_dragonpit_ocean_a",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_tunnel_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_upgraded_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_walled_a_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_upgraded_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_walled_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "chaos_baron_tunnel_b_1bitalpha",
+      "sourceSize": [
+        2048,
+        2048
+      ],
+      "webSize": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "order_gromp_earth_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    },
+    {
+      "name": "earth_order_grompdecal_a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "ocean_puddle_a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "earth_chaos_grompdecal_a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "webSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "chaos_gromp_earth_b_1bitalpha",
+      "sourceSize": [
+        1024,
+        2048
+      ],
+      "webSize": [
+        1024,
+        2048
+      ]
+    }
+  ],
+  "excludedShaderOnlyOverlays": {
+    "count": 12,
+    "material": "FaeLights_Prototype_Mat",
+    "reason": "Procedural shader-generated indicator with no static surface texture; cannot be rendered as opaque static geometry."
+  },
+  "textureEncoding": "WebP quality92, alpha retained, maximum2048",
+  "materialCompatibility": "Source DiffuseTexture restored for VertexDeform and SRX_DynamicEffect; their wind/effect shader code is not executed.",
+  "grassTint": {
+    "source": "assets/maps/info/map11/grasstint_srx.tex",
+    "mapSkin": "Maps/Shipping/Map11/MapSkins/Default",
+    "method": "Static material multiplier sampled from original world-space tint map at each grass cluster center. Wind and original per-pixel shader remain unimplemented.",
+    "worldSize": 15000,
+    "clusters": 59,
+    "samples": [
+      {
+        "node": "Layer1.MapGeo_Instance_229",
+        "worldXZ": [
+          7053.5947265625,
+          11343.91796875
+        ],
+        "texel": [
+          120,
+          62
+        ],
+        "rgb": [
+          107,
+          97,
+          99
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_230",
+        "worldXZ": [
+          6742.0703125,
+          11407.59228515625
+        ],
+        "texel": [
+          115,
+          61
+        ],
+        "rgb": [
+          129,
+          129,
+          82
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_271",
+        "worldXZ": [
+          6281.0,
+          10064.775405525817
+        ],
+        "texel": [
+          107,
+          84
+        ],
+        "rgb": [
+          123,
+          142,
+          107
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_335",
+        "worldXZ": [
+          9984.6220703125,
+          7861.764404296875
+        ],
+        "texel": [
+          170,
+          121
+        ],
+        "rgb": [
+          60,
+          124,
+          112
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_345",
+        "worldXZ": [
+          3554.0,
+          7709.8653722217405
+        ],
+        "texel": [
+          60,
+          124
+        ],
+        "rgb": [
+          90,
+          105,
+          74
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_364",
+        "worldXZ": [
+          11403.552734375,
+          7148.185546875
+        ],
+        "texel": [
+          194,
+          133
+        ],
+        "rgb": [
+          76,
+          137,
+          120
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_366",
+        "worldXZ": [
+          11509.46435546875,
+          7160.37158203125
+        ],
+        "texel": [
+          196,
+          133
+        ],
+        "rgb": [
+          71,
+          164,
+          161
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_371",
+        "worldXZ": [
+          11547.999984050415,
+          7067.546391285431
+        ],
+        "texel": [
+          196,
+          135
+        ],
+        "rgb": [
+          66,
+          121,
+          107
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_465",
+        "worldXZ": [
+          8638.10888671875,
+          4505.72119140625
+        ],
+        "texel": [
+          147,
+          178
+        ],
+        "rgb": [
+          66,
+          93,
+          57
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_503",
+        "worldXZ": [
+          8325.96337890625,
+          3572.3128662109375
+        ],
+        "texel": [
+          142,
+          194
+        ],
+        "rgb": [
+          115,
+          161,
+          95
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_506",
+        "worldXZ": [
+          8043.582763671875,
+          3582.09033203125
+        ],
+        "texel": [
+          137,
+          194
+        ],
+        "rgb": [
+          148,
+          195,
+          115
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_510",
+        "worldXZ": [
+          8023.8759765625,
+          3513.1729736328125
+        ],
+        "texel": [
+          136,
+          195
+        ],
+        "rgb": [
+          148,
+          195,
+          115
+        ]
+      },
+      {
+        "node": "Layer1.MapGeo_Instance_520",
+        "worldXZ": [
+          7130.785400390625,
+          3162.1434326171875
+        ],
+        "texel": [
+          121,
+          201
+        ],
+        "rgb": [
+          96,
+          135,
+          82
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_172",
+        "worldXZ": [
+          7170.437744140625,
+          14095.29638671875
+        ],
+        "texel": [
+          122,
+          15
+        ],
+        "rgb": [
+          104,
+          141,
+          71
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_177",
+        "worldXZ": [
+          2065.004638671875,
+          13543.99609375
+        ],
+        "texel": [
+          35,
+          25
+        ],
+        "rgb": [
+          98,
+          132,
+          76
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_178",
+        "worldXZ": [
+          2434.87255859375,
+          13536.7275390625
+        ],
+        "texel": [
+          41,
+          25
+        ],
+        "rgb": [
+          84,
+          118,
+          65
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_181",
+        "worldXZ": [
+          5315.516845703125,
+          13015.1611328125
+        ],
+        "texel": [
+          90,
+          34
+        ],
+        "rgb": [
+          79,
+          73,
+          62
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_183",
+        "worldXZ": [
+          1693.3540649414062,
+          13008.7705078125
+        ],
+        "texel": [
+          29,
+          34
+        ],
+        "rgb": [
+          90,
+          121,
+          66
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_188",
+        "worldXZ": [
+          1034.165283203125,
+          12756.16552734375
+        ],
+        "texel": [
+          18,
+          38
+        ],
+        "rgb": [
+          123,
+          154,
+          82
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_201",
+        "worldXZ": [
+          1170.1898498535156,
+          12351.341796875
+        ],
+        "texel": [
+          20,
+          45
+        ],
+        "rgb": [
+          87,
+          118,
+          68
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_213",
+        "worldXZ": [
+          8001.9130859375,
+          11828.3525390625
+        ],
+        "texel": [
+          136,
+          54
+        ],
+        "rgb": [
+          107,
+          101,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_217",
+        "worldXZ": [
+          4408.5635986328125,
+          11782.7216796875
+        ],
+        "texel": [
+          75,
+          55
+        ],
+        "rgb": [
+          126,
+          135,
+          84
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_218",
+        "worldXZ": [
+          4550.785888671875,
+          11707.42333984375
+        ],
+        "texel": [
+          77,
+          56
+        ],
+        "rgb": [
+          123,
+          137,
+          84
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_225",
+        "worldXZ": [
+          3363.488037109375,
+          11355.75146484375
+        ],
+        "texel": [
+          57,
+          62
+        ],
+        "rgb": [
+          90,
+          103,
+          117
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_228",
+        "worldXZ": [
+          9197.8408203125,
+          11479.69873046875
+        ],
+        "texel": [
+          156,
+          60
+        ],
+        "rgb": [
+          148,
+          158,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_265",
+        "worldXZ": [
+          6239.19677734375,
+          10298.83740234375
+        ],
+        "texel": [
+          106,
+          80
+        ],
+        "rgb": [
+          126,
+          152,
+          112
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_268",
+        "worldXZ": [
+          8289.4130859375,
+          10241.51806640625
+        ],
+        "texel": [
+          141,
+          81
+        ],
+        "rgb": [
+          140,
+          139,
+          84
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_277",
+        "worldXZ": [
+          2350.66259765625,
+          9788.28857421875
+        ],
+        "texel": [
+          40,
+          89
+        ],
+        "rgb": [
+          98,
+          111,
+          115
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_296",
+        "worldXZ": [
+          3039.9417724609375,
+          9051.65234375
+        ],
+        "texel": [
+          52,
+          101
+        ],
+        "rgb": [
+          54,
+          119,
+          98
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_299",
+        "worldXZ": [
+          4773.240966796875,
+          8703.01318359375
+        ],
+        "texel": [
+          81,
+          107
+        ],
+        "rgb": [
+          87,
+          98,
+          109
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_304",
+        "worldXZ": [
+          6622.566650390625,
+          8646.123046875
+        ],
+        "texel": [
+          113,
+          108
+        ],
+        "rgb": [
+          99,
+          138,
+          107
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_314",
+        "worldXZ": [
+          6153.521484375,
+          8255.90234375
+        ],
+        "texel": [
+          105,
+          115
+        ],
+        "rgb": [
+          101,
+          133,
+          109
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_318",
+        "worldXZ": [
+          776.8231811523438,
+          8143.04345703125
+        ],
+        "texel": [
+          13,
+          117
+        ],
+        "rgb": [
+          118,
+          147,
+          79
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_326",
+        "worldXZ": [
+          9907.99609375,
+          8004.5341796875
+        ],
+        "texel": [
+          168,
+          119
+        ],
+        "rgb": [
+          62,
+          136,
+          121
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_347",
+        "worldXZ": [
+          3404.3729248046875,
+          7773.0986328125
+        ],
+        "texel": [
+          58,
+          123
+        ],
+        "rgb": [
+          99,
+          97,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_369",
+        "worldXZ": [
+          4787.84228515625,
+          7119.343994140625
+        ],
+        "texel": [
+          81,
+          134
+        ],
+        "rgb": [
+          107,
+          134,
+          115
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_380",
+        "worldXZ": [
+          9119.09228515625,
+          6797.151611328125
+        ],
+        "texel": [
+          155,
+          139
+        ],
+        "rgb": [
+          41,
+          52,
+          57
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_384",
+        "worldXZ": [
+          14098.5927734375,
+          6974.104736328125
+        ],
+        "texel": [
+          240,
+          136
+        ],
+        "rgb": [
+          128,
+          174,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_398",
+        "worldXZ": [
+          8669.776611328125,
+          6380.135498046875
+        ],
+        "texel": [
+          147,
+          147
+        ],
+        "rgb": [
+          74,
+          113,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_409",
+        "worldXZ": [
+          8205.991977111817,
+          6118.963585427857
+        ],
+        "texel": [
+          140,
+          151
+        ],
+        "rgb": [
+          90,
+          128,
+          93
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_411",
+        "worldXZ": [
+          10395.1552734375,
+          6227.904052734375
+        ],
+        "texel": [
+          177,
+          149
+        ],
+        "rgb": [
+          41,
+          69,
+          57
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_416",
+        "worldXZ": [
+          10193.927734375,
+          6025.7763671875
+        ],
+        "texel": [
+          173,
+          153
+        ],
+        "rgb": [
+          99,
+          109,
+          123
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_417",
+        "worldXZ": [
+          11835.693359375,
+          5973.010498046875
+        ],
+        "texel": [
+          201,
+          153
+        ],
+        "rgb": [
+          60,
+          106,
+          88
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_422",
+        "worldXZ": [
+          12966.95556640625,
+          5902.669677734375
+        ],
+        "texel": [
+          220,
+          155
+        ],
+        "rgb": [
+          79,
+          100,
+          104
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_449",
+        "worldXZ": [
+          12017.080078125,
+          4936.177490234375
+        ],
+        "texel": [
+          204,
+          171
+        ],
+        "rgb": [
+          73,
+          101,
+          84
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_458",
+        "worldXZ": [
+          12022.833984375,
+          4658.539794921875
+        ],
+        "texel": [
+          204,
+          176
+        ],
+        "rgb": [
+          49,
+          65,
+          66
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_462",
+        "worldXZ": [
+          8588.13671875,
+          4715.308837890625
+        ],
+        "texel": [
+          146,
+          175
+        ],
+        "rgb": [
+          98,
+          144,
+          68
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_464",
+        "worldXZ": [
+          6544.358154296875,
+          4645.255859375
+        ],
+        "texel": [
+          111,
+          176
+        ],
+        "rgb": [
+          148,
+          195,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_496",
+        "worldXZ": [
+          11544.3466796875,
+          3911.4371337890625
+        ],
+        "texel": [
+          196,
+          189
+        ],
+        "rgb": [
+          93,
+          107,
+          120
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_512",
+        "worldXZ": [
+          8048.761962890625,
+          3500.55810546875
+        ],
+        "texel": [
+          137,
+          195
+        ],
+        "rgb": [
+          148,
+          195,
+          115
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_514",
+        "worldXZ": [
+          5625.003173828125,
+          3432.0709228515625
+        ],
+        "texel": [
+          96,
+          197
+        ],
+        "rgb": [
+          79,
+          113,
+          71
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_525",
+        "worldXZ": [
+          6829.617919921875,
+          3101.6298828125
+        ],
+        "texel": [
+          116,
+          202
+        ],
+        "rgb": [
+          123,
+          178,
+          90
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_526",
+        "worldXZ": [
+          10414.3994140625,
+          3069.4619140625
+        ],
+        "texel": [
+          177,
+          203
+        ],
+        "rgb": [
+          148,
+          190,
+          107
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_536",
+        "worldXZ": [
+          13543.8828125,
+          2823.4964599609375
+        ],
+        "texel": [
+          230,
+          207
+        ],
+        "rgb": [
+          99,
+          110,
+          62
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_549",
+        "worldXZ": [
+          13386.0927734375,
+          2419.2557983398438
+        ],
+        "texel": [
+          228,
+          214
+        ],
+        "rgb": [
+          118,
+          153,
+          96
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_554",
+        "worldXZ": [
+          9208.23095703125,
+          2166.2550659179688
+        ],
+        "texel": [
+          157,
+          218
+        ],
+        "rgb": [
+          132,
+          182,
+          82
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_559",
+        "worldXZ": [
+          12999.05908203125,
+          1932.4263305664062
+        ],
+        "texel": [
+          221,
+          222
+        ],
+        "rgb": [
+          123,
+          162,
+          99
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_565",
+        "worldXZ": [
+          12472.80029296875,
+          1352.6983032226562
+        ],
+        "texel": [
+          212,
+          232
+        ],
+        "rgb": [
+          132,
+          174,
+          99
+        ]
+      },
+      {
+        "node": "MapGeo_Instance_571",
+        "worldXZ": [
+          7786.02294921875,
+          794.3527221679688
+        ],
+        "texel": [
+          132,
+          241
+        ],
+        "rgb": [
+          112,
+          147,
+          82
+        ]
+      }
+    ]
+  },
+  "minimap": {
+    "source": "assets/maps/info/map11/2dlevelminimap_base_baron1.tex",
+    "sizeSourceUnits": [
+      14850,
+      14850
+    ],
+    "worldExtent": {
+      "minX": 0,
+      "minY": 32,
+      "maxX": 3168,
+      "maxY": 3200
+    }
+  }
+}

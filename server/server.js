@@ -337,7 +337,7 @@ io.on('connection', (socket) => {
       const d = data || {};
       const room = roomManager.getRoomBySocket(socket.id);
       if (!room || !room.gameEngine || room.state !== 'PLAYING') return;
-      room.gameEngine.handleCastSkill(socket.id, d.key, d.targetX, d.targetY);
+      room.gameEngine.handleCastSkill(socket.id, d.key, d.targetX, d.targetY, d.targetId);
     } catch (err) {
       console.error('castSkill error:', err);
     }

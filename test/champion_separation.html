@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>검객 / 가렌 독립 챔피언 검증</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"/lib/three.module.js","three/addons/":"/lib/three-addons/"}}</script>
+<style>body{margin:0;background:#101b24;color:#e4eaf0;font:14px system-ui;display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100vh}main{position:relative}canvas{display:block;width:100%;height:100%}header{position:absolute;top:28px;left:32px}h1{font-size:26px;margin:0}header p{color:#b9a16c}.labels{position:absolute;bottom:65px;width:100%;display:flex;justify-content:space-evenly;text-align:center}.labels div{width:40%}.labels b{font-size:24px}.labels p{color:#90abbc}aside{padding:24px;background:#182832;border-left:1px solid #344b59;overflow:auto}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#status{color:#dbc88f}body[data-status=PASS] #status{color:#95e4b0}body[data-status=FAIL] #status{color:#fa9999}.note{font-size:12px;line-height:1.8;color:#9aafb9}</style>
+<main><canvas id="scene"></canvas><header><h1>독립 챔피언 · 검객 + 가렌</h1><p>ACTUAL GAME RENDERER / DISTINCT MODEL & SKILL ROUTING</p></header><div class="labels"><div><b>검객</b><p>blademaster · 기존 절차형 모델<br>기존 QWER / 검·팔다리 애니메이션</p></div><div><b>가렌</b><p>garen · 추출한 기본 스킨<br>스켈레톤 68개 / 전용 QWER 리소스</p></div></div></main>
+<aside><h2>모델·이벤트 분리 검증</h2><p id="status">검증 준비 중…</p><p class="note">실제 GameRenderer의 모델 생성, 프레임 갱신, 스킬 이벤트 처리를 작은 검증 장면에서 호출합니다. 같은 플레이어 ID로 재경기할 때의 모델 교체도 확인합니다.</p><pre id="result">Loading…</pre></aside>
+<script type="module">
+import * as THREE from 'three';
+import { GameRenderer } from '/js/renderer.js';
+import { loadGarenAsset } from '/js/garenModel.js';
+import { GarenEffects } from '/js/garenEffects.js';
+import { GarenAudio } from '/js/garenAudio.js';
+const checks=[],errors=[],assert=(name,pass,detail)=>checks.push({name,pass:!!pass,...(detail===undefined?{}:{detail})}),wait=ms=>new Promise(r=>setTimeout(r,ms));
+window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+const canvas=document.getElementById('scene'),webgl=new THREE.WebGLRenderer({canvas,antialias:true});webgl.setPixelRatio(1);
+webgl.debug.onShaderError=(gl,p,vs,fs)=>errors.push({shader:gl.getProgramInfoLog(p),vertex:gl.getShaderInfoLog(vs),fragment:gl.getShaderInfoLog(fs)});
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x101b24);
+scene.add(new THREE.HemisphereLight(0xe5efff,0x65794f,2));const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(100,180,120);scene.add(light);
+scene.add(new THREE.GridHelper(400,20,0x7d7758,0x283e48));
+const camera=new THREE.PerspectiveCamera(40,1,.1,2000);camera.position.set(0,125,300);camera.lookAt(0,25,0);
+function resize(){webgl.setSize(canvas.parentElement.clientWidth,innerHeight,false);camera.aspect=canvas.width/canvas.height;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);
+// Use the production model/event/update methods without initializing an unrelated full arena.
+const renderer=Object.create(GameRenderer.prototype);
+Object.assign(renderer,{scene,localPlayerId:null,faceTextureCache:{},threePlayerMeshes:{},champAnimStates:{},gameState:{players:[],wards:[]},mapData:{bushes:[]},_cachedTargetVec:new THREE.Vector3(),hitFreezeTimer:0,shockwaves:[],slashTrails:[],gameFeelController:null,cameraCtrl:{addScreenShake(){}},garenEffects:new GarenEffects(scene),garenAudio:new GarenAudio()});
+const player=(id,championId,x=0)=>({id,championId,team:'blue',x,y:0,angle:Math.PI/2,vx:0,vy:0,isAlive:true,inBush:false,revealed:false,moveSpeed:310,garen:championId==='garen'?{qRemaining:0,wRemaining:0,eRemaining:0,rRemaining:0}:undefined});
+const countSkinned=group=>{let count=0;group.traverse(o=>{if(o.isSkinnedMesh)count++;});return count;};
+async function attached(group){await loadGarenAsset();for(let i=0;i<100&&!group.userData.garen&&!group.userData.disposed;i++)await wait(10);return group.userData.garen;}
+function clear(){renderer.update3DChampions([],0);renderer.garenEffects.update([],renderer.threePlayerMeshes,0);renderer.garenAudio.update([]);}
+function create(p){renderer.gameState.players=[p];renderer.update3DChampions([p],.016);return renderer.threePlayerMeshes[p.id];}
+let blade,garen,players=[];
+try{
+ const pending=create(player('same-socket','garen'));
+ assert('Garen attachment starts asynchronously',pending.userData.garenPending&&!pending.userData.garen);
+ clear();assert('Clearing pending owner marks it disposed',pending.userData.disposed&&!pending.parent);
+ const replacement=create(player('same-socket','blademaster'));
+ await loadGarenAsset();await wait(30);
+ assert('Late GLB load cannot attach to disposed owner',!pending.userData.garen&&!pending.children.some(o=>o.name==='GarenBaseVisual'));
+ assert('Same ID Garen-to-Blademaster retains procedural model',renderer.threePlayerMeshes['same-socket']===replacement&&!replacement.userData.garen&&!!replacement.userData.weapon);
+ clear();assert('Clearing removes animation state',!renderer.champAnimStates['same-socket']);
+ const newGaren=create(player('same-socket','garen'));const oldRig=await attached(newGaren);
+ assert('Same ID Blademaster-to-Garen loads a fresh rig',!!oldRig&&newGaren!==replacement&&countSkinned(newGaren)>0);
+ clear();assert('Clearing loaded Garen disposes rig',oldRig.disposed&&!oldRig.root.parent&&!newGaren.parent);
+ assert('Clearing empties mesh registry',Object.keys(renderer.threePlayerMeshes).length===0);
+ players=[player('blade','blademaster',-65),player('garen','garen',65)];renderer.gameState.players=players;
+ renderer.update3DChampions(players,.016);blade=renderer.threePlayerMeshes.blade;garen=renderer.threePlayerMeshes.garen;
+ await attached(garen);await renderer.garenEffects.ready;
+ assert('Only Garen receives extracted skeletal model',countSkinned(blade)===0&&countSkinned(garen)>0,{blade:countSkinned(blade),garen:countSkinned(garen)});
+ assert('Blademaster has no Garen pending flag or controller',!blade.userData.garenPending&&!blade.userData.garen);
+ assert('Blademaster retains four procedural limbs',['leftLeg','rightLeg','leftArm','rightArm'].every(k=>blade.userData[k]?.isObject3D));
+ assert('Blademaster retains segmented katana',blade.userData.weapon?.children.length>=5,{pieces:blade.userData.weapon?.children.length});
+ assert('Garen removes placeholder limbs and katana',['leftLeg','rightLeg','leftArm','rightArm','weapon'].every(k=>!garen.userData[k]));
+ assert('Both champion team rings survive',blade.userData.groundRing.parent===blade&&garen.userData.groundRing.parent===garen);
+ assert('Both champions coexist with separate transforms',blade!==garen&&blade.parent===scene&&garen.parent===scene&&blade.position.x!==garen.position.x);
+ const skeletons=[...garen.userData.garen.skeletons];assert('Extracted rig retains 68 bones',skeletons.some(s=>s.bones.length===68));
+ for(const key of ['Q','W','E','R']){const before=[renderer.slashTrails.length,renderer.shockwaves.length];renderer.triggerSkillVfx('blade','blademaster',key,0,0);const delta=[renderer.slashTrails.length-before[0],renderer.shockwaves.length-before[1]];assert('Blademaster '+key+' restores legacy feedback',key==='E'?delta[0]===1&&delta[1]===0:key==='R'?delta[0]===0&&delta[1]===1:delta[0]===1&&delta[1]===1,{delta});}
+ renderer.champAnimStates.blade.attackSwingTimer=0;players[0].vx=310;renderer.update3DChampions(players,.03);
+ assert('Blademaster procedural walking moves legs',Math.abs(blade.userData.leftLeg.rotation.x)>.01&&blade.userData.leftLeg.rotation.x===-blade.userData.rightLeg.rotation.x);
+ players[0].vx=0;renderer.triggerSkillVfx('blade','blademaster','Q',0,0);renderer.update3DChampions(players,.016);
+ assert('Blademaster procedural attack moves its katana',Math.abs(blade.userData.weapon.rotation.x)>.01);
+ const before=[renderer.slashTrails.length,renderer.shockwaves.length,renderer.garenEffects.active.length,garen.userData.garen.qRemaining];
+ for(const key of ['Q','W','E','R'])renderer.triggerSkillVfx('garen','garen',key,65,0);
+ assert('Garen local key feedback waits for accepted event',JSON.stringify(before)===JSON.stringify([renderer.slashTrails.length,renderer.shockwaves.length,renderer.garenEffects.active.length,garen.userData.garen.qRemaining]));
+ renderer.processEvents([{type:'garenSkill',playerId:'garen',key:'Q',phase:'cast',duration:8,x:65,y:0}]);players[1].garen.qRemaining=8;players[1].vx=310;renderer.update3DChampions(players,.016);
+ assert('Accepted Garen Q enters its own enhanced run clip',garen.userData.garen.current===4&&garen.userData.garen.qRemaining>0);
+ assert('Accepted Garen Q creates its own textured effect',renderer.garenEffects.active.some(e=>e.ownerId==='garen'));
+ assert('Garen events leave procedural champion unconverted',!blade.userData.garen&&!!blade.userData.weapon);
+ renderer.garenEffects.clear('garen');garen.userData.garen.skill({key:'Q',phase:'end'});players[1].garen.qRemaining=0;players[1].vx=0;renderer.champAnimStates.blade.attackSwingTimer=0;
+ renderer.update3DChampions(players,.2);webgl.compile(scene,camera);webgl.render(scene,camera);await wait(80);
+ assert('Both models and outlines render without shader errors',errors.length===0&&webgl.info.render.calls>5,{calls:webgl.info.render.calls});
+}catch(e){errors.push({message:e.message,stack:e.stack});}
+const report={status:checks.every(c=>c.pass)&&errors.length===0?'PASS':'FAIL',passed:checks.filter(c=>c.pass).length,total:checks.length,scope:'Actual GameRenderer model factory, update3DChampions, triggerSkillVfx, processEvents in a compact scene; excludes full lobby socket flow',checks,errors};
+document.getElementById('status').textContent=report.status+' · '+report.passed+'/'+report.total;document.getElementById('result').textContent=JSON.stringify(report,null,2);document.body.dataset.status=report.status;console.log('CHAMPION_SEPARATION_TEST '+JSON.stringify(report));
+function frame(){webgl.render(scene,camera);requestAnimationFrame(frame);}frame();
+</script>
+

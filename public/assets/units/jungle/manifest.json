@@ -1,0 +1,1044 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Maps/Shipping/Map11.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "1.0.0+d36a532"
+  },
+  "description": "Nine original primary jungle camp models selected by complete SkinMeshDataProperties and AnimationGraphData records. Dragon is original Infernal skin using the shared Air mesh, as the source skin specifies.",
+  "integration": {
+    "mapScale": 0.21333333333333335,
+    "multiplyBySourceSkinScale": true,
+    "groundOffset": 0,
+    "notes": [
+      "Original skeletons, diffuse textures and referenced core clips. Original particle/sound graphs not included.",
+      "One primary monster per existing engine entity; no extra companions or camp splitting."
+    ]
+  },
+  "models": [
+    {
+      "id": "baron",
+      "file": "baron.glb",
+      "bytes": 5278992,
+      "sha256": "74e8d8092548407557afba983a28fe5c1c0cb67582e7b85029e8d44690ff5f6d",
+      "metadata": {
+        "kind": "jungle",
+        "type": "baron",
+        "sourceScale": 0.8999999761581421,
+        "initialHidden": [
+          "horn",
+          "eye"
+        ],
+        "idle": "sru_baron_idle1",
+        "run": null,
+        "attacks": [
+          "sru_baron_attack1",
+          "sru_baron_attack2"
+        ],
+        "deaths": [
+          "sru_baron_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 131,
+      "meshes": [
+        {
+          "name": "Shield",
+          "vertices": 33,
+          "min": [
+            -28.448030471801758,
+            472.63897705078125,
+            287.3352966308594
+          ],
+          "max": [
+            28.448030471801758,
+            571.8623657226562,
+            311.34527587890625
+          ]
+        },
+        {
+          "name": "Horn",
+          "vertices": 144,
+          "min": [
+            -28.448030471801758,
+            472.63897705078125,
+            287.3352966308594
+          ],
+          "max": [
+            28.448030471801758,
+            581.130615234375,
+            452.35870361328125
+          ]
+        },
+        {
+          "name": "Eye",
+          "vertices": 106,
+          "min": [
+            -28.448030471801758,
+            472.63897705078125,
+            287.3352966308594
+          ],
+          "max": [
+            28.448030471801758,
+            571.8623657226562,
+            311.34527587890625
+          ]
+        },
+        {
+          "name": "Body",
+          "vertices": 14392,
+          "min": [
+            -342.7787780761719,
+            -198.785400390625,
+            -273.8977966308594
+          ],
+          "max": [
+            342.7787780761719,
+            859.6032104492188,
+            338.1394958496094
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_baron_attack1",
+          "duration": 1.9666668176651
+        },
+        {
+          "name": "sru_baron_attack2",
+          "duration": 1.9666668176651
+        },
+        {
+          "name": "sru_baron_death",
+          "duration": 5.000000476837158
+        },
+        {
+          "name": "sru_baron_idle1",
+          "duration": 3.9666669368743896
+        }
+      ],
+      "notes": [
+        "Stationary Baron has no run role in the base graph."
+      ],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_baron/skins/base/animations/sru_baron_attack1.anm",
+          "sha256": "3fe6730dac90f32a2fd1694b02726ced6da53d01fb70a12e892a1f3b00ce0565"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/animations/sru_baron_attack2.anm",
+          "sha256": "55da790cd1baf55bedf76baad862f10f4a0ba4d6fdfbba2bdc82e93196137e99"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/animations/sru_baron_death.anm",
+          "sha256": "72a6020e1bf76446535cbc6426413f1042ee0d18262e663a15dbd5d5b7b5841b"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/animations/sru_baron_idle1.anm",
+          "sha256": "f23a9a6844192fd59be3b7c7383a86d2861f43712155d921df0afb9135ded68c"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/baron_base_tx_cm.tex",
+          "sha256": "c80c6f0512ed9de9b64628ba6d01cdcf26eb432f0b5f6efb4d43da52472d7635"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/sru_baron_base.skl",
+          "sha256": "1644937d64c3a60a3446611b90e6cda43434dd22ce6c8e8e18fa14300ffedb0e"
+        },
+        {
+          "path": "assets/characters/sru_baron/skins/base/sru_baron_base.skn",
+          "sha256": "b53e8e88b46e5246b4d121e8e8418201a95736f20305c782e70a39305a855b4c"
+        },
+        {
+          "path": "data/characters/sru_baron/animations/skin0.bin",
+          "sha256": "937e65ccdf691bd8a84cd95bb4d14caf7004acce21298f9d191716e4fa5d5cc0"
+        },
+        {
+          "path": "data/characters/sru_baron/skins/skin0.bin",
+          "sha256": "7fe7cc331edf7debbe5d3a103494bc4c6313fcd9c532ee6dff610729cc4edd28"
+        }
+      ]
+    },
+    {
+      "id": "dragon",
+      "file": "dragon.glb",
+      "bytes": 4658904,
+      "sha256": "ded89570c13274d7faa939e5695a43588ba35c57089a520303dee1b2465b30b3",
+      "metadata": {
+        "kind": "jungle",
+        "type": "dragon",
+        "sourceScale": 1.25,
+        "initialHidden": [],
+        "idle": "sru_dragon_idle_normal",
+        "run": "sru_dragon_flying_run",
+        "attacks": [
+          "sru_dragon_flying_attack1"
+        ],
+        "deaths": [
+          "sru_dragon_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 106,
+      "meshes": [
+        {
+          "name": "MAT_Dragon",
+          "vertices": 6103,
+          "min": [
+            -256.72021484375,
+            -150.80918884277344,
+            -170.48910522460938
+          ],
+          "max": [
+            256.72021484375,
+            175.65660095214844,
+            196.37008666992188
+          ]
+        },
+        {
+          "name": "Dragon_RG_Default1",
+          "vertices": 244,
+          "min": [
+            -234.07958984375,
+            112.5385971069336,
+            -43.970333099365234
+          ],
+          "max": [
+            234.07958984375,
+            145.22979736328125,
+            90.05545806884766
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_dragon_death",
+          "duration": 8.40000057220459
+        },
+        {
+          "name": "sru_dragon_flying_attack1",
+          "duration": 1.9666668176651
+        },
+        {
+          "name": "sru_dragon_flying_run",
+          "duration": 2.3000001907348633
+        },
+        {
+          "name": "sru_dragon_idle_normal",
+          "duration": 3.9666669368743896
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_dragon/skins/base/animations/sru_dragon_death.anm",
+          "sha256": "347c434c2f3e52068ddda2fc3710a63a9f078534691a5e8065f99390b87bfe0c"
+        },
+        {
+          "path": "assets/characters/sru_dragon/skins/base/animations/sru_dragon_idle_normal.anm",
+          "sha256": "ff5339c6b9535d94c9c162b21d9f229756b296639b6a33b6cfd3d5995c023bf9"
+        },
+        {
+          "path": "assets/characters/sru_dragon_air/skins/base/animations/sru_dragon_flying_attack1.anm",
+          "sha256": "d678a66fab4df54c4b0859d0ee62b5a6b826c4cb8778399676495e97bbd799b2"
+        },
+        {
+          "path": "assets/characters/sru_dragon_air/skins/base/animations/sru_dragon_flying_run.anm",
+          "sha256": "f90a99362fafe90420b776ec11ba460df0e737af6e735da83deddd8362d9cb5f"
+        },
+        {
+          "path": "assets/characters/sru_dragon_fire/skins/base/sru_dragon_fire_tx_cm.tex",
+          "sha256": "1bc281a5b46749b20b0f00c7cb090ba10e95faafc224012f81f7c428f931d5c7"
+        },
+        {
+          "path": "assets/characters/sru_dragon_air/skins/base/sru_dragon_air.skl",
+          "sha256": "00c9a9567d375fe8ec7c1be6c5ba05aa6e140bd8df3c64456a561f2291473d5f"
+        },
+        {
+          "path": "assets/characters/sru_dragon_air/skins/base/sru_dragon_air.skn",
+          "sha256": "689734dc5943e512feed31a5240b479d26144be82f3a1d43643d01634d8d234d"
+        },
+        {
+          "path": "data/characters/sru_dragon_fire/animations/skin0.bin",
+          "sha256": "f17f1f400ba6d99b21a618b0a5f26678102ee360dc9f250449342ee99e4e03d5"
+        },
+        {
+          "path": "data/characters/sru_dragon_fire/skins/skin0.bin",
+          "sha256": "e7c85343ec3aaceec51b265a3f2ee58e19139d4a0c8e6e5f9566eff3191e87ed"
+        }
+      ]
+    },
+    {
+      "id": "buff_blue",
+      "file": "buff_blue.glb",
+      "bytes": 3179272,
+      "sha256": "6d3181d21998e13783f0bd05ff571217b86714d0ec0f3bbaab424d5979fee1c9",
+      "metadata": {
+        "kind": "jungle",
+        "type": "buff_blue",
+        "sourceScale": 1.3700000047683716,
+        "initialHidden": [],
+        "idle": "sru_blue_idle_normal",
+        "run": "sru_blue_run",
+        "attacks": [
+          "sru_blue_attack1",
+          "sru_blue_attack2",
+          "sru_blue_attack3"
+        ],
+        "deaths": [
+          "sru_blue_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 64,
+      "meshes": [
+        {
+          "name": "Blue_Golem_CM",
+          "vertices": 5241,
+          "min": [
+            -200.73348999023438,
+            -2.0431671142578125,
+            -113.66439819335938
+          ],
+          "max": [
+            200.73348999023438,
+            234.20509338378906,
+            55.58883285522461
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_blue_attack1",
+          "duration": 2
+        },
+        {
+          "name": "sru_blue_attack2",
+          "duration": 2
+        },
+        {
+          "name": "sru_blue_attack3",
+          "duration": 2
+        },
+        {
+          "name": "sru_blue_death",
+          "duration": 4.933333396911621
+        },
+        {
+          "name": "sru_blue_idle_normal",
+          "duration": 0.9666666984558105
+        },
+        {
+          "name": "sru_blue_run",
+          "duration": 1.2666667699813843
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_attack1.anm",
+          "sha256": "c2d81a894418d60b80337525992704552f2eabd849b2d1388c2b99a0c3a6688d"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_attack2.anm",
+          "sha256": "d21ddc043a6816ce70f4699493b899698045b759772338de78ea6873e1e1648d"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_attack3.anm",
+          "sha256": "c471b3ecaf47196e373dccc80fd7fd4da34b53c14a8127fab2f7ceb9161e7b18"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_death.anm",
+          "sha256": "0bedb6ced6cb51fa59ae61356f455268ff53b528c9fa204df2fdb3f2236ef941"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_idle_normal.anm",
+          "sha256": "a77dbe97b324937b022fbb73f70476988dcaccd1109e4b0b85d9328e5c36ef1b"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/animations/sru_blue_run.anm",
+          "sha256": "573958625ca4c25e0cb875f2e6bfb541ab8c228f1dbc1c18062ba4de769867f6"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/sru_blue_golem_v2.tex",
+          "sha256": "8984ddb7c63f3ec29cd011661f7e0579470cc6ae24a02f6042473d2f48d6743c"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/sru_blue.skl",
+          "sha256": "1bd812c9000818d8f64f458f3e564d415f90bf7012d021f84eb97f77461442e8"
+        },
+        {
+          "path": "assets/characters/sru_blue/skins/base/sru_blue.skn",
+          "sha256": "997fc3a02d23f708bc08ab7675bc770db1de02f28b7e954010a53364d1e02989"
+        },
+        {
+          "path": "data/characters/sru_blue/animations/skin0.bin",
+          "sha256": "13f11001a1d3de1ab9adc8b99b59f11cc7d1108ed344dc08099b55c1441b217b"
+        },
+        {
+          "path": "data/characters/sru_blue/skins/skin0.bin",
+          "sha256": "abd7b445aaf25c07c1e5c61ad1b33c491e927df3277c11185779a29e70bb5bf8"
+        }
+      ]
+    },
+    {
+      "id": "buff_red",
+      "file": "buff_red.glb",
+      "bytes": 2710724,
+      "sha256": "0a06eed929ba61dec8a4feff2edb44beeb0e6712d573aa4f1c92967f52a31c1f",
+      "metadata": {
+        "kind": "jungle",
+        "type": "buff_red",
+        "sourceScale": 2.075000047683716,
+        "initialHidden": [],
+        "idle": "sru_red_idle1",
+        "run": "sru_red_run",
+        "attacks": [
+          "sru_red_attack1",
+          "sru_red_attack2",
+          "sru_red_attack3"
+        ],
+        "deaths": [
+          "sru_red_death"
+        ],
+        "deathVisibility": [
+          {
+            "_type": "SubmeshVisibilityEventData",
+            "mName": "SubmeshOff",
+            "mHideSubmeshList": [
+              "RedBuff_TX"
+            ]
+          }
+        ]
+      },
+      "joints": 69,
+      "meshes": [
+        {
+          "name": "RedBuff_TX",
+          "vertices": 2704,
+          "min": [
+            -94.27595520019531,
+            -3.4077401161193848,
+            -52.68680191040039
+          ],
+          "max": [
+            94.27595520019531,
+            127.64839935302734,
+            95.41858673095703
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_red_attack1",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_red_attack2",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_red_attack3",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_red_death",
+          "duration": 2.700000047683716
+        },
+        {
+          "name": "sru_red_idle1",
+          "duration": 2.633333444595337
+        },
+        {
+          "name": "sru_red_run",
+          "duration": 1.033333420753479
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_attack1.anm",
+          "sha256": "e3ac56c4ed654ba760bf70a875bb753284d38dca9900da3e462553cff3aa091d"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_attack2.anm",
+          "sha256": "6bc5800c1d66cc68ceb8dde558f1fab053067429755995bbe9f98731f1f3ec2c"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_attack3.anm",
+          "sha256": "7161c5d4e061da84f8985d7d6b912e67a9d29734f235357eedac1ac7ce5f5e9f"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_death.anm",
+          "sha256": "c31d6100365c543f5c01dc2e80f848120d46126bc43f9512a9f1556a7ec7bb00"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_idle1.anm",
+          "sha256": "bc150c12c9c3424be3a392286a7b6932e3a6a31d004b9ac2154b928507fbedea"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/animations/sru_red_run.anm",
+          "sha256": "fadf178b328e8c63ea13602250ebfb6ae431e68de06d44d453216d37de205938"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/sru_red.tex",
+          "sha256": "e078153961d8b2c392c6c53df2f329a01964d3a5d604cc2f55cdb398a859e61d"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/sru_red.skl",
+          "sha256": "76f1e7b1b49c39a388d357f86a72ce505a14f9770eac5d6e164d6c33b0a8ad33"
+        },
+        {
+          "path": "assets/characters/sru_red/skins/base/sru_red.skn",
+          "sha256": "a24e9c00bb472051fe650560c1b5fcc617c9009eecc0f0540e13271dc1bdf8fa"
+        },
+        {
+          "path": "data/characters/sru_red/animations/skin0.bin",
+          "sha256": "d8316d4b33c7a7a4f616506cbaf3cfd675b35612e9b3d1c96a2155b666d7819e"
+        },
+        {
+          "path": "data/characters/sru_red/skins/skin0.bin",
+          "sha256": "6c415b592c7215245c62960d9cb338ec2bde15a2804a37f05001b76c564a9d38"
+        }
+      ]
+    },
+    {
+      "id": "scuttle",
+      "file": "scuttle.glb",
+      "bytes": 972092,
+      "sha256": "40f0563b30d3a454e1d1cabb6bc653ee85889d12a3ea5c5493d73cb919387f26",
+      "metadata": {
+        "kind": "jungle",
+        "type": "scuttle",
+        "sourceScale": 0.75,
+        "initialHidden": [],
+        "idle": "sru_crab_idle1",
+        "run": "sru_crab_run2",
+        "attacks": [],
+        "deaths": [],
+        "deathVisibility": []
+      },
+      "joints": 66,
+      "meshes": [
+        {
+          "name": "lambert2",
+          "vertices": 2730,
+          "min": [
+            -112.53179931640625,
+            -7.919849872589111,
+            -150.2821044921875
+          ],
+          "max": [
+            112.53179931640625,
+            177.52340698242188,
+            102.95879364013672
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_crab_idle1",
+          "duration": 3.1666667461395264
+        },
+        {
+          "name": "sru_crab_run2",
+          "duration": 0.5333333611488342
+        }
+      ],
+      "notes": [
+        "Source animation graph contains no attack/death clip. Peaceful crab uses original idle/run; death is a short web removal hold."
+      ],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_crab/skins/base/animations/sru_crab_idle1.anm",
+          "sha256": "5eb8dde1d6d7fb8485e908412f6c434f1790061ed1a97a0952512f4d2a153021"
+        },
+        {
+          "path": "assets/characters/sru_crab/skins/base/animations/sru_crab_run2.anm",
+          "sha256": "62c96d9ec03f32fd5d1fc03ecf8e09877c11e4f977087ffa03fa296b07d536d3"
+        },
+        {
+          "path": "assets/characters/sru_crab/skins/base/sru_crab_tx_cm.tex",
+          "sha256": "af8ef2d7ee2229b626d79086313ff13d7d90e11bb3bb6a7726a4089b474568ee"
+        },
+        {
+          "path": "assets/characters/sru_crab/skins/base/sru_crab.skl",
+          "sha256": "ac4d0d8a6c65047b6a05bcb8b34e439cf70d2356137844eec7869267ed0e223a"
+        },
+        {
+          "path": "assets/characters/sru_crab/skins/base/sru_crab.skn",
+          "sha256": "c55601a564d2d0ea64c954b2fe3795089647649f126af2bf802122285900a562"
+        },
+        {
+          "path": "data/characters/sru_crab/animations/skin0.bin",
+          "sha256": "17f230270df76adbde74f55ca5a4759634aa4740315cbf3c53d00687c6143d57"
+        },
+        {
+          "path": "data/characters/sru_crab/skins/skin0.bin",
+          "sha256": "6996a0566e43fd8b4bcaf21f92c9246459b3999ed7bc1f2072159e8a05c00886"
+        }
+      ]
+    },
+    {
+      "id": "gromp",
+      "file": "gromp.glb",
+      "bytes": 2494844,
+      "sha256": "ba8070aa03cdda575e33c5a61deff0b1cdf95dfc5471616b6a477c346521ad3a",
+      "metadata": {
+        "kind": "jungle",
+        "type": "gromp",
+        "sourceScale": 1,
+        "initialHidden": [
+          "sru_gromp_mini_mat",
+          "toad_spawn_mat"
+        ],
+        "idle": "sru_gromp_idle1",
+        "run": "sru_gromp_run",
+        "attacks": [
+          "sru_gromp_attack1",
+          "sru_gromp_attack1b"
+        ],
+        "deaths": [
+          "sru_gromp_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 82,
+      "meshes": [
+        {
+          "name": "Toad_Mat",
+          "vertices": 3551,
+          "min": [
+            -123.55559539794922,
+            -42.22874069213867,
+            -95.64083099365234
+          ],
+          "max": [
+            123.55559539794922,
+            170.65939331054688,
+            202.35247802734375
+          ]
+        },
+        {
+          "name": "Toad_Spawn_Mat",
+          "vertices": 172,
+          "min": [
+            -27.36927032470703,
+            -13.9268798828125,
+            -26.857030868530273
+          ],
+          "max": [
+            33.68973922729492,
+            54.801170349121094,
+            31.32917022705078
+          ]
+        },
+        {
+          "name": "SRU_Gromp_mini_mat",
+          "vertices": 519,
+          "min": [
+            -36.57790756225586,
+            -0.6533700227737427,
+            -218.74249267578125
+          ],
+          "max": [
+            36.57790756225586,
+            51.86540985107422,
+            -151.29820251464844
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_gromp_attack1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "sru_gromp_attack1b",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "sru_gromp_death",
+          "duration": 4.9666666984558105
+        },
+        {
+          "name": "sru_gromp_idle1",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "sru_gromp_run",
+          "duration": 0.5333333611488342
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_gromp/skins/base/animations/sru_gromp_attack1.anm",
+          "sha256": "b3127b30582eba8f4d9da77c0c117089886da00f433158c85aa5c482982d04b3"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/animations/sru_gromp_attack1b.anm",
+          "sha256": "a8a81a74e901b767212fa16e3f8c135f3024d357a211877623603e550f6bee4b"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/animations/sru_gromp_death.anm",
+          "sha256": "944a037e8bb0a01fb0fb927157bc02497eb9ec22be5e5285c959bfd369bbf4b0"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/animations/sru_gromp_idle1.anm",
+          "sha256": "044edc5da68e67b6086077a9c10d1123662ff1e9c87672ca3e6fa9fb6bb51dd6"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/animations/sru_gromp_run.anm",
+          "sha256": "8b39c8e66deac69fe29c38c93a32058a7c2f13987be9c73dc267b5f2b7f74855"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/sru_gromp_base_tx_cm.tex",
+          "sha256": "cf8d46ed2fbd13c888a5e6259974b5ceb5dd02f02329575bb97686d9a2a09f50"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/sru_gromp_mini_tx_cm.tex",
+          "sha256": "94babd011bb3a092b63352a0d98eaba5e29689a229d27b27ac2e7c25bf4bf806"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/sru_gromp.skl",
+          "sha256": "ce9e929bc52f626673d52f99d65b78364f24e1cd96a9c2a39f7415f2b74231a4"
+        },
+        {
+          "path": "assets/characters/sru_gromp/skins/base/sru_gromp.skn",
+          "sha256": "e17787fd44dfc8093ee82e0c99bb2dea4b2a7558d294a84edfaf53ede7cb3042"
+        },
+        {
+          "path": "data/characters/sru_gromp/animations/skin0.bin",
+          "sha256": "75bc409e6acae80144d6272f80ce01e465a1c163825823bab9b0f1f3c7bf7251"
+        },
+        {
+          "path": "data/characters/sru_gromp/skins/skin0.bin",
+          "sha256": "a091825bf69f60d0454e8d16f3fe87ba94e653c371573e9452db68e93f51a437"
+        }
+      ]
+    },
+    {
+      "id": "wolves",
+      "file": "wolves.glb",
+      "bytes": 1957580,
+      "sha256": "9b9992a26de40957eb565c9ca6258b51d569d1491a401c04b5403c3ccc6f7ed5",
+      "metadata": {
+        "kind": "jungle",
+        "type": "wolves",
+        "sourceScale": 1.2000000476837158,
+        "initialHidden": [],
+        "idle": "sru_murkwolf_idle1",
+        "run": "sru_murkwolf_run",
+        "attacks": [
+          "sru_murkwolf_attack1",
+          "sru_murkwolf_attack4"
+        ],
+        "deaths": [
+          "sru_murkwolf_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 61,
+      "meshes": [
+        {
+          "name": "wolf_mat1",
+          "vertices": 3261,
+          "min": [
+            -49.94519805908203,
+            -0.8885712027549744,
+            -158.88629150390625
+          ],
+          "max": [
+            49.94519805908203,
+            99.8099594116211,
+            82.57733154296875
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_murkwolf_attack1",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_murkwolf_attack4",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_murkwolf_death",
+          "duration": 3.3000001907348633
+        },
+        {
+          "name": "sru_murkwolf_idle1",
+          "duration": 2.633333444595337
+        },
+        {
+          "name": "sru_murkwolf_run",
+          "duration": 0.7666667103767395
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/animations/sru_murkwolf_attack1.anm",
+          "sha256": "457bdf9847768689923e20116e1d4298508a3d1b955bee2c24d18f68da80a052"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/animations/sru_murkwolf_attack4.anm",
+          "sha256": "2832ff3ba599fbfca1dd3a741b6d461b93e273937ccdc483b33e2879b35f299f"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/animations/sru_murkwolf_death.anm",
+          "sha256": "080c2a3ce8e33932dadb47be23cb9e59a324c428554b6549b7e176b52ed8ab6f"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/animations/sru_murkwolf_idle1.anm",
+          "sha256": "0ed35d3dd32eb50f18164d443a8f22bbfc6dcd4102d7c6c5553a1a163ed7f2d3"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/animations/sru_murkwolf_run.anm",
+          "sha256": "2cb392734106d8660aa241e6dd3de850e0598dc033b5c3dc26db36b1ce4a01d7"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/sru_murkwolf.tex",
+          "sha256": "4d51c41ac57624f44ffd9255ee30d593d86fc1adeaa9d3fa45993473050482cf"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/sru_murkwolf.skl",
+          "sha256": "d4530f8bd86c7afc4e6860b7a185649950bf590d84521a01cf2f10fa1d625ca2"
+        },
+        {
+          "path": "assets/characters/sru_murkwolf/skins/base/sru_murkwolf.skn",
+          "sha256": "b3385bfef9cb071276f10d31790a34e4469452051353cabd91894bc9186ebd96"
+        },
+        {
+          "path": "data/characters/sru_murkwolf/animations/skin0.bin",
+          "sha256": "eabf8b3c2c85f63d6fbe23ce000c33532107b53c56a6f29926dfebe76f356c05"
+        },
+        {
+          "path": "data/characters/sru_murkwolf/skins/skin0.bin",
+          "sha256": "f6ab6cbe116e80edde7c22ee154a5fdf2bc47457f5342d8b1f3b69e287739779"
+        }
+      ]
+    },
+    {
+      "id": "raptors",
+      "file": "raptors.glb",
+      "bytes": 1687736,
+      "sha256": "f0464e241c0e8c3c6ebeb04f136b773b8557a3864157815df8fde6c1295d6696",
+      "metadata": {
+        "kind": "jungle",
+        "type": "raptors",
+        "sourceScale": 1.399999976158142,
+        "initialHidden": [],
+        "idle": "sru_razorbeak_idle_normal1",
+        "run": "sru_razorbeak_run",
+        "attacks": [
+          "sru_razorbeak_ranged_attack1",
+          "sru_razorbeak_ranged_attack2"
+        ],
+        "deaths": [
+          "sru_razorbeak_death"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 48,
+      "meshes": [
+        {
+          "name": "lambert3",
+          "vertices": 2544,
+          "min": [
+            -43.967681884765625,
+            -0.4654200077056885,
+            -96.58440399169922
+          ],
+          "max": [
+            43.96770095825195,
+            108.57150268554688,
+            71.49798583984375
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "sru_razorbeak_death",
+          "duration": 3.500000238418579
+        },
+        {
+          "name": "sru_razorbeak_idle_normal1",
+          "duration": 2.3000001907348633
+        },
+        {
+          "name": "sru_razorbeak_ranged_attack1",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_razorbeak_ranged_attack2",
+          "duration": 1.633333444595337
+        },
+        {
+          "name": "sru_razorbeak_run",
+          "duration": 1.2000000476837158
+        }
+      ],
+      "notes": [],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/animations/sru_razorbeak_death.anm",
+          "sha256": "de526e5c9fe76b5d09ea33cae6458bca7b31c5ac26163f0cb404a055e00f5bf2"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/animations/sru_razorbeak_idle_normal1.anm",
+          "sha256": "658ae845372b118ebe9c6bbe68cd095664abe8513024f914584839b7ff16201c"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/animations/sru_razorbeak_ranged_attack1.anm",
+          "sha256": "343be7cd639a46da462546b6d69acdd0644ac51b7d9e74a141a6b6d8433bc849"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/animations/sru_razorbeak_ranged_attack2.anm",
+          "sha256": "c2ec06a9b20e4fdf1e74ed31a31f0aeca3c970716450ba1ae61e1cad1bf723ba"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/animations/sru_razorbeak_run.anm",
+          "sha256": "5d6b7634b8fa9dad9a28fd1967e3bd7317caa0333e9592bf6ee903791c4414a9"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/sru_razorbeak_tx_cm.tex",
+          "sha256": "674e5de10e182e1264a4769afccf3e5186ea9bec9ad84615424237f33e760fe2"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/sru_razorbeak.skl",
+          "sha256": "af75cff2ed5b987f96b91f476f7b8e690dc39465e00749683027ae62de048514"
+        },
+        {
+          "path": "assets/characters/sru_razorbeak/skins/base/sru_razorbeak.skn",
+          "sha256": "64583cd2d994c2f1dc099ba15d2843c18318c4096dc81517e18141802825fff8"
+        },
+        {
+          "path": "data/characters/sru_razorbeak/animations/skin0.bin",
+          "sha256": "e7e699f0a57d0704bc0c8488722749c151b008df5e2f094ae558776f79001657"
+        },
+        {
+          "path": "data/characters/sru_razorbeak/skins/skin0.bin",
+          "sha256": "9d89be2394d5c69edacbb6bb142d4f2420ee9eb126256ed2a3a06ff220907838"
+        }
+      ]
+    },
+    {
+      "id": "krugs",
+      "file": "krugs.glb",
+      "bytes": 1512112,
+      "sha256": "16df469a0c7e68f31cc3850eb6da153d79f20905775cb89e8ae0a8eb9f301b05",
+      "metadata": {
+        "kind": "jungle",
+        "type": "krugs",
+        "sourceScale": 1.149999976158142,
+        "initialHidden": [],
+        "idle": "krug_idle_normal",
+        "run": "krug_run2",
+        "attacks": [
+          "krug_attack1",
+          "krug_attack4",
+          "krug_attack5"
+        ],
+        "deaths": [
+          "krug_death2"
+        ],
+        "deathVisibility": []
+      },
+      "joints": 46,
+      "meshes": [
+        {
+          "name": "SRU_Krugs_MD_Rockem_Mini2",
+          "vertices": 1769,
+          "min": [
+            -70.81352996826172,
+            -0.8652199506759644,
+            -91.9913330078125
+          ],
+          "max": [
+            76.76394653320312,
+            151.5164031982422,
+            60.92985153198242
+          ]
+        }
+      ],
+      "animations": [
+        {
+          "name": "krug_attack1",
+          "duration": 1.6000001430511475
+        },
+        {
+          "name": "krug_attack4",
+          "duration": 1.6000001430511475
+        },
+        {
+          "name": "krug_attack5",
+          "duration": 1.6000001430511475
+        },
+        {
+          "name": "krug_death2",
+          "duration": 3.9333336353302
+        },
+        {
+          "name": "krug_idle_normal",
+          "duration": 0.6000000238418579
+        },
+        {
+          "name": "krug_run2",
+          "duration": 0.6000000238418579
+        }
+      ],
+      "notes": [
+        "GoldenKrug StaticMaterialDef entry could not be decoded; base SkinMeshDataProperties and graph decoded fully. Uses explicit original base diffuse texture, without the golden dynamic shader."
+      ],
+      "sourceFiles": [
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_attack1.anm",
+          "sha256": "0f9c0e18e81c0993da5b93f40544bf6302368372f502fba0ace0c08a76bfd431"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_attack4.anm",
+          "sha256": "38086d57487b76dd9478576c5763bab8a5d8a8afce7affeace6b6196d81f8069"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_attack5.anm",
+          "sha256": "b7ca6e2e9315c21a1aac062ae0fdeab10853b5ba0ae6db1710a397294fd7a57f"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_death2.anm",
+          "sha256": "eace32b8ad292944e842f6aa2810ab6add921fc57faabb7cc81cc18355d8545e"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_idle_normal.anm",
+          "sha256": "c207ba33c430961bdce9c0e26af4cae463a07e413a81cc1dc9b310acd295165a"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/animations/krug_run2.anm",
+          "sha256": "c2fa9bd628833ad974e6603860090f4b36b4f970f875591efdf86cd7ab022ef0"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/sru_krug_base_tx_cm.tex",
+          "sha256": "806f596858accf2399ef3cc9a877f7162fd011c2695b212718f7485e55846fe9"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/sru_krug.skl",
+          "sha256": "ebdbecfd0fab228af9505dab2692f46d38a1b7edbf9fbfbdd37b8a91e4aadad1"
+        },
+        {
+          "path": "assets/characters/sru_krug/skins/base/sru_krug.skn",
+          "sha256": "87d0e80f88fe58713a75dce1f34a559bac81bbb03aac2cd52aa0fe1c76e9c4a0"
+        },
+        {
+          "path": "data/characters/sru_krug/animations/skin0.bin",
+          "sha256": "ff87682c5f75dd21e2360bc6a8dafdfebc0e4612d1e1679a178956bf2d24ef4e"
+        },
+        {
+          "path": "data/characters/sru_krug/skins/skin0.bin",
+          "sha256": "290cd56a5289cba11a0a0bd383f6302e73ac2cd3f86587d9618b8a5f77c91e9d"
+        }
+      ]
+    }
+  ]
+}

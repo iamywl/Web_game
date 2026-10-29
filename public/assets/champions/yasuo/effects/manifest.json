@@ -1,0 +1,197 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Champions/Yasuo.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "2025-02-28-d36a532"
+  },
+  "scope": "Original base-skin texture images decoded locally. Web geometry, timing and composition are reconstructed, not the proprietary particle graph. Garen mesh is only a texture-decoder carrier; no carrier geometry is included.",
+  "files": [
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_q_tornado_blade.tex",
+      "sha256": "daa476318dc4ff99ec419c595b656a918c020965379450c006005f095b4c5ae2",
+      "output": "q_tornado_blade.png",
+      "outputSha256": "887fc39a0f36177985034547a0c4cdd6877fcf195eeea7360ff4b0adfe667178",
+      "dimensions": [
+        256,
+        128
+      ],
+      "bytes": 4817
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_q_second_swirl.tex",
+      "sha256": "f9f9681effe569fdf4b874c1b65dc0fdf155846fa186568bb7c6a654d0b495c0",
+      "output": "q_second_swirl.png",
+      "outputSha256": "75f8b5729e0ac46f5177db44e368ba169633b360f1c2378f613dbfbf40cbf5f6",
+      "dimensions": [
+        256,
+        128
+      ],
+      "bytes": 11551
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_q_tonado_wind_cas.tex",
+      "sha256": "6d77a5304e4b969fcc5e8911eeb0acce713d988eaeb536fd292c72243a7979e7",
+      "output": "q_tonado_wind_cas.png",
+      "outputSha256": "da6c1e4a7ba12798f721348185f83e9857c5865a44e4510601a05a3bb75fb3ac",
+      "dimensions": [
+        512,
+        128
+      ],
+      "bytes": 43067
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_q_wind_hit_flash.tex",
+      "sha256": "0ae177070833c2fd3ebe15defd8bed540304bf1b3720f7c68e8d6108a9d0bb52",
+      "output": "q_wind_hit_flash.png",
+      "outputSha256": "c76f0db7226aa7df215f0d2886a3f350cc90afb4cf08a5980ff7d3714a200ebf",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 49129
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_q_wind_hit_tar.tex",
+      "sha256": "1782dfe451ecae767e00195e0cdd61fcd38d5c62f026a7f279e90ef63619065f",
+      "output": "q_wind_hit_tar.png",
+      "outputSha256": "f5b90b33b6be5c0486a363b287991d650ccf48b711a3d894be16cb086aa744c5",
+      "dimensions": [
+        256,
+        128
+      ],
+      "bytes": 8917
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_w_windwall_steam.tex",
+      "sha256": "2fa8281fac2db83cc12fde4cce0218478bf22263457cdea93f99d5f2d0f4d037",
+      "output": "w_windwall_steam.png",
+      "outputSha256": "4d54b00b835461efee1332699c3a7c80b4cbd7cef84b2d0c058fd763adacf46b",
+      "dimensions": [
+        512,
+        128
+      ],
+      "bytes": 61785
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_w_windwall_indicator.tex",
+      "sha256": "f81ed9652a8646fa77418e7da66a377d6dc14609af61cfbd16516be444ae42ac",
+      "output": "w_windwall_indicator.png",
+      "outputSha256": "62a6e949aa8db242a5d4d638ba89b22f201dc4005dd4f4537b9a996fe387c8cb",
+      "dimensions": [
+        256,
+        128
+      ],
+      "bytes": 6572
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_w_windwall_block_impact.tex",
+      "sha256": "294b03606b785d074e1e7913bb3811c9327aea71f35e8156e7c19c3cfccdb522",
+      "output": "w_windwall_block_impact.png",
+      "outputSha256": "8cafdf8ffd83a26a1781ce405a48767cd363349c2f17584830cb07cd8159c9cd",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 43674
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_e_dash_afterimage.tex",
+      "sha256": "23ed716f9a64325acb72f6cff6ac97860961c832ef295ea6202727f39f639e4f",
+      "output": "e_dash_afterimage.png",
+      "outputSha256": "1381d806aa132aa9d6685c0ccb9fe0b533b2c8b90d8d753be2dcfd793762beeb",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 57574
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_e_dash_linger.tex",
+      "sha256": "c16b9270463db0e7eb70c6537f061ce6f8befdc7d67f5314889832dd691fedef",
+      "output": "e_dash_linger.png",
+      "outputSha256": "2efe241b54420e31c974a1d56f6eb475d98c9e5b9b8b4dadacf8a7f066638331",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 61577
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_e_dash_ring.tex",
+      "sha256": "61cdc0ead054fecc2241a22134cddb39dff67c6abf5de6b68490da3c07cac056",
+      "output": "e_dash_ring.png",
+      "outputSha256": "5347afb920c10ef1d34fc648ef5d86ffd02920ebd6705b43d937dcc85cf7199f",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 34080
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_e_tonado.tex",
+      "sha256": "a85394e08a90a0be58859e1cdc80aa8b55d7542d0421017034630c47a259567e",
+      "output": "e_tonado.png",
+      "outputSha256": "e71183d011d324c5b93862079092c8baf625a0dc638b61bb6901e54173a069d1",
+      "dimensions": [
+        512,
+        128
+      ],
+      "bytes": 58491
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_eq_fill_circle_cas.tex",
+      "sha256": "cc8ff6481c73635052e298ed71c5be1ef4f2af5261d9b4d7ef8fa891d56dd790",
+      "output": "eq_fill_circle_cas.png",
+      "outputSha256": "81759c938af123502149cd48ac072ef2aef76ddf05cf8700155c4a589b99137f",
+      "dimensions": [
+        128,
+        128
+      ],
+      "bytes": 5904
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_r_hit_streak_tar.tex",
+      "sha256": "48c4415d6b308e94531be4b98969ccd7d86d2874822f1234694e3dda468214f8",
+      "output": "r_hit_streak_tar.png",
+      "outputSha256": "6cac08dabeedb54ee029f6640478db85a6a71b13f18c26a54ed724b416565d6c",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 23729
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_r_hit_flash_tar_2.tex",
+      "sha256": "ebfbc8b50bc43ce3beb079acc973b83b101999deee999e6a83ef1b22c384b092",
+      "output": "r_hit_flash_tar_2.png",
+      "outputSha256": "3a6f6646121c4881b8df499088f5d4b99f76b0369a44852a893538caaa8363e3",
+      "dimensions": [
+        128,
+        128
+      ],
+      "bytes": 10447
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_r_wind_blast.tex",
+      "sha256": "551c31132de2c8ea6100a04c8418bef2044a37be28d4ace963921a4597b3d9b5",
+      "output": "r_wind_blast.png",
+      "outputSha256": "3ffbb1d7a92636bc3b7bceef1edd6453f0360022b03a10cefb4140b42b56d912",
+      "dimensions": [
+        256,
+        128
+      ],
+      "bytes": 13648
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/particles/yasuo_base_r_land_exp_ring.tex",
+      "sha256": "df03bec2739efc711292427219e31d7f287e38cf7b697b9f8f90fcdace8dc000",
+      "output": "r_land_exp_ring.png",
+      "outputSha256": "7d8d6b5dd9198efd8b0e5dcad42f91650ed1cbfedbc199efd8572ad54d357ff7",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 42571
+    }
+  ]
+}

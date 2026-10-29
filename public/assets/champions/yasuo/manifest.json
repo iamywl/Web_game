@@ -1,0 +1,100 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Champions/Yasuo.wad.client",
+  "createdAt": "2026-10-29T06:38:10.201Z",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "d36a532"
+  },
+  "model": {
+    "file": "yasuo-base.glb",
+    "bytes": 7732020,
+    "sha256": "f4e9d7a8d6817aa1d2cc61ee281d3c1519ed9a9ffe9366433dec894f397f5ac6",
+    "animations": [
+      "yasuo_attack1",
+      "yasuo_attack2",
+      "yasuo_attack3",
+      "yasuo_attack4",
+      "yasuo_idle1",
+      "yasuo_run1",
+      "yasuo_spell1a",
+      "yasuo_spell1b",
+      "yasuo_spell1_dash",
+      "yasuo_spell1_wind",
+      "yasuo_spell2",
+      "yasuo_spell3",
+      "yasuo_spell4"
+    ],
+    "joints": 114,
+    "materials": [
+      "Yasuo_Instrument_Mat",
+      "Yasuo_Base_Weapon_Mat",
+      "Yasuo_Base_Mat"
+    ]
+  },
+  "sourceFiles": [
+    {
+      "path": "assets/characters/yasuo/skins/base/yasuo.skn",
+      "sha256": "3c69374ddc65b31f1660116b24543c1c0d95244f31b6f22586a765e55afccd8f"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/yasuo.skl",
+      "sha256": "1b9dbf0d98f7e72ae49129a627b98859e598f860e32d61c7cdac18cc456b3485"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/yasuo_base_tx_cm.tex",
+      "sha256": "ee74cfc35bc2a03a8bebbeb26bff46197c14c9b6a34986b3a2f471ebfb579b84"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_attack1.anm",
+      "sha256": "045501ec4761111b0e3545c0b255eefbba9b597fb94506aa43ad10f8d273e88a"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_attack2.anm",
+      "sha256": "8e03c6f30417648f7f65bd2cf6e034a3bdc5e05e4283964c30c9edcdea2954fc"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_attack3.anm",
+      "sha256": "ec02557f05141571f9b81eb617a151eb23e46fc1657adbc6f37e94617107ae4a"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_attack4.anm",
+      "sha256": "c9f12b67f98ab2e98c90ef0250afede05751bb699f974d5e957fb2ae09fc6ee3"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_idle1.anm",
+      "sha256": "de758a22f16bce8eaf8c3c04c7b81c78da018be9ae71748f0b04addb1ce24352"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_run1.anm",
+      "sha256": "c35d60515d8fe35086dffe1a7dbe12cf3f6789140402606962c765626ea5f1f4"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell1a.anm",
+      "sha256": "0b4cac5e69cc8c5d73f16eb2c67c14264568b2b3fa3a31b7c276bcdcad458753"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell1b.anm",
+      "sha256": "a830ede1a69e71b18515cedc74748896835b06ba2cac3bb599bb919b444385ff"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell1_dash.anm",
+      "sha256": "4586e0db76fe035a61af490f5bd2898ab9ee044ead2f55059469b527a3a09174"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell1_wind.anm",
+      "sha256": "d06765bf991a721bfcfc990c85b5b3e1f0ecdfcee05a302e3909ca2362ee5417"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell2.anm",
+      "sha256": "49b852b11ea2eed8e7312dc614f52ba5740f9afe4c666f8ca00d22b16b122fe7"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell3.anm",
+      "sha256": "388db288d1e69639cbd0415e582f7363f457596a5aeaac2a28c60da7f9eebdba"
+    },
+    {
+      "path": "assets/characters/yasuo/skins/base/animations/yasuo_spell4.anm",
+      "sha256": "acfc1a7825e84fe8e55d8e6f7a49aacd4b1ea03465e4edaf900e9271873a06d7"
+    }
+  ]
+}

@@ -1,0 +1,647 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Maps/Shipping/Map11.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "d36a532"
+  },
+  "description": "Original Summoners Rift OrderBlue skin0 and ChaosRed skin3; distinct faction geometry, original team and Rubble textures.",
+  "metadata": {
+    "sourceSkinScale": 0.9,
+    "initialVisible": [
+      "Base"
+    ],
+    "initialHidden": [
+      "Stage1",
+      "Stage2",
+      "Stage3",
+      "Rubble",
+      "Broken1",
+      "Broken2",
+      "Broken3"
+    ],
+    "states": {
+      "Idle1": {
+        "clip": "idle1",
+        "visible": [
+          "Base"
+        ]
+      },
+      "State2": {
+        "clip": "idle1",
+        "visible": [
+          "Stage1"
+        ]
+      },
+      "State3": {
+        "clip": "idle1",
+        "visible": [
+          "Stage2"
+        ]
+      },
+      "Death": {
+        "clip": "idle1",
+        "visible": [
+          "Rubble"
+        ],
+        "separateDebris": {
+          "clip": "break3",
+          "visible": [
+            "Broken3"
+          ],
+          "lifetime": 11
+        }
+      },
+      "Destroyed": {
+        "clip": "respawn",
+        "visible": [
+          "Rubble"
+        ]
+      },
+      "Respawn": {
+        "clip": "respawn",
+        "visible": [
+          "Broken1",
+          "Broken2",
+          "Broken3",
+          "Rubble"
+        ],
+        "showAtFrame438": [
+          "Stage1",
+          "Stage2",
+          "Stage3",
+          "Base"
+        ]
+      }
+    },
+    "debris": {
+      "break1": {
+        "visible": [
+          "Broken1"
+        ],
+        "lifetime": 10
+      },
+      "break2": {
+        "visible": [
+          "Broken2"
+        ],
+        "lifetime": 10
+      },
+      "break3": {
+        "visible": [
+          "Broken3"
+        ],
+        "lifetime": 11
+      }
+    },
+    "attackAnimation": null
+  },
+  "redMetadata": {
+    "initialVisible": [
+      "Base",
+      "Cloth1",
+      "Cloth2"
+    ],
+    "initialHidden": [
+      "Stage1",
+      "Stage2",
+      "Stage3",
+      "Rubble",
+      "Broken1",
+      "Broken2",
+      "Broken3",
+      "RubbleBase"
+    ],
+    "states": {
+      "Idle1": {
+        "clip": "idle1",
+        "parallelClothClip": "cloth_stage1",
+        "visible": [
+          "Base",
+          "Cloth1",
+          "Cloth2"
+        ]
+      },
+      "State2": {
+        "clip": "idle1",
+        "visible": [
+          "Stage1",
+          "Cloth1"
+        ]
+      },
+      "State3": {
+        "clip": "idle1",
+        "visible": [
+          "Stage2"
+        ]
+      },
+      "Death": {
+        "clip": "idle1",
+        "visible": [
+          "Stage2",
+          "Stage3"
+        ],
+        "hideAtFrame16": [
+          "Stage2"
+        ],
+        "showAtFrame57": [
+          "RubbleBase",
+          "Rubble"
+        ],
+        "separateDebris": {
+          "clip": "break3",
+          "visible": [
+            "Broken3"
+          ]
+        }
+      },
+      "Destroyed": {
+        "clip": "destroyed",
+        "visible": [
+          "Rubble",
+          "RubbleBase"
+        ]
+      }
+    },
+    "attackAnimation": "Attack1 and Attack2 resolve to idle1; no distinct skeletal firing motion"
+  },
+  "integration": {
+    "recommendedUniformScale": 0.28,
+    "groundOffset": 0,
+    "notes": [
+      "metadata describes blue; redMetadata describes ChaosRed.",
+      "Model has authored below-ground foundation; do not lift entire bbox to ground.",
+      "Break clips are VFX mesh debris, not a turret aiming animation.",
+      "HP stage thresholds are not established by the decoded animation graph.",
+      "Web code may shorten destruction duration; document that timing as reconstructed."
+    ]
+  },
+  "sources": [
+    {
+      "path": "assets/characters/turret/skins/base/turret_base.skn",
+      "bytes": 1287866,
+      "sha256": "7ed1f6808b3b62c7db4637039720cf1edaffeaebe7d9ccc29ce5488e0c8ee596"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/turret_base.skl",
+      "bytes": 7260,
+      "sha256": "31c97dada2208e369a09f170223bbbd24e89e452ecd7787a7f116e5ac65e48c5"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/turret_base_tx_cm.tex",
+      "bytes": 1398140,
+      "sha256": "7ba9f91987d5fe9fe2b1e392a0d842ba65d0ca17e5d015cdb0f40fa95a33c5b9"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/turret_base_rubble_tx_cm.tex",
+      "bytes": 349564,
+      "sha256": "0a205a941cacf26ff0998b76d207836710fa62e243059b3516a5fc4cd8503343"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/turret_skin02.skn",
+      "bytes": 1922764,
+      "sha256": "0519a9e5221fea9d1e4afd9532c4fc76b8fe0c7cde9cffbbb772de22cc37b422"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/turret_skin02.skl",
+      "bytes": 10240,
+      "sha256": "b1529afe7d27cda9c4fb3bd19a9f6529e20af5dbb330eb41148ad5000370f83f"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin03/turret_skin03_tx_cm.tex",
+      "bytes": 699076,
+      "sha256": "3a48ed11ad5de0acf747da307af0d3034fa59ca5747756cb4de44015a84a513b"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin03/turret_skin03_rubble_tx_cm.tex",
+      "bytes": 174788,
+      "sha256": "9255ff0e8867cc4aae5e0156c11393bc284f18360297812e93152007c494cdf4"
+    },
+    {
+      "path": "data/characters/turret/skins/skin0.bin",
+      "bytes": 4370,
+      "sha256": "07904285e431da437a8a1df9955b6a5f18b04cc7824823109a0d12fdc5d97580"
+    },
+    {
+      "path": "data/characters/turret/skins/skin3.bin",
+      "bytes": 2712,
+      "sha256": "551093924e2f75f6f46b8b5e97ed7f65520f16279b2e3a5d52037692fbbaeabd"
+    },
+    {
+      "path": "data/characters/turret/animations/skin0.bin",
+      "bytes": 3998,
+      "sha256": "54ee83d6b2e67933d67bffe751745b839e704ae208cf52281c84aa017eaebd7b"
+    },
+    {
+      "path": "data/characters/turret/animations/skin2.bin",
+      "bytes": 4705,
+      "sha256": "8e690e1ce119d17e33b82b17159a256d7810bac57b0b6a9e272e9b2bb65c4c64"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/animations/idle1.anm",
+      "bytes": 558,
+      "sha256": "4ab6da63eeaeb93836c09d15a7a152d9a5e6a8a8400f9ba3408eb59b3b7c5ee7"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/animations/respawn.anm",
+      "bytes": 55200,
+      "sha256": "11f844d736190d89f2ecc437c21fc3dbfb1e05c8b679af5e04abbdebe2e6e823"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/animations/break1.anm",
+      "bytes": 148106,
+      "sha256": "c9b4520ce5f8635a9bb3f67e09e47a81e9db79e05e8ca51132ff6827ada3525a"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/animations/break2.anm",
+      "bytes": 18334,
+      "sha256": "e3557cbf7177eb41c03eef54935e6b6d4ecb19204eb1fb73f504bc451e8f27e0"
+    },
+    {
+      "path": "assets/characters/turret/skins/base/animations/break3.anm",
+      "bytes": 27366,
+      "sha256": "69d29a459745321ce8efd6110badd4e81eb2847f5bc551a68c55d9af866b213f"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/idle1.anm",
+      "bytes": 10282,
+      "sha256": "bf7dde93dad510d21caa36e0f80ed00b3cf5c265d0c3a80a3f2f5fbcdc961774"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/respawn.anm",
+      "bytes": 65754,
+      "sha256": "8cd04e345c08c18e7097dc88938eeaaaa086c801a174844f4fa2471208269309"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/break1.anm",
+      "bytes": 24542,
+      "sha256": "e36f90f5250c8bc97da0153f8b7c2f9b9e51e094f996ad53672f398da1ce6531"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/break2.anm",
+      "bytes": 31370,
+      "sha256": "7fbd5710e080508d529645bc8b48a902333d68c01b26110a063fa18966d98d82"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/break3.anm",
+      "bytes": 29970,
+      "sha256": "6dc8f4ec014f31fcf81a1ab9128a809fef05b0c3c5af27b1b94f8b3590bcc10d"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/cloth_stage1.anm",
+      "bytes": 14234,
+      "sha256": "97f81a0c77884e6a6491ae6de3ef406f3d90a4f3122c2f4dddc5b1fba6360663"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/cloth_stage2.anm",
+      "bytes": 11832,
+      "sha256": "e3a853b1e87efc09fbab2b955f8fc74aeafbd7da9fa10b9a138bb2db0adad4a4"
+    },
+    {
+      "path": "assets/characters/turret/skins/skin02/animations/destroyed.anm",
+      "bytes": 2554,
+      "sha256": "8ab2a39e80c6302968ff0dc8314f1698675f5ee86e393d896948c2289e27d89f"
+    }
+  ],
+  "models": [
+    {
+      "team": "blue",
+      "file": "blue.glb",
+      "bytes": 6594804,
+      "sha256": "a31cbd19a2bc53a8e14d97ed9603623b2d059ff2f95df3f9f8c104a9a3617290",
+      "joints": 58,
+      "animations": [
+        {
+          "name": "break1",
+          "duration": 10.000000953674316
+        },
+        {
+          "name": "break2",
+          "duration": 9.966667175292969
+        },
+        {
+          "name": "break3",
+          "duration": 11.333333969116211
+        },
+        {
+          "name": "idle1",
+          "duration": 0.03333333507180214
+        },
+        {
+          "name": "respawn",
+          "duration": 14.966667175292969
+        }
+      ],
+      "meshes": [
+        {
+          "name": "Base",
+          "vertices": 3392,
+          "min": [
+            -136.9777069091797,
+            -307.390380859375,
+            -161.66949462890625
+          ],
+          "max": [
+            136.9777069091797,
+            610.8529663085938,
+            161.66909790039062
+          ]
+        },
+        {
+          "name": "Stage1",
+          "vertices": 3392,
+          "min": [
+            -136.9777069091797,
+            -307.390380859375,
+            -161.66949462890625
+          ],
+          "max": [
+            136.9777069091797,
+            610.8529663085938,
+            161.66909790039062
+          ]
+        },
+        {
+          "name": "Stage2",
+          "vertices": 3054,
+          "min": [
+            -136.9777069091797,
+            -307.390380859375,
+            -161.66949462890625
+          ],
+          "max": [
+            136.9777069091797,
+            610.8529663085938,
+            161.66909790039062
+          ]
+        },
+        {
+          "name": "Stage3",
+          "vertices": 692,
+          "min": [
+            -136.9777069091797,
+            -307.390380859375,
+            -161.66949462890625
+          ],
+          "max": [
+            136.9777069091797,
+            92.07559204101562,
+            149.8094024658203
+          ]
+        },
+        {
+          "name": "Rubble",
+          "vertices": 493,
+          "min": [
+            -136.9777069091797,
+            -290.598388671875,
+            -161.66949462890625
+          ],
+          "max": [
+            136.9777069091797,
+            92.07559204101562,
+            149.8094024658203
+          ]
+        },
+        {
+          "name": "Broken1",
+          "vertices": 1206,
+          "min": [
+            -112.46260070800781,
+            82.02268981933594,
+            -116.17679595947266
+          ],
+          "max": [
+            129.26629638671875,
+            429.1880798339844,
+            90.66346740722656
+          ]
+        },
+        {
+          "name": "Broken2",
+          "vertices": 4518,
+          "min": [
+            -122.21389770507812,
+            65.3093032836914,
+            -121.80389404296875
+          ],
+          "max": [
+            122.4166030883789,
+            485.5080871582031,
+            86.72378540039062
+          ]
+        },
+        {
+          "name": "Broken3",
+          "vertices": 6102,
+          "min": [
+            -78.93843078613281,
+            67.49319458007812,
+            -116.1823959350586
+          ],
+          "max": [
+            94.29362487792969,
+            610.5239868164062,
+            161.67691040039062
+          ]
+        }
+      ]
+    },
+    {
+      "team": "red",
+      "file": "red.glb",
+      "bytes": 10455152,
+      "sha256": "8cce1a1666810adb139483e08144d7a6742d76c359bd7194ef590804479e7771",
+      "joints": 82,
+      "animations": [
+        {
+          "name": "break1",
+          "duration": 9.966667175292969
+        },
+        {
+          "name": "break2",
+          "duration": 9.966667175292969
+        },
+        {
+          "name": "break3",
+          "duration": 11.333333969116211
+        },
+        {
+          "name": "cloth_stage1",
+          "duration": 2.3000001907348633
+        },
+        {
+          "name": "cloth_stage2",
+          "duration": 1.9666668176651
+        },
+        {
+          "name": "destroyed",
+          "duration": 0.03333333507180214
+        },
+        {
+          "name": "idle1",
+          "duration": 1.8666667938232422
+        },
+        {
+          "name": "respawn",
+          "duration": 15.30000114440918
+        }
+      ],
+      "meshes": [
+        {
+          "name": "Base",
+          "vertices": 4079,
+          "min": [
+            -143.56719970703125,
+            -486.880859375,
+            -154.3929901123047
+          ],
+          "max": [
+            143.56719970703125,
+            634.089599609375,
+            154.3929901123047
+          ]
+        },
+        {
+          "name": "Stage1",
+          "vertices": 5970,
+          "min": [
+            -143.56719970703125,
+            -486.880859375,
+            -154.3929901123047
+          ],
+          "max": [
+            143.56719970703125,
+            634.0659790039062,
+            154.3929901123047
+          ]
+        },
+        {
+          "name": "Stage2",
+          "vertices": 3915,
+          "min": [
+            -143.56719970703125,
+            -486.880859375,
+            -154.3929901123047
+          ],
+          "max": [
+            143.56719970703125,
+            634.0659790039062,
+            154.3929901123047
+          ]
+        },
+        {
+          "name": "Stage3",
+          "vertices": 834,
+          "min": [
+            -143.56719970703125,
+            -486.880859375,
+            -154.3929901123047
+          ],
+          "max": [
+            143.56719970703125,
+            64.93689727783203,
+            154.3929901123047
+          ]
+        },
+        {
+          "name": "Cloth1",
+          "vertices": 297,
+          "min": [
+            -41.16835021972656,
+            -29.376968383789062,
+            -83.78569030761719
+          ],
+          "max": [
+            36.0565299987793,
+            338.03729248046875,
+            88.25457763671875
+          ]
+        },
+        {
+          "name": "Cloth2",
+          "vertices": 198,
+          "min": [
+            -107.54309844970703,
+            75.10293579101562,
+            -35.47100830078125
+          ],
+          "max": [
+            114.6231918334961,
+            332.9377746582031,
+            12.294230461120605
+          ]
+        },
+        {
+          "name": "RubbleBase",
+          "vertices": 850,
+          "min": [
+            -143.56719970703125,
+            -250.306396484375,
+            -154.3929901123047
+          ],
+          "max": [
+            143.56719970703125,
+            64.93659210205078,
+            154.3929901123047
+          ]
+        },
+        {
+          "name": "Rubble",
+          "vertices": 2188,
+          "min": [
+            -132.11228942871094,
+            -250.21517944335938,
+            -85.9701156616211
+          ],
+          "max": [
+            107.23739624023438,
+            164.62770080566406,
+            78.50251770019531
+          ]
+        },
+        {
+          "name": "Broken1",
+          "vertices": 2875,
+          "min": [
+            -115.53939819335938,
+            73.0579605102539,
+            -81.60272216796875
+          ],
+          "max": [
+            136.47189331054688,
+            444.80218505859375,
+            57.07878112792969
+          ]
+        },
+        {
+          "name": "Broken2",
+          "vertices": 5928,
+          "min": [
+            -129.472900390625,
+            -31.474990844726562,
+            -95.1661605834961
+          ],
+          "max": [
+            111.0324935913086,
+            472.0048828125,
+            101.16850280761719
+          ]
+        },
+        {
+          "name": "Broken3",
+          "vertices": 6661,
+          "min": [
+            -127.81739044189453,
+            14.187000274658203,
+            -81.55459594726562
+          ],
+          "max": [
+            96.93978118896484,
+            634.0894775390625,
+            126.43679809570312
+          ]
+        }
+      ]
+    }
+  ]
+}

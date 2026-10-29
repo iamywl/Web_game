@@ -6,6 +6,9 @@
 
 const { CHAMPIONS, SUMMONER_SPELLS } = require('./ChampionData');
 const { ITEMS } = require('./ItemData');
+const Garen = require('./GarenMechanics');
+const Yasuo = require('./YasuoMechanics');
+const MapNavigation = require('../../public/js/mapNavigation').default;
 
 const TICK_RATE = 60;
 const DT = 1 / TICK_RATE; // ~0.01666s (60 FPS tick)
@@ -14,63 +17,8 @@ const MAP_HEIGHT_ARAM = 1600;
 const MAP_WIDTH_SR = 3200;
 const MAP_HEIGHT_SR = 3200;
 
-// Summoner's Rift Canonical 3200x3200 Minion Routes
-const MINION_ROUTES = {
-  blue_top: [
-    { x: 480, y: 2720 },
-    { x: 450, y: 2450 },
-    { x: 450, y: 1650 },
-    { x: 450, y: 450 },
-    { x: 1650, y: 450 },
-    { x: 2450, y: 450 },
-    { x: 2720, y: 480 }
-  ],
-  blue_mid: [
-    { x: 480, y: 2720 },
-    { x: 680, y: 2520 },
-    { x: 1050, y: 2150 },
-    { x: 1600, y: 1600 },
-    { x: 2150, y: 1050 },
-    { x: 2520, y: 680 },
-    { x: 2720, y: 480 }
-  ],
-  blue_bot: [
-    { x: 480, y: 2720 },
-    { x: 750, y: 2750 },
-    { x: 1550, y: 2750 },
-    { x: 2750, y: 2750 },
-    { x: 2750, y: 1550 },
-    { x: 2750, y: 750 },
-    { x: 2720, y: 480 }
-  ],
-  red_top: [
-    { x: 2720, y: 480 },
-    { x: 2450, y: 450 },
-    { x: 1650, y: 450 },
-    { x: 450, y: 450 },
-    { x: 450, y: 1650 },
-    { x: 450, y: 2450 },
-    { x: 480, y: 2720 }
-  ],
-  red_mid: [
-    { x: 2720, y: 480 },
-    { x: 2520, y: 680 },
-    { x: 2150, y: 1050 },
-    { x: 1600, y: 1600 },
-    { x: 1050, y: 2150 },
-    { x: 680, y: 2520 },
-    { x: 480, y: 2720 }
-  ],
-  red_bot: [
-    { x: 2720, y: 480 },
-    { x: 2750, y: 750 },
-    { x: 2750, y: 1550 },
-    { x: 2750, y: 2750 },
-    { x: 1550, y: 2750 },
-    { x: 750, y: 2750 },
-    { x: 480, y: 2720 }
-  ]
-};
+const SR_PLACEMENTS = require('../../public/assets/maps/summoners-rift/placements.json');
+const MINION_ROUTES = SR_PLACEMENTS.routes;
 
 class GameEngine {
   constructor(room, io) {
@@ -85,6 +33,19 @@ class GameEngine {
       this.map = this.createSummonersRiftMap();
       this.structures = this.createSummonersRiftStructures();
       this.jungleMonsters = this.createSummonersRiftJungle();
+      this.navigation = new MapNavigation(require('../../public/assets/maps/summoners-rift/navigation.json'));
+      this.navigation.setStructures(Object.values(this.structures).filter((s, i, all) => all.indexOf(s) === i));
+      const campNames = { 'Order Wolves': 'wolves_blue', 'Order Blue': 'blue_buff_blue', 'Order OwlBear': 'gromp_blue', 'Order Red': 'red_buff_blue', 'Order Wraiths': 'raptors_blue', 'Order Small Golems': 'krugs_blue', 'Chaos Wolves': 'wolves_red', 'Chaos Blue': 'blue_buff_red', 'Chaos OwlBear': 'gromp_red', 'Chaos Red': 'red_buff_red', 'Chaos Wraiths': 'raptors_red', 'Chaos Small Golems': 'krugs_red', Baron: 'baron', Dragon: 'dragon', 'Baron Crab': 'scuttle_top', 'Dragon Crab': 'scuttle_bot' };
+      for (const camp of SR_PLACEMENTS.camps) {
+        const monster = this.jungleMonsters[campNames[camp.name]];
+        if (!monster) continue;
+        monster.x = camp.x; monster.y = camp.y;
+        monster.spawnX = camp.x; monster.spawnY = camp.y;
+        if (monster.type === 'scuttle') {
+          monster.patrolMinX = camp.x - 80; monster.patrolMaxX = camp.x + 80;
+          monster.patrolMinY = camp.y - 80; monster.patrolMaxY = camp.y + 80;
+        }
+      }
     } else {
       this.map = this.createAramMap();
       this.structures = this.createAramStructures();
@@ -98,6 +59,7 @@ class GameEngine {
     this.minionWaveCount = 0;
 
     this.players = {}; // socketId -> Player
+    this.yasuoWalls = [];
     this.projectiles = []; // array of active skillshots
     this.aoeZones = []; // array of ground delay/persistent zones
     this.eventsQueue = []; // damage numbers, CC alerts, kills to broadcast this tick
@@ -115,57 +77,13 @@ class GameEngine {
   }
 
   createSummonersRiftMap() {
+    const blue = SR_PLACEMENTS.spawns.blue, red = SR_PLACEMENTS.spawns.red;
     return {
-      width: MAP_WIDTH_SR,
-      height: MAP_HEIGHT_SR,
-      isSummonersRift: true,
-      obstacles: [
-        // Upper River Walls & Baron Pit Alcove
-        { id: 'wall_baron_back', type: 'circle', x: 920, y: 820, radius: 110 },
-        { id: 'wall_baron_left', type: 'circle', x: 860, y: 1000, radius: 85 },
-        { id: 'wall_baron_right', type: 'circle', x: 1080, y: 780, radius: 85 },
-        // Lower River Walls & Dragon Pit Alcove
-        { id: 'wall_dragon_back', type: 'circle', x: 2280, y: 2380, radius: 110 },
-        { id: 'wall_dragon_left', type: 'circle', x: 2120, y: 2420, radius: 85 },
-        { id: 'wall_dragon_right', type: 'circle', x: 2340, y: 2200, radius: 85 },
-        // Blue Top Jungle Rocks
-        { id: 'rock_blue_top_1', type: 'circle', x: 1000, y: 1700, radius: 85 },
-        { id: 'rock_blue_top_2', type: 'box', x: 750, y: 1750, width: 80, height: 120 },
-        // Blue Bot Jungle Rocks
-        { id: 'rock_blue_bot_1', type: 'circle', x: 1550, y: 2250, radius: 85 },
-        { id: 'rock_blue_bot_2', type: 'box', x: 1750, y: 2450, width: 120, height: 80 },
-        // Red Top Jungle Rocks
-        { id: 'rock_red_top_1', type: 'circle', x: 1650, y: 950, radius: 85 },
-        { id: 'rock_red_top_2', type: 'box', x: 1450, y: 750, width: 120, height: 80 },
-        // Red Bot Jungle Rocks
-        { id: 'rock_red_bot_1', type: 'circle', x: 2200, y: 1500, radius: 85 },
-        { id: 'rock_red_bot_2', type: 'box', x: 2450, y: 1450, width: 80, height: 120 }
-      ],
-      bushes: [
-        // Top Lane Outer 3 Bushes
-        { id: 'bush_top_1', x: 400, y: 850, radius: 75 },
-        { id: 'bush_top_2', x: 400, y: 1050, radius: 75 },
-        { id: 'bush_top_3', x: 400, y: 1250, radius: 75 },
-        // Top River Tri-Bush
-        { id: 'bush_top_river_tri', x: 600, y: 900, radius: 80 },
-        // Mid River Bushes
-        { id: 'bush_mid_river_top', x: 1350, y: 1400, radius: 80 },
-        { id: 'bush_mid_river_bot', x: 1850, y: 1800, radius: 80 },
-        // Bot River Tri-Bush
-        { id: 'bush_bot_river_tri', x: 2600, y: 2300, radius: 80 },
-        // Bot Lane Outer 3 Bushes
-        { id: 'bush_bot_1', x: 1950, y: 2800, radius: 75 },
-        { id: 'bush_bot_2', x: 2150, y: 2800, radius: 75 },
-        { id: 'bush_bot_3', x: 2350, y: 2800, radius: 75 },
-        // Jungle Buff Bushes
-        { id: 'bush_blue_buff', x: 950, y: 1550, radius: 70 },
-        { id: 'bush_red_buff', x: 1550, y: 2450, radius: 70 },
-        { id: 'bush_red_buff_enemy', x: 1650, y: 750, radius: 70 },
-        { id: 'bush_blue_buff_enemy', x: 2250, y: 1650, radius: 70 }
-      ],
+      width: MAP_WIDTH_SR, height: MAP_HEIGHT_SR, isSummonersRift: true,
+      obstacles: [], bushes: [],
       bases: {
-        blue: { x: 300, y: 2900, spawnX: 300, spawnY: 2900 },
-        red: { x: 2900, y: 300, spawnX: 2900, spawnY: 300 }
+        blue: { x: blue.x, y: blue.y, spawnX: blue.x, spawnY: blue.y },
+        red: { x: red.x, y: red.y, spawnX: red.x, spawnY: red.y }
       }
     };
   }
@@ -223,6 +141,21 @@ class GameEngine {
     reg('red_nexus_turret_l', { id: 'red_nexus_turret_l', team: 'red', lane: 'base', tier: 4, type: 'turret', name: '레드 넥서스 좌 포탑', x: 2620, y: 580, radius: 46, hp: 4500, maxHp: 4500, armor: 45, range: 380, attackCooldown: 0, attackInterval: 1.1, damage: 230, targetId: null, isAlive: true, isInvulnerable: true });
     reg('red_nexus_turret_r', { id: 'red_nexus_turret_r', team: 'red', lane: 'base', tier: 4, type: 'turret', name: '레드 넥서스 우 포탑', x: 2580, y: 620, radius: 46, hp: 4500, maxHp: 4500, armor: 45, range: 380, attackCooldown: 0, attackInterval: 1.1, damage: 230, targetId: null, isAlive: true, isInvulnerable: true });
     reg('red_nexus', { id: 'red_nexus', team: 'red', type: 'nexus', name: '레드 넥서스', x: 2720, y: 480, radius: 65, hp: 5500, maxHp: 5500, armor: 30, isAlive: true, isInvulnerable: true });
+
+    // Source placements replace geometry only; IDs, combat stats and hierarchy stay intact.
+    for (const placement of SR_PLACEMENTS.structures) {
+      let id = placement.id.replace('_inhib_turret', '_inhibitor_turret').replace(/_inhib$/, '_inhibitor');
+      id = id.replace(/_nexus_turret1$/, '_nexus_turret_l').replace(/_nexus_turret2$/, '_nexus_turret_r');
+      if (/_outer$|_inner$/.test(id)) id += '_turret';
+      const structure = s[id];
+      if (!structure) throw new Error('Unmapped original structure: ' + placement.id);
+      structure.x = placement.x; structure.y = placement.y;
+      structure.height = placement.height; structure.rotation = placement.rotation;
+      structure.radius = (structure.type === 'turret' ? 125 : structure.type === 'nexus' ? 304 : 213.75) * (3200 / 15000);
+      // The web game's spell/attack distances remain unchanged. Keep ranged
+      // minions within tower retaliation while leaving a safe mid-lane gap.
+      if (structure.type === 'turret') structure.range = 300;
+    }
 
     // Backwards compatibility aliases
     s.blue_outer_turret = s.blue_mid_outer_turret;
@@ -479,6 +412,12 @@ class GameEngine {
         deathMark: null, // for Shadow Assassin R
         targetEnemyId: null // target for auto attack
       };
+      if (this.navigation) {
+        const player = this.players[socketId], i = this.navigation.nearest(player.x, player.y, player.radius);
+        if (i >= 0) { player.x = player.targetX = this.navigation.centerX(i); player.y = player.targetY = this.navigation.centerY(i); }
+      }
+      Garen.initialize(this.players[socketId]);
+      Yasuo.initialize(this.players[socketId]);
     }
   }
 
@@ -512,6 +451,12 @@ class GameEngine {
 
     // 2. Process Movements & Collisions
     this.updatePlayerMovements();
+
+    for (const id in this.players) {
+      Garen.update(this, this.players[id], DT);
+      Yasuo.update(this, this.players[id], DT);
+    }
+    Yasuo.updateWalls(this, DT);
 
     // 3. Process Minions & Lane Waves
     this.updateMinions();
@@ -567,6 +512,7 @@ class GameEngine {
           p.recallTimer = 0;
           p.x = base.x;
           p.y = base.y;
+          p.navPath = null;
           p.targetX = base.x;
           p.targetY = base.y;
           this.eventsQueue.push({ type: 'recall_complete', playerId: p.id, x: p.x, y: p.y });
@@ -598,6 +544,11 @@ class GameEngine {
       }
       p.inBush = inAnyBush;
       p.bushId = curBushId;
+      if (this.navigation) {
+        const cell = this.navigation.index(p.x, p.y);
+        p.inBush = this.navigation.bushAt(p.x, p.y);
+        p.bushId = p.inBush ? 'source_bush_' + this.navigation.data.bushIds[cell] : null;
+      }
 
       // Update Buffs / Debuffs
       let speedMult = 1.0;
@@ -607,6 +558,7 @@ class GameEngine {
       let isStunned = false;
       let isRooted = false;
       let isImmune = false;
+      let isSilenced = false;
 
       // Berserker Passive: missing health scaling
       if (p.championId === 'berserker') {
@@ -617,6 +569,7 @@ class GameEngine {
 
       for (let i = p.statusEffects.length - 1; i >= 0; i--) {
         const eff = p.statusEffects[i];
+        Garen.applyTenacity(p, eff);
         eff.duration -= DT;
 
         if (eff.type === 'SLOW') speedMult *= (1 - (eff.value || 0.3));
@@ -625,6 +578,7 @@ class GameEngine {
         if (eff.type === 'ROOT') isRooted = true;
         if (eff.type === 'STEALTH') isStealthed = true;
         if (eff.type === 'IMMUNE') isImmune = true;
+        if (eff.type === 'SILENCE' && eff.duration > 0) isSilenced = true;
         if (eff.type === 'AS_BUFF') asBonus += (eff.value || 0.5);
         if (eff.type === 'AD_BUFF') adBonus += (eff.value || 30);
 
@@ -654,21 +608,39 @@ class GameEngine {
       p.isStunned = isStunned;
       p.isRooted = isRooted;
       p.isImmune = isImmune;
-      p.moveSpeed = p.baseMoveSpeed * speedMult;
+      p.isSilenced = isSilenced;
+      p.moveSpeed = p.baseMoveSpeed * speedMult * (p.garen?.qSpeedRemaining > 0 ? 1.35 : 1);
       p.ad = p.baseAd + adBonus;
       p.as = p.baseAs * (1 + asBonus);
     }
   }
 
   updatePlayerMovements() {
+    if (this.navigation) {
+      let mask = 0, index = 0;
+      for (const key in this.structures) {
+        const s = this.structures[key];
+        if (s.id !== key) continue;
+        if (s.isAlive) mask |= 1 << index;
+        index++;
+      }
+      if (mask !== this.navStructureMask) {
+        this.navStructureMask = mask;
+        this.navigation.setStructures(Object.values(this.structures).filter((s, i, all) => all.indexOf(s) === i));
+      }
+    }
     for (const p of Object.values(this.players)) {
-      if (!p.isAlive || p.isStunned || p.isRooted) continue;
+      // Animation telemetry describes this tick's resolved motion, including stops/CC.
+      p.vx = 0;
+      p.vy = 0;
+      if (!p.isAlive || p.isStunned || p.isRooted || p.garen?.rRemaining > 0 || p.yasuo?.rRemaining > 0 || p.yasuo?.eRemaining > 0) continue;
 
-      const dx = p.targetX - p.x;
-      const dy = p.targetY - p.y;
+      this.selectNavigationWaypoint(p, p.targetX, p.targetY);
+      const dx = (this.navigation ? p.navX : p.targetX) - p.x;
+      const dy = (this.navigation ? p.navY : p.targetY) - p.y;
       const dist = Math.hypot(dx, dy);
 
-      if (dist > 4) {
+      if (dist > (this.navigation ? 0.25 : 4)) {
         const step = Math.min(dist, p.moveSpeed * DT);
         const safeDist = dist > 0.001 ? dist : 1;
         const nx = p.x + (dx / safeDist) * step;
@@ -683,7 +655,38 @@ class GameEngine {
     }
   }
 
-  resolvePlayerMovement(p, nx, ny) {
+  selectNavigationWaypoint(entity, targetX, targetY) {
+    if (!this.navigation) return;
+    this.navigation.team = entity.team;
+    if (entity.navRevision !== this.navigation.revision) { entity.navPath = null; entity.navRevision = this.navigation.revision; }
+    if (Math.hypot(targetX - entity.x, targetY - entity.y) < 4) { entity.navX = entity.x; entity.navY = entity.y; entity.navPath = null; return; }
+    const waypoint = entity.navPath?.[entity.navIndex];
+    const changed = !entity.navPath?.length || Math.hypot(targetX - entity.navGoalX, targetY - entity.navGoalY) > 8 ||
+      (waypoint && this.gameTime >= (entity.navReplanAt || 0) && !this.navigation.lineClear(entity.x, entity.y, waypoint.x, waypoint.y, entity.radius));
+    if (changed && (!entity.navPath || this.gameTime >= (entity.navReplanAt || 0))) {
+      entity.navPath = this.navigation.findPath(entity.x, entity.y, targetX, targetY, entity.radius);
+      entity.navIndex = 0; entity.navGoalX = targetX; entity.navGoalY = targetY;
+      entity.navReplanAt = this.gameTime + 0.2;
+    }
+    const path = entity.navPath;
+    while (entity.navIndex < path.length - 1 && Math.hypot(path[entity.navIndex].x - entity.x, path[entity.navIndex].y - entity.y) < entity.radius + 4 &&
+      this.navigation.lineClear(entity.x, entity.y, path[entity.navIndex + 1].x, path[entity.navIndex + 1].y, entity.radius)) entity.navIndex++;
+    const next = path[entity.navIndex];
+    entity.navX = next ? next.x : entity.x; entity.navY = next ? next.y : entity.y;
+  }
+
+  moveMinionOnMap(m, targetX, targetY, step) {
+    this.selectNavigationWaypoint(m, targetX, targetY);
+    const dx = (m.navX ?? targetX) - m.x, dy = (m.navY ?? targetY) - m.y, dist = Math.hypot(dx, dy);
+    if (dist < 0.001) return;
+    step = Math.min(step, dist); m.angle = Math.atan2(dy, dx);
+    if (this.navigation) {
+      this.navigation.move(m.x, m.y, m.x + dx / dist * step, m.y + dy / dist * step, m.radius);
+      m.x = this.navigation.resultX; m.y = this.navigation.resultY;
+    } else { m.x += dx / dist * step; m.y += dy / dist * step; }
+  }
+
+  resolvePlayerMovement(p, nx, ny, blink = false) {
     if (isNaN(nx) || isNaN(ny)) {
       return;
     }
@@ -691,6 +694,12 @@ class GameEngine {
     // 1. Arena Boundaries
     nx = Math.max(p.radius, Math.min(this.map.width - p.radius, nx));
     ny = Math.max(p.radius, Math.min(this.map.height - p.radius, ny));
+
+    if (this.navigation) {
+      this.navigation.team = p.team;
+      this.navigation.move(p.x, p.y, nx, ny, p.radius, blink);
+      nx = this.navigation.resultX; ny = this.navigation.resultY;
+    }
 
     // 2. Obstacles Collision (Circles and Boxes)
     for (const obs of this.map.obstacles) {
@@ -741,7 +750,11 @@ class GameEngine {
       }
     }
 
+    if (this.navigation && !this.navigation.isWalkable(nx, ny, p.radius)) { nx = p.x; ny = p.y; }
     if (!isNaN(nx) && !isNaN(ny)) {
+      // Measure after collision resolution so a blocked move does not play a run cycle.
+      p.vx = (nx - p.x) / DT;
+      p.vy = (ny - p.y) / DT;
       p.x = nx;
       p.y = ny;
     }
@@ -856,6 +869,11 @@ class GameEngine {
       radius = 26;
     }
 
+    if (this.navigation) this.navigation.team = team;
+    if (this.navigation && !this.navigation.isWalkable(x, y, radius)) {
+      const cell = this.navigation.nearest(x, y, radius);
+      if (cell >= 0) { x = this.navigation.centerX(cell); y = this.navigation.centerY(cell); }
+    }
     this.minions[id] = {
       id,
       isMinion: true,
@@ -880,6 +898,9 @@ class GameEngine {
       goldValue,
       attackCooldown: 0.5,
       attackAnimTimer: 0,
+      attackSequence: 0,
+      visualX: x,
+      visualY: y,
       targetId: null,
       isAlive: true
     };
@@ -981,6 +1002,7 @@ class GameEngine {
           if (m.attackCooldown <= 0) {
             m.attackCooldown = 1 / m.as;
             m.attackAnimTimer = 0.3;
+            m.attackSequence += 1;
             if (m.type === 'melee') {
               this.applyDamage(m.id, target, m.damage, 'physical', false);
             } else {
@@ -1002,16 +1024,17 @@ class GameEngine {
         } else {
           // Advance towards target (stopping precisely at attack standoff boundary)
           const step = Math.min(dist - attackRangeThreshold + 2, m.speed * DT);
-          m.x += (dx / dist) * step;
-          m.y += (dy / dist) * step;
+          this.moveMinionOnMap(m, target.x, target.y, step);
         }
       } else {
         if (m.waypoints && m.waypoints.length > 0) {
           const wpIdx = Math.min(m.waypointIndex || 1, m.waypoints.length - 1);
           let targetWp = m.waypoints[wpIdx];
           const distToWp = Math.hypot(targetWp.x - m.x, targetWp.y - m.y);
-          if (distToWp < 60 && wpIdx < m.waypoints.length - 1) {
+          const reachedProjected = m.navPath?.length && m.navIndex === m.navPath.length - 1 && Math.hypot(m.navX - m.x, m.navY - m.y) < 4;
+          if ((distToWp < 60 || reachedProjected) && wpIdx < m.waypoints.length - 1) {
             m.waypointIndex = wpIdx + 1;
+            m.navPath = null;
             targetWp = m.waypoints[m.waypointIndex];
           }
 
@@ -1020,6 +1043,7 @@ class GameEngine {
 
           // Check if any alive structure lies directly in the path of march
           for (const s of Object.values(this.structures)) {
+            if (this.navigation) break;
             if (!s.isAlive) continue;
             const distToS = Math.hypot(s.x - m.x, s.y - m.y);
             if (distToS < s.radius + 35) {
@@ -1036,8 +1060,7 @@ class GameEngine {
           if (dist > 10) {
             m.angle = Math.atan2(dy, dx);
             const step = Math.min(dist, m.speed * DT);
-            m.x += (dx / dist) * step;
-            m.y += (dy / dist) * step;
+            this.moveMinionOnMap(m, marchX, marchY, step);
           }
         } else {
           // Legacy 1v1 march down lane towards enemy nexus with dynamic turret avoidance
@@ -1074,7 +1097,7 @@ class GameEngine {
         const sdx = m.x - s.x;
         const sdy = m.y - s.y;
         const sdist = Math.hypot(sdx, sdy);
-        const minDist = s.radius + m.radius + 6;
+        const minDist = s.radius + m.radius + (this.navigation ? 0 : 6);
         if (sdist < minDist) {
           const safeDist = sdist > 0.001 ? sdist : 1;
           const dirX = sdist > 0.001 ? (sdx / safeDist) : 1;
@@ -1096,12 +1119,30 @@ class GameEngine {
           const push = (minDist - sepDist) * 0.5;
           const nx = sepDx / sepDist;
           const ny = sepDy / sepDist;
-          m.x -= nx * push;
-          m.y -= ny * push;
-          m2.x += nx * push;
-          m2.y += ny * push;
+          if (this.navigation) {
+            this.navigation.team = m.team;
+            this.navigation.move(m.x, m.y, m.x - nx * push, m.y - ny * push, m.radius);
+            m.x = this.navigation.resultX; m.y = this.navigation.resultY;
+            this.navigation.team = m2.team;
+            this.navigation.move(m2.x, m2.y, m2.x + nx * push, m2.y + ny * push, m2.radius);
+            m2.x = this.navigation.resultX; m2.y = this.navigation.resultY;
+          } else {
+            m.x -= nx * push; m.y -= ny * push;
+            m2.x += nx * push; m2.y += ny * push;
+          }
         }
       }
+    }
+    // Presentation telemetry measured after all collision/separation corrections.
+    for (let i = 0; i < minionList.length; i++) {
+      const m = minionList[i];
+      if (this.navigation) this.navigation.team = m.team;
+      if (this.navigation && m.isAlive && !this.navigation.isWalkable(m.x, m.y, m.radius)) {
+        m.x = m.visualX; m.y = m.visualY;
+      }
+      m.vx = m.isAlive ? (m.x - (m.visualX ?? m.x)) / DT : 0;
+      m.vy = m.isAlive ? (m.y - (m.visualY ?? m.y)) / DT : 0;
+      m.visualX = m.x; m.visualY = m.y;
     }
   }
 
@@ -1109,6 +1150,36 @@ class GameEngine {
   // JUNGLE MONSTERS & VISION WARDS (SCUTTLE CRAB & DRAGON)
   // ==========================================================
   updateJungleMonsters() {
+    for (const key in this.jungleMonsters) {
+      const monster = this.jungleMonsters[key];
+      if (key === 'dragon' || key === 'scuttle') continue;
+      if (!monster.isAlive) {
+        monster.respawnTimer = Math.max(0, (monster.respawnTimer || 0) - DT);
+        if (!monster.respawnTimer) { monster.isAlive = true; monster.hp = monster.maxHp; monster.targetId = null; }
+        continue;
+      }
+      monster.vx = 0; monster.vy = 0;
+      if (monster.type === 'scuttle' && this.navigation) {
+        this.navigation.team = null;
+        const nextY = monster.y + monster.speed * monster.patrolDir * DT;
+        this.navigation.move(monster.x, monster.y, monster.x, nextY, monster.radius);
+        monster.vx = (this.navigation.resultX - monster.x) / DT;
+        monster.vy = (this.navigation.resultY - monster.y) / DT;
+        monster.x = this.navigation.resultX; monster.y = this.navigation.resultY;
+        if (monster.y >= monster.patrolMaxY || monster.y <= monster.patrolMinY || !monster.vy) monster.patrolDir *= -1;
+        monster.angle = monster.patrolDir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        continue;
+      }
+      monster.attackCooldown = Math.max(0, (monster.attackCooldown || 0) - DT);
+      const target = this.players[monster.targetId];
+      if (!target?.isAlive || Math.hypot(target.x - monster.x, target.y - monster.y) > monster.range + target.radius) continue;
+      if (monster.attackCooldown <= 0) {
+        monster.attackCooldown = monster.attackInterval;
+        monster.attackSequence = (monster.attackSequence || 0) + 1;
+        monster.angle = Math.atan2(target.y - monster.y, target.x - monster.x);
+        this.applyDamage(monster.id, target, monster.damage, 'physical', false);
+      }
+    }
     // 1. Scuttle Crab (River Patrol)
     const scuttle = this.jungleMonsters.scuttle;
     if (scuttle) {
@@ -1169,6 +1240,8 @@ class GameEngine {
           dragon.targetId = dragonTarget.id;
           if (dragon.attackCooldown <= 0) {
             dragon.attackCooldown = dragon.attackInterval;
+            dragon.attackSequence = (dragon.attackSequence || 0) + 1;
+            dragon.angle = Math.atan2(dragonTarget.y - dragon.y, dragonTarget.x - dragon.x);
             // Spawn flame breath projectile
             this.spawnProjectile({
               ownerId: dragon.id,
@@ -1244,17 +1317,17 @@ class GameEngine {
     const dragonMult = 1 + (p.dragonBuffStacks || 0) * 0.12;
 
     p.maxHp = Math.round(baseHp + bonusHp);
-    p.maxMp = Math.round(baseMp + bonusMp);
+    p.maxMp = (p.championId === 'garen' || p.championId === 'yasuo') ? 0 : Math.round(baseMp + bonusMp);
     p.baseAd = Math.round((baseAd + bonusAd) * dragonMult);
     p.ad = p.baseAd;
-    p.armor = Math.round(baseArmor + bonusArmor);
-    p.mr = Math.round(baseMr);
+    p.armor = Math.round(baseArmor + bonusArmor + (p.garen?.wResists || 0));
+    p.mr = Math.round(baseMr + (p.garen?.wResists || 0));
     p.baseMoveSpeed = baseMoveSpeed + bonusMoveSpeed;
     p.moveSpeed = p.baseMoveSpeed;
     p.baseAs = Number((baseAs * (1 + bonusAs)).toFixed(2));
     p.as = p.baseAs;
     p.lifesteal = bonusLifesteal;
-    p.critChance = bonusCritChance;
+    p.critChance = p.championId === 'yasuo' ? Math.min(1, bonusCritChance * 2.5) : bonusCritChance;
   }
 
   addExp(p, amount) {
@@ -1302,6 +1375,9 @@ class GameEngine {
       if (curRank === 2 && p.level < 16) return { success: false, error: '궁극기 3레벨은 16레벨에 배울 수 있습니다.' };
     } else {
       if (curRank >= 5) return { success: false, error: '스킬은 최대 5레벨입니다.' };
+      if ((p.championId === 'garen' || p.championId === 'yasuo') && curRank + 1 > Math.ceil(p.level / 2)) {
+        return { success: false, error: '현재 챔피언 레벨에서 스킬 랭크를 더 올릴 수 없습니다.' };
+      }
     }
     p.skillRanks[k] = curRank + 1;
     p.skillPoints -= 1;
@@ -1507,6 +1583,7 @@ class GameEngine {
       // Attack execution
       if (currentTarget && turret.attackCooldown <= 0) {
         turret.attackCooldown = turret.attackInterval;
+        turret.attackSequence = (turret.attackSequence || 0) + 1;
         // Fire turret missile
         this.spawnProjectile({
           ownerId: turret.id,
@@ -1528,6 +1605,7 @@ class GameEngine {
   updateAutoAttacks() {
     for (const p of Object.values(this.players)) {
       if (!p.isAlive || p.isStunned) continue;
+      if (p.garen?.eRemaining > 0 || p.garen?.rRemaining > 0 || p.yasuo?.rRemaining > 0 || p.yasuo?.eRemaining > 0) continue;
 
       // Auto-target acquisition ONLY if idle or in explicit attack-move mode
       if (!p.targetEnemyId && !p.stealth) {
@@ -1590,7 +1668,7 @@ class GameEngine {
 
       if (!p.targetEnemyId) continue;
 
-      const target = this.players[p.targetEnemyId] || this.structures[p.targetEnemyId] || this.minions[p.targetEnemyId];
+      const target = this.findCombatTarget(p.targetEnemyId);
       if (!target || !target.isAlive || target.team === p.team) {
         p.targetEnemyId = null;
         p.isAutoIdleTarget = false;
@@ -1598,7 +1676,7 @@ class GameEngine {
       }
 
       const dist = Math.hypot(target.x - p.x, target.y - p.y);
-      const attackRangeThreshold = p.attackRange + (target.radius || 20);
+      const attackRangeThreshold = p.attackRange + (target.radius || 20) + (p.garen?.qRemaining > 0 ? 25 : 0);
 
       if (dist > attackRangeThreshold) {
         if (p.isAutoIdleTarget) {
@@ -1628,12 +1706,12 @@ class GameEngine {
             type: 'attack',
             attackerId: p.id,
             targetId: target.id,
-            isRanged: p.attackRange > 150,
+            isRanged: p.attackRange > 150 && p.championId !== 'yasuo',
             x: p.x,
             y: p.y
           });
 
-          if (p.attackRange <= 150) {
+          if (p.attackRange <= 150 || p.championId === 'yasuo') {
             // Melee instant strike
             this.executeBasicAttack(p, target);
           } else {
@@ -1660,6 +1738,7 @@ class GameEngine {
   executeBasicAttack(attacker, target) {
     let rawDamage = attacker.ad;
     let isCrit = false;
+    if (attacker.yasuo && Math.random() < (attacker.critChance || 0)) { rawDamage *= 1.8; isCrit = true; }
 
     // Sniper Passive: bonus crit damage at range
     if (attacker.championId === 'sniper') {
@@ -1691,6 +1770,8 @@ class GameEngine {
       }
     }
 
+    rawDamage = Garen.empowerAttack(this, attacker, target, rawDamage);
+
     // Shadow Hunter W Passive: 3-stack true damage
     if (attacker.championId === 'shadow_hunter') {
       attacker.passiveCount = (attacker.passiveCount || 0) + 1;
@@ -1719,10 +1800,27 @@ class GameEngine {
   updateProjectiles() {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];
+      if (proj.type === 'yasuo_tornado') {
+        if (Yasuo.projectile(this, proj, DT)) this.projectiles.splice(i, 1);
+        continue;
+      }
+      // Test the full travel segment before any damage, so fast missiles cannot
+      // tunnel through Wind Wall between simulation frames.
+      let nextX = proj.x + (proj.vx || 0) * proj.speed * DT;
+      let nextY = proj.y + (proj.vy || 0) * proj.speed * DT;
+      if (proj.targetId) {
+        const wallTarget = this.findCombatTarget(proj.targetId);
+        if (wallTarget) {
+          const dx = wallTarget.x - proj.x, dy = wallTarget.y - proj.y;
+          const distance = Math.hypot(dx, dy), step = Math.min(distance, proj.speed * DT);
+          nextX = proj.x + dx / (distance || 1) * step; nextY = proj.y + dy / (distance || 1) * step;
+        }
+      }
+      if (Yasuo.blocked(this, proj, nextX, nextY)) { this.projectiles.splice(i, 1); continue; }
 
       // Homing target (turret missile, ranged auto attack)
       if (proj.targetId) {
-        const target = this.players[proj.targetId] || this.structures[proj.targetId] || this.minions[proj.targetId];
+        const target = this.findCombatTarget(proj.targetId);
         if (!target || !target.isAlive) {
           this.projectiles.splice(i, 1);
           continue;
@@ -1937,6 +2035,9 @@ class GameEngine {
 
   applyDamage(attackerId, target, rawAmount, type, isCrit) {
     if (!target || !target.isAlive || target.isImmune || target.isInvulnerable) return;
+    if (target.team === 'neutral' && target.type !== 'scuttle' && this.players[attackerId] && rawAmount > 0) target.targetId = attackerId;
+    Garen.onDamage(this, target, attackerId, rawAmount);
+    Yasuo.onDamage(this, target, attackerId, rawAmount);
 
     // Berserker Ragnarok Check: Cannot die below 1 HP
     const isUndying = target.statusEffects && target.statusEffects.some(e => e.type === 'IMMUNE' || e.type === 'UNDYING');
@@ -1977,10 +2078,11 @@ class GameEngine {
     // Armor / MR Reduction
     let finalAmount = rawAmount;
     if (type === 'physical') {
-      const arm = Math.max(0, target.armor || 25);
+      const shred = target.statusEffects?.find(e => e.type === 'GAREN_ARMOR_SHRED' && e.duration > 0);
+      const arm = Math.max(0, target.armor ?? 25) * (shred ? 1 - shred.value : 1);
       finalAmount = rawAmount * (100 / (100 + arm));
     } else if (type === 'magic') {
-      const res = Math.max(0, target.mr || 25);
+      const res = Math.max(0, target.mr ?? 25);
       finalAmount = rawAmount * (100 / (100 + res));
     }
 
@@ -1993,6 +2095,11 @@ class GameEngine {
     }
 
     // Shield absorption
+    if (target.yasuo?.shield > 0) target.yasuo.shield = Math.max(0, target.yasuo.shield - Math.min(target.shield || 0, finalAmount));
+    if (target.garen?.wRemaining > 0 && type !== 'true') finalAmount *= 0.7;
+    if (target.garen?.wShield > 0) {
+      target.garen.wShield = Math.max(0, target.garen.wShield - Math.min(target.shield || 0, finalAmount));
+    }
     if (target.shield && target.shield > 0) {
       if (target.shield >= finalAmount) {
         target.shield -= finalAmount;
@@ -2040,8 +2147,11 @@ class GameEngine {
     if (!victim) return;
     victim.isAlive = false;
     victim.hp = 0;
+    Garen.reset(this, victim);
+    Yasuo.reset(this, victim);
 
     const killer = this.players[killerId];
+    Garen.onKill(this, killer, victim);
 
     // 1. Nexus Destruction
     if (victim.type === 'nexus') {
@@ -2104,6 +2214,14 @@ class GameEngine {
         team: killer ? killer.team : 'neutral',
         killerName: killer ? killer.nickname : '미니언'
       });
+      return;
+    }
+
+    // Neutral camps never count as champion kills or alter the match score.
+    if (victim.team === 'neutral') {
+      victim.respawnTimer = victim.type === 'baron' ? 180 : 120;
+      victim.targetId = null;
+      if (killer) { killer.gold += victim.goldValue || 0; this.addExp(killer, victim.expValue || 0); }
       return;
     }
 
@@ -2232,13 +2350,17 @@ class GameEngine {
 
   respawnPlayer(p) {
     if (!p) return;
+    Garen.reset(this, p);
+    Yasuo.reset(this, p);
     p.isAlive = true;
     p.hp = p.maxHp;
     p.mp = p.maxMp;
     p.statusEffects = [];
+    p.isSilenced = false;
     const base = this.map.bases[p.team];
     p.x = base.spawnX;
     p.y = base.spawnY;
+    p.navPath = null;
     p.targetX = base.spawnX;
     p.targetY = base.spawnY;
   }
@@ -2271,10 +2393,19 @@ class GameEngine {
   }
 
   // Handle Client Commands
+  findCombatTarget(id) {
+    const direct = this.players[id] || this.structures[id] || this.minions[id];
+    if (direct) return direct;
+    for (const key in this.jungleMonsters) if (this.jungleMonsters[key].id === id) return this.jungleMonsters[key];
+    return null;
+  }
+
   handleMoveInput(socketId, targetX, targetY) {
     const p = this.players[socketId];
-    if (!p || !p.isAlive || p.isStunned || p.isRooted) return;
+    if (!p || !p.isAlive || p.isStunned || p.isRooted || p.garen?.rRemaining > 0 || p.yasuo?.rRemaining > 0 || p.yasuo?.eRemaining > 0) return;
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
     this.cancelRecall(p);
+    p.navPath = null;
     p.targetX = Math.max(20, Math.min(this.map.width - 20, targetX));
     p.targetY = Math.max(20, Math.min(this.map.height - 20, targetY));
     p.targetEnemyId = null; // moving clears auto-attack target unless targeted click
@@ -2291,7 +2422,7 @@ class GameEngine {
     p.isAttackMove = false;
 
     // If out of range, immediately set target coordinates towards enemy
-    const target = this.players[targetId] || this.structures[targetId] || this.minions[targetId];
+    const target = this.findCombatTarget(targetId);
     if (target) {
       const dist = Math.hypot(target.x - p.x, target.y - p.y);
       if (dist > p.attackRange + (target.radius || 20)) {
@@ -2349,11 +2480,14 @@ class GameEngine {
     p.vy = 0;
     p.targetEnemyId = null;
     p.isAttackMove = false;
+    p.navPath = null; p.navX = p.x; p.navY = p.y;
   }
 
-  handleCastSkill(socketId, skillKey, targetX, targetY) {
+  handleCastSkill(socketId, skillKey, targetX, targetY, targetId) {
     const p = this.players[socketId];
-    if (!p || !p.isAlive || p.isStunned) return;
+    if (!p || !p.isAlive || p.isStunned || p.isSilenced || p.statusEffects.some(e => e.type === 'SILENCE' && e.duration > 0)) return false;
+    if (p.championId === 'garen') return Garen.cast(this, p, skillKey, targetX, targetY, targetId);
+    if (p.championId === 'yasuo') return Yasuo.cast(this, p, skillKey, targetX, targetY, targetId);
     this.cancelRecall(p);
     p.revealedTimer = 1.5;
 
@@ -2392,7 +2526,8 @@ class GameEngine {
       const flashDist = Math.min(dist, spellData.range);
       const nx = p.x + (dist > 0.001 ? (dx / safeDist) * flashDist : spellData.range);
       const ny = p.y + (dist > 0.001 ? (dy / safeDist) * flashDist : 0);
-      this.resolvePlayerMovement(p, nx, ny);
+      this.resolvePlayerMovement(p, nx, ny, true);
+      p.navPath = null;
       p.targetX = p.x;
       p.targetY = p.y;
       this.eventsQueue.push({ type: 'flash', x: p.x, y: p.y });
@@ -2432,6 +2567,9 @@ class GameEngine {
     const dirX = dx / dist;
     const dirY = dy / dist;
 
+    // Garen is validated and executed by GarenMechanics before this dispatcher.
+    if (p.championId === 'garen' || p.championId === 'yasuo') return;
+
     // 1. BLADEMASTER (검객)
     if (p.championId === 'blademaster') {
       if (key === 'Q') {
@@ -2454,8 +2592,8 @@ class GameEngine {
       } else if (key === 'R') {
         // Omnislash airborne
         const jumpDist = Math.min(dist, skill.range);
-        p.x += dirX * jumpDist;
-        p.y += dirY * jumpDist;
+        this.resolvePlayerMovement(p, p.x + dirX * jumpDist, p.y + dirY * jumpDist, true);
+        p.navPath = null;
         p.targetX = p.x;
         p.targetY = p.y;
         this.createAoeBlast(p.id, p.team, p.x, p.y, skill.radius, skill.damage, 'AIRBORNE', skill.airborneDuration);
@@ -2563,8 +2701,8 @@ class GameEngine {
           if (edist <= skill.radius) {
             const pushDirX = (ep.x - p.x) / (edist || 1);
             const pushDirY = (ep.y - p.y) / (edist || 1);
-            ep.x += pushDirX * skill.knockbackDist;
-            ep.y += pushDirY * skill.knockbackDist;
+            this.resolvePlayerMovement(ep, ep.x + pushDirX * skill.knockbackDist, ep.y + pushDirY * skill.knockbackDist);
+            ep.navPath = null;
             this.applyDamage(p.id, ep, skill.damage, 'magic', false);
             this.applyPyromancerPassive(ep, p.id);
           }
@@ -2612,8 +2750,8 @@ class GameEngine {
       } else if (key === 'E') {
         // Shadow Step Blink
         const blinkDist = Math.min(dist, skill.range);
-        p.x += dirX * blinkDist;
-        p.y += dirY * blinkDist;
+        this.resolvePlayerMovement(p, p.x + dirX * blinkDist, p.y + dirY * blinkDist, true);
+        p.navPath = null;
         p.targetX = p.x;
         p.targetY = p.y;
         this.createAoeBlast(p.id, p.team, p.x, p.y, 130, skill.damage, null);
@@ -2626,8 +2764,8 @@ class GameEngine {
           if (d <= skill.range) { bestTarget = ep; break; }
         }
         if (bestTarget) {
-          p.x = bestTarget.x - dirX * 50;
-          p.y = bestTarget.y - dirY * 50;
+          this.resolvePlayerMovement(p, bestTarget.x - dirX * 50, bestTarget.y - dirY * 50, true);
+          p.navPath = null;
           this.applyDamage(p.id, bestTarget, skill.initialDamage, 'physical', true);
           setTimeout(() => {
             if (bestTarget && bestTarget.isAlive) {
@@ -2643,8 +2781,8 @@ class GameEngine {
       if (key === 'Q') {
         // Shield Bash Dash
         const dashDist = Math.min(dist, skill.range);
-        p.x += dirX * dashDist;
-        p.y += dirY * dashDist;
+        this.resolvePlayerMovement(p, p.x + dirX * dashDist, p.y + dirY * dashDist, false);
+        p.navPath = null;
         p.targetX = p.x;
         p.targetY = p.y;
         this.createAoeBlast(p.id, p.team, p.x, p.y, 150, skill.damage, 'STUN', skill.stunDuration);
@@ -2768,8 +2906,8 @@ class GameEngine {
           if (edist <= skill.range) {
             const pushX = ep.x + dirX * skill.knockbackDist;
             const pushY = ep.y + dirY * skill.knockbackDist;
-            ep.x = pushX;
-            ep.y = pushY;
+            this.resolvePlayerMovement(ep, pushX, pushY);
+            ep.navPath = null;
             this.applyDamage(p.id, ep, skill.damage, 'physical', false);
             break;
           }
@@ -2806,16 +2944,16 @@ class GameEngine {
       } else if (key === 'E') {
         // Knee Dash
         const dashDist = Math.min(dist, skill.range);
-        p.x += dirX * dashDist;
-        p.y += dirY * dashDist;
+        this.resolvePlayerMovement(p, p.x + dirX * dashDist, p.y + dirY * dashDist, false);
+        p.navPath = null;
         p.targetX = p.x;
         p.targetY = p.y;
         this.createAoeBlast(p.id, p.team, p.x, p.y, 140, skill.damage, 'SLOW', skill.slowDuration);
       } else if (key === 'R') {
         // Rising Dragon Fist
         const jumpDist = Math.min(dist, skill.range);
-        p.x += dirX * jumpDist;
-        p.y += dirY * jumpDist;
+        this.resolvePlayerMovement(p, p.x + dirX * jumpDist, p.y + dirY * jumpDist, true);
+        p.navPath = null;
         p.targetX = p.x;
         p.targetY = p.y;
         this.createAoeBlast(p.id, p.team, p.x, p.y, 160, skill.damage, 'AIRBORNE', skill.airborneDuration);
@@ -2848,8 +2986,8 @@ class GameEngine {
         if (selfDist < skill.radius + 50) {
           const sDirX = (p.x - tx) / (selfDist || 1);
           const sDirY = (p.y - ty) / (selfDist || 1);
-          p.x += sDirX * skill.knockbackDist;
-          p.y += sDirY * skill.knockbackDist;
+          this.resolvePlayerMovement(p, p.x + sDirX * skill.knockbackDist, p.y + sDirY * skill.knockbackDist);
+          p.navPath = null;
         }
       } else if (key === 'E') {
         // Minefield
@@ -2890,7 +3028,9 @@ class GameEngine {
       isSummonersRift: !!this.map.isSummonersRift,
       obstacles: this.map.obstacles,
       bushes: this.map.bushes,
-      bases: this.map.bases
+      bases: this.map.bases,
+      navigation: this.navigation ? this.navigation.data : null,
+      originalMap: this.navigation ? { url: '/assets/maps/summoners-rift/map.glb', scale: 3200 / 15000, sourceSize: 15000 } : null
     };
   }
 
@@ -2908,6 +3048,10 @@ class GameEngine {
         accentColor: p.accentColor,
         x: Math.round(p.x),
         y: Math.round(p.y),
+        vx: p.vx,
+        vy: p.vy,
+        navX: p.navX,
+        navY: p.navY,
         angle: p.angle,
         hp: Math.round(p.hp),
         maxHp: p.maxHp,
@@ -2915,6 +3059,15 @@ class GameEngine {
         maxMp: p.maxMp,
         shield: Math.round(p.shield || 0),
         isAlive: p.isAlive,
+        isSilenced: !!p.isSilenced,
+        airborneRemaining: p.statusEffects.reduce((remaining, e) => e.type === 'AIRBORNE' ? Math.max(remaining, e.duration) : remaining, 0),
+        yasuo: p.yasuo ? { qStacks: p.yasuo.qStacks, qRemaining: p.yasuo.qRemaining, eRemaining: p.yasuo.eRemaining, rRemaining: p.yasuo.rRemaining, flow: p.yasuo.flow, shieldRemaining: p.yasuo.shieldRemaining } : null,
+        garen: p.garen ? {
+          qRemaining: p.garen.qRemaining,
+          wRemaining: p.garen.wRemaining,
+          eRemaining: p.garen.eRemaining,
+          rRemaining: p.garen.rRemaining
+        } : null,
         respawnTimer: Math.ceil(p.respawnTimer),
         cooldowns: p.cooldowns,
         kills: p.kills,
@@ -2952,11 +3105,14 @@ class GameEngine {
         tier: s.tier || null,
         x: s.x,
         y: s.y,
+        height: s.height,
+        rotation: s.rotation,
         radius: s.radius,
         range: s.range || 380,
         hp: Math.round(s.hp),
         maxHp: s.maxHp,
         targetId: s.targetId || null,
+        attackSequence: s.attackSequence || 0,
         isAlive: s.isAlive,
         isInvulnerable: !!s.isInvulnerable,
         respawnTimer: s.respawnTimer ? Math.ceil(s.respawnTimer) : 0
@@ -2965,6 +3121,12 @@ class GameEngine {
         id: jm.id,
         name: jm.name,
         type: jm.type,
+        attackSequence: jm.attackSequence || 0,
+        vx: jm.vx || 0,
+        vy: jm.vy || 0,
+        speed: jm.speed || 150,
+        as: jm.attackInterval ? 1 / jm.attackInterval : 1,
+        angle: jm.angle,
         team: jm.team,
         x: Math.round(jm.x),
         y: Math.round(jm.y),
@@ -2993,14 +3155,19 @@ class GameEngine {
         angle: Number(m.angle.toFixed(2)),
         hp: Math.round(m.hp),
         maxHp: m.maxHp,
-        isAttacking: m.attackAnimTimer > 0
+        isAttacking: m.attackAnimTimer > 0,
+        attackSequence: m.attackSequence || 0,
+        vx: m.vx || 0, vy: m.vy || 0, speed: m.speed, as: m.as, targetId: m.targetId || null
       })),
+      yasuoWalls: this.yasuoWalls.map(w => ({ ...w })),
       projectiles: this.projectiles.map(pr => ({
         id: pr.id,
+        ownerId: pr.ownerId,
         type: pr.type,
         x: Math.round(pr.x),
         y: Math.round(pr.y),
         radius: pr.radius,
+        angle: Math.atan2(pr.vy || 0, pr.vx || 0),
         color: pr.color || '#fff'
       })),
       aoeZones: this.aoeZones.map(z => ({

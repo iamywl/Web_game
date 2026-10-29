@@ -14,11 +14,22 @@
 
 import * as THREE from 'three';
 import { createChampionMaterial, createOutlineMesh, toonRamp } from './nprMaterial.js';
+import { attachGarenModel } from './garenModel.js';
+import { GarenEffects } from './garenEffects.js';
+import { GarenAudio } from './garenAudio.js';
+import { attachYasuoModel } from './yasuoModel.js';
+import { YasuoEffects } from './yasuoEffects.js';
+import { YasuoAudio } from './yasuoAudio.js';
+import { attachUnitModel, disposeUnitGroup } from './unitModels.js';
 import { GameFeelController } from './GameFeelController.js';
+import { loadRiftMap } from './riftMap.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// Legacy renderer methods and GLTF loaders must share the same Three.js instance.
+window.THREE = THREE;
 
 // Zero-GC Module-Level Math Cache Variables
 const Three = (typeof THREE !== 'undefined' && THREE) ? THREE : window.THREE;
@@ -79,6 +90,10 @@ class GameRenderer {
     this.minionAnimStates = {}; // minionId -> { walkPhase, lastX, lastY }
 
     this.init3DScene();
+    this.garenEffects = new GarenEffects(this.scene);
+    this.garenAudio = new GarenAudio();
+    this.yasuoEffects = new YasuoEffects(this.scene);
+    this.yasuoAudio = new YasuoAudio();
     this.init2DOverlayCanvas();
 
     window.addEventListener('resize', this.onResize.bind(this));
@@ -97,6 +112,7 @@ class GameRenderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x060c14);
     this.scene.fog = new THREE.FogExp2(0x060c14, 0.00045);
+    this.legacyFog = this.scene.fog;
 
     // 2. 3D Perspective Quarter-View Camera
     this.camera3D = new THREE.PerspectiveCamera(45, this.width / this.height, 10, 5000);
@@ -114,7 +130,7 @@ class GameRenderer {
     // Dynamic DPR: support up to 2.0 for sharp, crisp visuals on Retina/QHD/4K displays
     this.renderer3D.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
     this.renderer3D.shadowMap.enabled = true;
-    this.renderer3D.shadowMap.type = THREE.PCFSoftShadowMap; // Beautiful penumbra soft shadows
+    this.renderer3D.shadowMap.type = THREE.PCFShadowMap;
     this.renderer3D.toneMapping = THREE.ACESFilmicToneMapping; // Industry standard cinematic tone curve
     this.renderer3D.toneMappingExposure = 1.15;
 
@@ -149,7 +165,9 @@ class GameRenderer {
     this.setup3DLights();
 
     // 5. 3D Terrain & Obstacles
+    const environmentStart = this.scene.children.length;
     this.build3DEnvironment();
+    this.environmentObjects = this.scene.children.slice(environmentStart);
 
     // 6. Raycaster for Exact 3D Ground Intersection
     this.raycaster = new THREE.Raycaster();
@@ -733,10 +751,40 @@ class GameRenderer {
 
   setMapData(mapData) {
     if (mapData) {
+      const version = this.mapLoadVersion = (this.mapLoadVersion || 0) + 1;
+      this.originalMap?.removeFromParent(); this.originalMap = null;
+      this.mapLoadNotice?.remove(); this.mapLoadNotice = null;
+      this.originalMapReady = false; this.originalMapError = null;
+      this.scene.fog = this.legacyFog;
+      for (const object of this.environmentObjects || []) object.visible = true;
+      if (this.bushInstanced) this.bushInstanced.visible = !mapData.originalMap;
+      this.navigation = mapData.navigation ? new globalThis.MapNavigation(mapData.navigation) : null;
+      this.navStructureMask = null;
+      this.garenEffects.navigation = this.navigation; this.yasuoEffects.navigation = this.navigation;
+      if (this.gameFeelController) this.gameFeelController.navigation = this.navigation;
+      this.clearUnitModels();
       this.mapData = mapData;
       this.cameraCtrl.setMapSize(mapData.width || 2400, mapData.height || 1600);
-      if (mapData.isSummonersRift) {
+      this.cameraCtrl.allowEdgeFocus = !!mapData.originalMap;
+      if (mapData.isSummonersRift && !mapData.originalMap) {
         this.setupSummonersRiftTerrain(mapData);
+      }
+      if (mapData.originalMap) {
+        const notice = document.createElement('div');
+        notice.setAttribute('role', 'status'); notice.textContent = '소환사의 협곡 지형을 불러오는 중…';
+        notice.style.cssText = 'position:absolute;top:90px;left:50%;transform:translateX(-50%);z-index:20;padding:10px 18px;background:#091626e8;color:#f1d58d;border:1px solid #8d7742;border-radius:8px;pointer-events:none';
+        this.container.appendChild(notice); this.mapLoadNotice = notice;
+        this.minimapImage = new Image();
+        this.minimapImage.src = '/assets/maps/summoners-rift/minimap.png';
+        loadRiftMap(mapData.originalMap).then(root => {
+          if (version !== this.mapLoadVersion) return;
+          this.originalMap = root; this.scene.add(root);
+          for (const object of this.environmentObjects) object.visible = false;
+          if (this.bushInstanced) this.bushInstanced.visible = false;
+          this.scene.fog = null;
+          this.originalMapReady = true;
+          notice.remove();
+        }).catch(error => { this.originalMapError = error.message; notice.textContent = '협곡 지형을 불러오지 못했습니다. 새로고침해 주세요.'; console.error('Summoners Rift map load failed:', error); });
       }
       if (mapData.obstacles) {
         this.update3DWalls(mapData.obstacles);
@@ -776,26 +824,51 @@ class GameRenderer {
     this.mouseVec.y = -(screenY / this.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouseVec, this.camera3D);
 
-    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, this._cachedHitPoint);
+    this.groundPlane.constant = 0;
+    let hit = this.raycaster.ray.intersectPlane(this.groundPlane, this._cachedHitPoint);
+    if (hit && this.navigation) {
+      for (let i = 0; i < 5; i++) {
+        this.groundPlane.constant = -this.navigation.heightAt(hit.x, hit.z);
+        hit = this.raycaster.ray.intersectPlane(this.groundPlane, this._cachedHitPoint);
+        if (!hit) break;
+      }
+    }
     if (hit) {
       return { x: hit.x, y: hit.z };
     }
     return this.cameraCtrl.screenToWorld(screenX, screenY);
   }
 
-  worldToScreen(worldX, worldZ) {
+  worldToScreen(worldX, worldZ, height = 0) {
+    height += this.navigation?.heightAt(worldX, worldZ) || 0;
     const THREE = window.THREE;
     if (!this.camera3D || !THREE) {
       return this.cameraCtrl.worldToScreen(worldX, worldZ);
     }
 
-    this._cachedWorldPos.set(worldX, 0, worldZ);
+    this._cachedWorldPos.set(worldX, height, worldZ);
     this._cachedWorldPos.project(this.camera3D);
 
     return {
       x: (this._cachedWorldPos.x * 0.5 + 0.5) * this.width,
       y: (-(this._cachedWorldPos.y * 0.5) + 0.5) * this.height
     };
+  }
+
+  pickCombatTarget(screenX, screenY, team) {
+    // Pointer-event work only: picking the actual raised mesh also selects tall
+    // towers/monsters whose body is far above their ground-plane click point.
+    this.mouseVec.set(screenX / this.width * 2 - 1, -screenY / this.height * 2 + 1);
+    this.raycaster.setFromCamera(this.mouseVec, this.camera3D);
+    let target = null, distance = Infinity;
+    const collections = [[this.gameState?.players, this.threePlayerMeshes], [this.gameState?.minions, this.threeMinionMeshes], [this.gameState?.structures, this.threeStructureMeshes], [this.gameState?.jungleMonsters, this.threeJungleMeshes]];
+    for (const [states, meshes] of collections) for (const state of states || []) {
+      if (state.team === team || state.isAlive === false || state.hp <= 0) continue;
+      const group = meshes[state.id]; if (!group?.visible) continue;
+      const hits = this.raycaster.intersectObject(group, true);
+      if (hits.length && hits[0].distance < distance) { target = state; distance = hits[0].distance; }
+    }
+    return target;
   }
 
   // ==========================================================
@@ -853,6 +926,7 @@ class GameRenderer {
   }
 
   triggerSkillVfx(playerId, champId, key, targetX, targetY) {
+    if (champId === 'garen' || champId === 'yasuo') return; // Imported champions follow accepted server events.
     const p = this.gameState?.players?.find(pl => pl.id === playerId);
     if (!p) return;
 
@@ -945,7 +1019,23 @@ class GameRenderer {
   processEvents(events) {
     if (!events || !events.length) return;
     for (const ev of events) {
-      if (ev.type === 'damage') {
+      if (ev.type === 'garenSkill') {
+        const player = this.gameState?.players?.find(p => p.id === ev.playerId);
+        const group = this.threePlayerMeshes[ev.playerId];
+        group?.userData.garen?.skill(ev);
+        this.garenEffects.trigger(ev, player, group);
+        if (group?.visible !== false) this.garenAudio.trigger(ev);
+        if (ev.key === 'R' && ev.phase === 'cast' && ev.playerId === this.localPlayerId) this.gameFeelController?.stopMoving();
+        if (ev.key === 'R' && ev.phase === 'hit' && (ev.playerId === this.localPlayerId || ev.targetId === this.localPlayerId)) this.gameFeelController?.addTrauma(0.16);
+      } else if (ev.type === 'yasuoSkill' || ev.type === 'yasuoWallBlock') {
+        const player = this.gameState?.players?.find(p => p.id === ev.playerId);
+        const group = this.threePlayerMeshes[ev.playerId];
+        group?.userData.yasuo?.skill(ev);
+        this.yasuoEffects.trigger(ev, player, group);
+        if (group?.visible !== false) this.yasuoAudio.trigger(ev);
+        if ((ev.key === 'E' || ev.key === 'R') && ev.phase === 'cast' && ev.playerId === this.localPlayerId) this.gameFeelController?.stopMoving();
+        if (ev.key === 'R' && ev.phase === 'hit' && (ev.playerId === this.localPlayerId || ev.targetId === this.localPlayerId)) this.gameFeelController?.addTrauma(0.16);
+      } else if (ev.type === 'damage') {
         const color = ev.isCrit ? '#f1c40f' : '#ffffff';
         const txt = ev.isCrit ? `⚡ CRIT! ${ev.amount}` : `${ev.amount}`;
 
@@ -1002,8 +1092,17 @@ class GameRenderer {
       } else if (ev.type === 'attack') {
         if (ev.attackerId && this.champAnimStates[ev.attackerId]) {
           this.champAnimStates[ev.attackerId].attackSwingTimer = 0.35;
+          const attacker = this.gameState?.players?.find(p => p.id === ev.attackerId);
+          if (ev.attackerId === this.localPlayerId && !attacker?.vx && !attacker?.vy) {
+            this.gameFeelController?.stopMoving();
+          }
+          this.threePlayerMeshes[ev.attackerId]?.userData.garen?.attack(attacker?.as);
+          this.threePlayerMeshes[ev.attackerId]?.userData.yasuo?.attack(attacker?.as);
         }
-        if (window.soundEngine) {
+        const isYasuoAttack = this.gameState?.players?.some(p => p.id === ev.attackerId && p.championId === 'yasuo');
+        if (isYasuoAttack) {
+          if (this.threePlayerMeshes[ev.attackerId]?.visible !== false) this.yasuoAudio.attack(ev.attackerId);
+        } else if (window.soundEngine) {
           if (ev.isRanged) window.soundEngine.playGunshot(false);
           else window.soundEngine.playSwordSlash();
         }
@@ -1032,12 +1131,11 @@ class GameRenderer {
   // ==========================================================
   // 60 FPS 3D & 2D RENDER LOOP
   // ==========================================================
-  render(gameState, mouseScreenPos) {
+  render(gameState, mouseScreenPos, dt = 0.0166) {
     this.gameState = gameState;
     const THREE = window.THREE;
     if (!THREE || !this.renderer3D || !this.scene) return;
 
-    const dt = 0.0166;
     if (this.hitFreezeTimer > 0) {
       this.hitFreezeTimer -= dt;
       // Hit-Stop freezes animation timer for tangible impact weight
@@ -1085,13 +1183,17 @@ class GameRenderer {
     }
 
     // 3. Update 3D Champion Hierarchical Models
-    this.update3DChampions(gameState.players);
+    this.update3DChampions(gameState.players, dt);
+    this.garenEffects.update(gameState.players, this.threePlayerMeshes, dt);
+    this.garenAudio.update(gameState.players);
+    this.yasuoEffects.update(gameState.players, this.threePlayerMeshes, dt, gameState.yasuoWalls, gameState.projectiles);
+    this.yasuoAudio.update(gameState.players, gameState.yasuoWalls);
 
     // 4. Update 3D Structures (Turrets & Nexus)
-    this.update3DStructures(gameState.structures, gameState);
+    this.update3DStructures(gameState.structures, gameState, dt);
 
     // 5. Update 3D Minions (Melee, Caster, Cannon Waves)
-    this.update3DMinions(gameState.minions);
+    this.update3DMinions(gameState.minions, dt);
 
     // 6. Update 3D Projectiles
     this.update3DProjectiles(gameState.projectiles);
@@ -1100,7 +1202,7 @@ class GameRenderer {
     this.update3DAoeZones(gameState.aoeZones);
 
     // 7.5 Update 3D Jungle Monsters (Scuttle Crab, Elemental Dragon)
-    this.update3DJungleMonsters(gameState.jungleMonsters);
+    this.update3DJungleMonsters(gameState.jungleMonsters, dt);
 
     // 7.6 Update 3D Vision Wards
     this.update3DWards(gameState.wards);
@@ -1333,7 +1435,7 @@ class GameRenderer {
   // ==========================================================
   // 3D CHAMPION HIERARCHICAL MODELS & ANIMATIONS
   // ==========================================================
-  update3DChampions(players) {
+  update3DChampions(players, dt = 0.0166) {
     const THREE = window.THREE;
     if (!players) return;
 
@@ -1346,10 +1448,10 @@ class GameRenderer {
         this.champAnimStates[p.id] = { walkCycle: 0, attackSwingTimer: 0, hitFlashTimer: 0 };
       }
       const anim = this.champAnimStates[p.id];
-      const isMoving = p.vx !== 0 || p.vy !== 0;
+      const isMoving = Math.abs(p.vx || 0) > 0.1 || Math.abs(p.vy || 0) > 0.1;
       const isHitFrozen = this.hitFreezeTimer > 0;
-      if (isMoving && !isHitFrozen) anim.walkCycle += 0.28;
-      if (anim.attackSwingTimer > 0 && !isHitFrozen) anim.attackSwingTimer -= 0.0166;
+      if (isMoving && !isHitFrozen) anim.walkCycle += dt * 16.8;
+      if (anim.attackSwingTimer > 0 && !isHitFrozen) anim.attackSwingTimer -= dt;
 
       let group = this.threePlayerMeshes[p.id];
       if (!group) {
@@ -1365,9 +1467,10 @@ class GameRenderer {
             this.gameFeelController = new Controller(this.camera3D, group, {
               moveSpeed: p.moveSpeed || 340.0,
               turnRate: Math.PI * 4.0,
-              maxShakeOffset: 14.0
+              maxShakeOffset: 14.0, navigation: this.navigation, radius: p.radius || 22
             });
             this.gameFeelController.initPosition(p.x, p.y);
+            if (this.navigation) this.navigation.team = p.team;
           }
         }
       }
@@ -1378,7 +1481,7 @@ class GameRenderer {
 
       let isStealthedEnemy = false;
       if (!isAlly && p.inBush && !p.revealed) {
-        let canSeeInBush = false;
+        let canSeeInBush = !!(this.navigation && localPlayer?.inBush && localPlayer.bushId === p.bushId);
         if (localPlayer && this.mapData.bushes) {
           for (let bIdx = 0; bIdx < this.mapData.bushes.length; bIdx++) {
             const b = this.mapData.bushes[bIdx];
@@ -1405,13 +1508,20 @@ class GameRenderer {
         }
       }
 
-      if (isStealthedEnemy) {
-        group.visible = false;
+      group.visible = p.isAlive;
+      if (!p.isAlive) {
+        group.userData.garen?.update(false, 0, p.moveSpeed, false);
+        group.userData.yasuo?.update(false, 0, p.moveSpeed, false);
+        if (p.id === this.localPlayerId) this.gameFeelController?.stopMoving();
         return;
       }
-
-      group.visible = p.isAlive;
-      if (!p.isAlive) return;
+      if (isStealthedEnemy) {
+        group.visible = false;
+        group.userData.garen?.update(isMoving, isHitFrozen ? 0 : dt, p.moveSpeed);
+        group.userData.yasuo?.sync(p.yasuo);
+        group.userData.yasuo?.update(isMoving, isHitFrozen ? 0 : dt, p.moveSpeed);
+        return;
+      }
 
       // Subtle camouflage transparency for ally or local player concealed in bush
       const isConcealed = p.inBush && !p.revealed;
@@ -1425,15 +1535,21 @@ class GameRenderer {
         });
       }
 
-      const isPlayerMoving = (p.id === this.localPlayerId && this.gameFeelController) ? this.gameFeelController.isMoving : isMoving;
+      const isPlayerMoving = (p.id === this.localPlayerId && this.gameFeelController) ? (this.gameFeelController.isMoving || isMoving) : isMoving;
 
       if (p.id === this.localPlayerId && this.gameFeelController) {
         // Local champion position and slerp turn rate are handled directly by GameFeelController
         anim.walkCycle = this.gameFeelController.walkCycle;
+        if (group.userData.garen || group.userData.yasuo) group.position.y = this.navigation?.heightAt(group.position.x, group.position.z) || 0;
+        if (!this.gameFeelController.isMoving) {
+          _v1.set(0, 1, 0);
+          _q1.setFromAxisAngle(_v1, -p.angle + Math.PI / 2);
+          group.quaternion.rotateTowards(_q1, Math.PI * 4 * dt);
+        }
       } else {
         // Smooth Lerp Interpolation for 60~144 FPS fluid movement (Remote champions)
-        const walkBob = isMoving ? Math.sin(anim.walkCycle) * 2.5 : 0;
-        this._cachedTargetVec.set(p.x, walkBob, p.y);
+        const walkBob = isMoving && !group.userData.garen && !group.userData.yasuo ? Math.sin(anim.walkCycle) * 2.5 : 0;
+        this._cachedTargetVec.set(p.x, walkBob + (this.navigation?.heightAt(p.x, p.y) || 0), p.y);
         if (group.position.lengthSq() === 0) {
           group.position.copy(this._cachedTargetVec);
         } else {
@@ -1444,9 +1560,15 @@ class GameRenderer {
         const targetRotY = -p.angle + Math.PI / 2;
         _v1.set(0, 1, 0);
         _q1.setFromAxisAngle(_v1, targetRotY);
-        const turnStep = (Math.PI * 4.0) * 0.0166; // 720 deg/sec
+        const turnStep = (Math.PI * 4.0) * dt; // 720 deg/sec
         group.quaternion.rotateTowards(_q1, turnStep);
       }
+
+      group.userData.garen?.sync(p.garen);
+      group.userData.garen?.update(isPlayerMoving, isHitFrozen ? 0 : dt, p.moveSpeed);
+      group.userData.yasuo?.sync(p.yasuo);
+      group.userData.yasuo?.update(isPlayerMoving, isHitFrozen ? 0 : dt, p.moveSpeed);
+      if (p.airborneRemaining > 0) group.position.y = (this.navigation?.heightAt(p.x, p.y) || 0) + 28 + Math.sin(Math.min(1, p.airborneRemaining) * Math.PI) * 12;
 
       // Biped Gaits: Legs & Arms Swing
       if (group.userData.leftLeg && group.userData.rightLeg) {
@@ -1504,7 +1626,13 @@ class GameRenderer {
     // Remove disconnected
     Object.keys(this.threePlayerMeshes).forEach(id => {
       if (!activeIds.has(id)) {
-        this.scene.remove(this.threePlayerMeshes[id]);
+        const removed = this.threePlayerMeshes[id];
+        removed.userData.disposed = true;
+        removed.userData.garen?.dispose();
+        removed.userData.yasuo?.dispose();
+        this.scene.remove(removed);
+        delete this.champAnimStates[id];
+        if (id === this.localPlayerId) this.gameFeelController = null;
         delete this.threePlayerMeshes[id];
       }
     });
@@ -1718,7 +1846,7 @@ class GameRenderer {
     group.userData.rightArm = rightArm;
 
     // 7. Delegate to Champion Specialists
-    if (cid === 'blademaster') {
+    if (cid === 'blademaster' || cid === 'garen' || cid === 'yasuo') {
       this.buildBlademasterModel(group, teamHex, skinMat, darkMat, goldMat, silverMat, armorMat, THREE);
     } else if (cid === 'sniper') {
       this.buildSniperModel(group, teamHex, skinMat, darkMat, goldMat, silverMat, armorMat, THREE);
@@ -1742,6 +1870,8 @@ class GameRenderer {
 
     // Apply Inverted Hull Stylized NPR Cartoon Outlines
     this.applyInvertedHullOutline(group, THREE);
+    if (cid === 'garen') attachGarenModel(group);
+    if (cid === 'yasuo') attachYasuoModel(group);
 
     return group;
   }
@@ -2905,7 +3035,19 @@ class GameRenderer {
   // ==========================================================
   // 3D STRUCTURES (HIGH-DETAIL LOL NPR TURRETS & ARCANE NEXUS)
   // ==========================================================
-  update3DStructures(structures, gameState) {
+  clearUnitModels() {
+    for (const id in this.threeMinionMeshes) { disposeUnitGroup(this.threeMinionMeshes[id]); delete this.threeMinionMeshes[id]; }
+    for (const id in this.threeStructureMeshes) { disposeUnitGroup(this.threeStructureMeshes[id]); delete this.threeStructureMeshes[id]; }
+    for (const id in this.threeJungleMeshes) { disposeUnitGroup(this.threeJungleMeshes[id]); delete this.threeJungleMeshes[id]; }
+    this.minionAnimStates = {};
+  }
+
+  update3DStructures(structures, gameState, dt = 1 / 60) {
+    if (this.navigation && structures) {
+      let mask = 0;
+      for (let i = 0; i < structures.length; i++) if (structures[i].isAlive) mask |= 1 << i;
+      if (mask !== this.navStructureMask) { this.navStructureMask = mask; this.navigation.setStructures(structures); }
+    }
     const THREE = window.THREE;
     if (!structures) return;
 
@@ -3092,14 +3234,23 @@ class GameRenderer {
         // Apply Inverted Hull Stylized Cartoon Outlines to Structure
         this.applyInvertedHullOutline(group, THREE);
 
-        group.position.set(s.x, 0, s.y);
+        group.position.set(s.x, s.height ?? (this.navigation?.heightAt(s.x, s.y) || 0), s.y);
         this.threeStructureMeshes[s.id] = group;
         this.scene.add(group);
+        if (s.type === 'turret') attachUnitModel(group, 'turret', s.team, s.type).then(rig => {
+          if (rig && this.mapData?.originalMap) { rig.root.scale.setScalar(this.mapData.originalMap.scale); rig.root.rotation.y = -(s.rotation || 0); }
+        });
+        else if (this.mapData?.originalMap && (s.type === 'nexus' || s.type === 'inhibitor')) attachUnitModel(group, s.type, s.team, s.type).then(rig => {
+          if (rig) rig.root.rotation.y = -(s.rotation || 0);
+        });
       }
 
-      group.visible = s.isAlive;
+      group.userData.unit?.sync(s, dt);
+      group.visible = s.isAlive || !!group.userData.unit;
       if (!s.isAlive) {
         if (group.userData.laser) group.userData.laser.visible = false;
+        if (group.userData.rangeMesh) group.userData.rangeMesh.visible = false;
+        if (group.userData.shield) group.userData.shield.visible = false;
         return;
       }
 
@@ -3139,7 +3290,7 @@ class GameRenderer {
           const tx = targetObj.x - s.x;
           const ty = 22; // Target chest height
           const tz = targetObj.y - s.y;
-          const startY = 96;
+          const startY = group.userData.unit ? (this.mapData?.originalMap ? 105 : 138) : 96;
 
           _v1.set(tx, ty - startY, tz);
           const len = _v1.length();
@@ -3159,16 +3310,15 @@ class GameRenderer {
   // ==========================================================
   // 3D MINION HIERARCHICAL MODELS & ANIMATIONS
   // ==========================================================
-  update3DMinions(minions) {
+  update3DMinions(minions, dt = 1 / 60) {
     const THREE = window.THREE;
     if (!this.threeMinionMeshes) this.threeMinionMeshes = {};
     if (!this.minionAnimStates) this.minionAnimStates = {};
 
-    const activeMinionIds = new Set();
+    const frame = this.unitFrame = (this.unitFrame || 0) + 1;
 
     if (minions) {
       minions.forEach(m => {
-        activeMinionIds.add(m.id);
         let group = this.threeMinionMeshes[m.id];
         let animState = this.minionAnimStates[m.id];
 
@@ -3182,17 +3332,23 @@ class GameRenderer {
           this.threeMinionMeshes[m.id] = group;
           this.scene.add(group);
         }
+        group.userData.seenFrame = frame;
 
         group.visible = (m.hp > 0);
 
         // Position & Zero-GC rotation update
-        group.position.set(m.x, 0, m.y);
+        group.position.set(m.x, this.navigation?.heightAt(m.x, m.y) || 0, m.y);
         group.rotation.y = -m.angle + Math.PI / 2;
 
         // Animate movement gait
         const isMoving = Math.hypot(m.x - animState.lastX, m.y - animState.lastY) > 0.05;
         animState.lastX = m.x;
         animState.lastY = m.y;
+
+        if (group.userData.unit) {
+          group.userData.unit.sync(m, dt);
+          return;
+        }
 
         if (isMoving) {
           animState.walkPhase += 0.25;
@@ -3238,9 +3394,16 @@ class GameRenderer {
 
     // Clean up dead/removed minion meshes
     for (const id in this.threeMinionMeshes) {
-      if (!activeMinionIds.has(id)) {
+      if (this.threeMinionMeshes[id].userData.seenFrame !== frame) {
         const mesh = this.threeMinionMeshes[id];
-        this.scene.remove(mesh);
+        // Corpses are presentation only: absent from target selection and HUD.
+        mesh.userData.dying = true;
+        const rig = mesh.userData.unit;
+        if (rig) {
+          rig.die(); rig.updateDeath(dt);
+          if (!rig.finished) continue;
+        }
+        disposeUnitGroup(mesh);
         delete this.threeMinionMeshes[id];
         delete this.minionAnimStates[id];
       }
@@ -3404,6 +3567,7 @@ class GameRenderer {
 
     // Apply Inverted Hull Stylized NPR Cartoon Outlines to All Minions
     this.applyInvertedHullOutline(group, THREE);
+    attachUnitModel(group, 'minion', m.team, m.type);
 
     return group;
   }
@@ -3867,7 +4031,7 @@ class GameRenderer {
     return group;
   }
 
-  update3DJungleMonsters(jungleMonsters) {
+  update3DJungleMonsters(jungleMonsters, dt = 1 / 60) {
     const THREE = window.THREE;
     if (!this.threeJungleMeshes) this.threeJungleMeshes = {};
     if (!jungleMonsters) return;
@@ -3893,8 +4057,16 @@ class GameRenderer {
         }
         this.threeJungleMeshes[jm.id] = group;
         this.scene.add(group);
+        if (this.mapData?.originalMap) attachUnitModel(group, 'jungle', 'neutral', jm.type);
       }
 
+      if (group.userData.unit) {
+        group.userData.unit.sync(jm, dt);
+        group.visible = jm.isAlive || !group.userData.unit.finished;
+        group.position.set(jm.x, this.navigation?.heightAt(jm.x, jm.y) || 0, jm.y);
+        if (Number.isFinite(jm.angle)) group.rotation.y = -jm.angle + Math.PI / 2;
+        return;
+      }
       group.visible = jm.isAlive;
       if (!jm.isAlive) return;
 
@@ -3937,11 +4109,12 @@ class GameRenderer {
       } else {
         group.position.y = Math.abs(Math.sin(this.animationTimer * 5)) * 1.5;
       }
+      group.position.y += this.navigation?.heightAt(jm.x, jm.y) || 0;
     });
 
     for (const id in this.threeJungleMeshes) {
       if (!activeIds.has(id)) {
-        this.scene.remove(this.threeJungleMeshes[id]);
+        disposeUnitGroup(this.threeJungleMeshes[id]);
         delete this.threeJungleMeshes[id];
       }
     }
@@ -3961,7 +4134,7 @@ class GameRenderer {
           this.threeWardMeshes[w.id] = group;
           this.scene.add(group);
         }
-        group.position.set(w.x, 0, w.y);
+        group.position.set(w.x, this.navigation?.heightAt(w.x, w.y) || 0, w.y);
         if (group.userData.crystal) {
           group.userData.crystal.rotation.y += 0.03;
           group.userData.crystal.position.y = 22 + Math.sin(this.animationTimer * 3) * 2;
@@ -3983,6 +4156,7 @@ class GameRenderer {
 
     if (projectiles) {
       projectiles.forEach((pr, idx) => {
+        if (pr.type === 'yasuo_tornado') return; // rendered from snapshots by YasuoEffects
         const pId = `proj_${idx}`;
         activeIds.add(pId);
 
@@ -3993,7 +4167,7 @@ class GameRenderer {
           this.scene.add(mesh);
         }
 
-        mesh.position.set(pr.x, 24, pr.y);
+        mesh.position.set(pr.x, 24 + (this.navigation?.heightAt(pr.x, pr.y) || 0), pr.y);
 
         // Heading rotation
         if (mesh.userData.lastX !== undefined) {
@@ -4109,7 +4283,7 @@ class GameRenderer {
           this.scene.add(mesh);
         }
 
-        mesh.position.set(z.x, 0, z.y);
+        mesh.position.set(z.x, this.navigation?.heightAt(z.x, z.y) || 0, z.y);
 
         // Meteor falling animation
         if (mesh.userData.meteor) {
@@ -4170,7 +4344,7 @@ class GameRenderer {
 
         // Stealth culling for enemy health bars
         if (!isAlly && p.inBush && !p.revealed) {
-          let canSeeInBush = false;
+          let canSeeInBush = !!(this.navigation && localPlayer?.inBush && localPlayer.bushId === p.bushId);
           if (localPlayer && this.mapData.bushes) {
             for (let bIdx = 0; bIdx < this.mapData.bushes.length; bIdx++) {
               const b = this.mapData.bushes[bIdx];
@@ -4211,11 +4385,12 @@ class GameRenderer {
       for (let i = 0; i < gameState.structures.length; i++) {
         const s = gameState.structures[i];
         if (!s.isAlive) continue;
-        const sp = this.worldToScreen(s.x, s.y);
+        const importedTurret = s.type === 'turret' && this.threeStructureMeshes[s.id]?.userData.unit;
+        const sp = this.worldToScreen(s.x, s.y, importedTurret ? (this.mapData?.originalMap ? 136 : 178) : 0);
         if (sp.x < -160 || sp.x > sw + 160 || sp.y < -160 || sp.y > sh + 160) continue;
         const isAlly = localPlayer ? s.team === localPlayer.team : s.team === 'blue';
         if (s.type === 'turret') {
-          this.renderTurretHealthBar(ctx, s, sp.x, sp.y - 100, isAlly);
+          this.renderTurretHealthBar(ctx, s, sp.x, sp.y - (importedTurret ? 8 : 100), isAlly);
         } else if (s.type === 'inhibitor') {
           this.renderInhibitorHealthBar(ctx, s, sp.x, sp.y - 55, isAlly);
         } else if (s.type === 'nexus') {
@@ -4231,10 +4406,11 @@ class GameRenderer {
       for (let i = 0; i < gameState.minions.length; i++) {
         const m = gameState.minions[i];
         if (m.hp <= 0) continue;
-        const sp = this.worldToScreen(m.x, m.y);
+        const importedMinion = this.threeMinionMeshes[m.id]?.userData.unit;
+        const sp = this.worldToScreen(m.x, m.y, importedMinion ? (m.type === 'super' ? 62 : m.type === 'cannon' ? 49 : 43) : 0);
         if (sp.x < -60 || sp.x > sw + 60 || sp.y < -60 || sp.y > sh + 60) continue;
         const isAlly = localPlayer ? m.team === localPlayer.team : m.team === 'blue';
-        this.renderMinionHealthBar(ctx, m, sp.x, sp.y - (m.type === 'cannon' ? 36 : 28), isAlly);
+        this.renderMinionHealthBar(ctx, m, sp.x, sp.y - (importedMinion ? 6 : m.type === 'cannon' ? 36 : 28), isAlly);
       }
     }
 
@@ -4435,7 +4611,7 @@ class GameRenderer {
 
     const hpPct = Math.max(0, Math.min(1, p.hp / p.maxHp));
     const shieldPct = Math.max(0, Math.min(1, (p.shield || 0) / p.maxHp));
-    const mpPct = Math.max(0, Math.min(1, p.mp / p.maxMp));
+    const mpPct = p.maxMp > 0 ? Math.max(0, Math.min(1, p.mp / p.maxMp)) : 0;
 
     // Blit Pre-rendered Nickname & Level Badge via single drawImage (0ms CPU cost!)
     const badge = this.getPlayerBadge(p, isMe, isAlly);
@@ -4639,7 +4815,10 @@ class GameRenderer {
     const mapW = this.mapData.width || 2400;
     const mapH = this.mapData.height || 1600;
 
-    if (this.mapData.isSummonersRift) {
+    if (this.mapData?.originalMap && this.minimapImage?.complete && this.minimapImage.naturalWidth) {
+      mctx.fillStyle = '#07120e'; mctx.fillRect(0, 0, mw, mh);
+      mctx.drawImage(this.minimapImage, 0, 32 / mapH * mh, 3168 / mapW * mw, 3168 / mapH * mh);
+    } else if (this.mapData.isSummonersRift) {
       // 1. Summoner's Rift Dark Terrain
       mctx.fillStyle = '#08120b';
       mctx.fillRect(0, 0, mw, mh);
@@ -4885,7 +5064,7 @@ class GameRenderer {
 
         // Minimap stealth culling
         if (!isAlly && p.inBush && !p.revealed) {
-          let canSeeInBush = false;
+          let canSeeInBush = !!(this.navigation && localPlayer?.inBush && localPlayer.bushId === p.bushId);
           if (localPlayer && this.mapData.bushes) {
             for (let bIdx = 0; bIdx < this.mapData.bushes.length; bIdx++) {
               const b = this.mapData.bushes[bIdx];

@@ -1,0 +1,398 @@
+{
+  "sourceWad": "C:/Riot Games/League of Legends/Game/DATA/FINAL/Maps/Shipping/Map11.wad.client",
+  "tools": {
+    "wadtools": "0.5.7",
+    "lol2gltf": "1.0.0+d36a532"
+  },
+  "description": "Original Summoners Rift Order Blue skin0 and Chaos Red skin3, distinct faction geometry and original textures. Skin BIN defines mesh/textures; animation BIN defines included clips and mesh visibility.",
+  "integration": {
+    "uniformScale": 0.21333333333333335,
+    "groundOffset": 0,
+    "notes": [
+      "Apply source map ground elevation to the model origin; below-ground foundations are authored.",
+      "Only initialVisible meshes should render while alive. Death graph swaps to Destroyed immediately.",
+      "Mesh motion is original. Particle graphs/audio are not included in these GLBs.",
+      "Source coordinates remain model-local and unscaled; terrain uses the shared source-to-game transform."
+    ]
+  },
+  "models": [
+    {
+      "team": "blue",
+      "file": "blue.glb",
+      "sourceSkin": "Inhibitor_SR_Order_Blue",
+      "bytes": 2041496,
+      "sha256": "bbb93cc9fb9e7510b7e35309f2416d9dba94804fc1fa40287eb4a32c89509cd5",
+      "joints": 25,
+      "initialHidden": [
+        "Destroyed"
+      ],
+      "initialVisible": [
+        "pally_inhib_texture"
+      ],
+      "animations": [
+        {
+          "name": "inhibitor_death",
+          "duration": 8.300000190734863
+        },
+        {
+          "name": "inhibitor_hold",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "inhibitor_idle1",
+          "duration": 1
+        },
+        {
+          "name": "inhibitor_idle2",
+          "duration": 1
+        },
+        {
+          "name": "inhibitor_idle_dead",
+          "duration": 1.6666667461395264
+        },
+        {
+          "name": "inhibitor_respawn",
+          "duration": 10.000000953674316
+        },
+        {
+          "name": "inhibitor_spawn",
+          "duration": 1.1666667461395264
+        }
+      ],
+      "meshes": [
+        {
+          "name": "pally_inhib_texture",
+          "vertices": 4647,
+          "min": [
+            -203.46109008789062,
+            -486.0448913574219,
+            -204.20469665527344
+          ],
+          "max": [
+            243.39459228515625,
+            279.9198913574219,
+            205.02658081054688
+          ]
+        },
+        {
+          "name": "Destroyed",
+          "vertices": 7051,
+          "min": [
+            -203.431396484375,
+            -474.60009765625,
+            -204.61448669433594
+          ],
+          "max": [
+            243.4239959716797,
+            284.1289978027344,
+            204.61590576171875
+          ]
+        }
+      ],
+      "sourceAnimationStates": {
+        "Idle_Normal1": {
+          "clip": "inhibitor_idle1",
+          "visibilityEvents": []
+        },
+        "Death_Base": {
+          "clip": "inhibitor_death",
+          "visibilityEvents": [
+            {
+              "_type": "SubmeshVisibilityEventData",
+              "mName": "Submesh",
+              "mShowSubmeshList": [
+                "Destroyed"
+              ],
+              "mHideSubmeshList": [
+                "pally_inhib_texture"
+              ]
+            }
+          ]
+        },
+        "0xe4cb0f58": {
+          "clip": "inhibitor_spawn",
+          "visibilityEvents": []
+        },
+        "0xc3247102": {
+          "clip": "inhibitor_idle_dead",
+          "visibilityEvents": []
+        },
+        "Respawn_Base": {
+          "clip": "inhibitor_respawn",
+          "visibilityEvents": [
+            {
+              "_type": "SubmeshVisibilityEventData",
+              "mName": "Submesh",
+              "mStartFrame": 290,
+              "mShowSubmeshList": [
+                "pally_inhib_texture"
+              ],
+              "mHideSubmeshList": [
+                "Destroyed"
+              ]
+            }
+          ]
+        },
+        "Idle_Normal2": {
+          "clip": "inhibitor_idle2",
+          "visibilityEvents": []
+        },
+        "Idle_Normal3": {
+          "clip": "inhibitor_idle2",
+          "visibilityEvents": []
+        },
+        "Idle_Hold": {
+          "clip": "inhibitor_hold",
+          "visibilityEvents": []
+        }
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_death.anm",
+          "sha256": "9fe0e014fda656fc49d4aee1d2aab4eddffa996d937eda168ff4c14344f7d8c3"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_hold.anm",
+          "sha256": "fbd5b7237b04df4068a37daff0b6d7eaa0ea6d528af706f172812a3e7ef5dd55"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_idle1.anm",
+          "sha256": "80017207b83f0c61fc919ff27797fca361aa25cd758959a36b4c7e0f0735c381"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_idle2.anm",
+          "sha256": "460f57e8930de620b9ca07f477bbaef0abcfae78948de203222a39d04fdae940"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_idle_dead.anm",
+          "sha256": "384870c6455abd978752b184801e7d558c810f0f1df1cebcc9c816bec1746dcd"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_respawn.anm",
+          "sha256": "da75c45470428d55fc7bdf2fca65f6af2fa01d8f36e466d43a6e836bd89df43a"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/animations/inhibitor_spawn.anm",
+          "sha256": "537a15bcea95094a409f409ec0d9c4027d3f010daa2e5639c8a76e267e985e13"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/inhibitor_destroyed_cm.tex",
+          "sha256": "c740af07f44985922cbdccec387c2d6c541329f9d88425f60a22748aa44ba0e2"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/inhibitor_tx_cm.tex",
+          "sha256": "d5b19fb3068d3e2d0b5deb56328cc0cf5e55bf59478ff646c01b04f9704d6fd4"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/inhibitor.skl",
+          "sha256": "4be38ae691592f849645aaf7a1be1e2add2a3ea548c0822b7de4b45264ca327f"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/base/inhibitor.skn",
+          "sha256": "5db3a0124be2e0de8fea54c15795e384e57c38c652ac0e01c9716a36f2b0a082"
+        },
+        {
+          "path": "data/characters/inhibitor/animations/skin0.bin",
+          "sha256": "77b4e9b14a4dcaf11bf5e5fbd97095535302b26e15a044749a7cf9e837e15771"
+        },
+        {
+          "path": "data/characters/inhibitor/skins/skin0.bin",
+          "sha256": "fe358b8fbe2b09684104a6d0e25d189334097fee50e47f7aa0112d7dd7cea427"
+        }
+      ]
+    },
+    {
+      "team": "red",
+      "file": "red.glb",
+      "sourceSkin": "Inhibitor_SR_Chaos_Red",
+      "bytes": 1685684,
+      "sha256": "36cc6ad7eec0459f81a09f691a97ce95df3ec38f058b59618a1446e8907e164b",
+      "joints": 20,
+      "initialHidden": [
+        "Destroyed"
+      ],
+      "initialVisible": [
+        "SRUAP_ChaosInhibitor_MAT"
+      ],
+      "animations": [
+        {
+          "name": "sruap_chaosinhibitor_death",
+          "duration": 8.300000190734863
+        },
+        {
+          "name": "sruap_chaosinhibitor_idle_death",
+          "duration": 1.6666667461395264
+        },
+        {
+          "name": "sruap_chaosinhibitor_idle_hold",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "sruap_chaosinhibitor_idle_normal",
+          "duration": 1
+        },
+        {
+          "name": "sruap_chaosinhibitor_idle_normal2",
+          "duration": 1
+        },
+        {
+          "name": "sruap_chaosinhibitor_idle_normal3",
+          "duration": 1
+        },
+        {
+          "name": "sruap_chaosinhibitor_respawn",
+          "duration": 10.000000953674316
+        },
+        {
+          "name": "sruap_chaosinhibitor_spawn",
+          "duration": 1.1666667461395264
+        }
+      ],
+      "meshes": [
+        {
+          "name": "SRUAP_ChaosInhibitor_MAT",
+          "vertices": 3154,
+          "min": [
+            -202.69009399414062,
+            -789.0081176757812,
+            -228.34918212890625
+          ],
+          "max": [
+            204.0229034423828,
+            402.02239990234375,
+            228.34918212890625
+          ]
+        },
+        {
+          "name": "Destroyed",
+          "vertices": 4315,
+          "min": [
+            -202.69009399414062,
+            -789.0079345703125,
+            -228.34918212890625
+          ],
+          "max": [
+            204.0229034423828,
+            402.02239990234375,
+            228.34918212890625
+          ]
+        }
+      ],
+      "sourceAnimationStates": {
+        "Idle_Normal1": {
+          "clip": "sruap_chaosinhibitor_idle_normal",
+          "visibilityEvents": []
+        },
+        "Death_Base": {
+          "clip": "sruap_chaosinhibitor_death",
+          "visibilityEvents": [
+            {
+              "_type": "SubmeshVisibilityEventData",
+              "mName": "Submesh",
+              "mShowSubmeshList": [
+                "Destroyed"
+              ],
+              "mHideSubmeshList": [
+                "SRUAP_ChaosInhibitor_MAT"
+              ]
+            }
+          ]
+        },
+        "0xe4cb0f58": {
+          "clip": "sruap_chaosinhibitor_spawn",
+          "visibilityEvents": []
+        },
+        "0xc3247102": {
+          "clip": "sruap_chaosinhibitor_idle_death",
+          "visibilityEvents": []
+        },
+        "Idle_Hold": {
+          "clip": "sruap_chaosinhibitor_idle_hold",
+          "visibilityEvents": []
+        },
+        "Respawn_Base": {
+          "clip": "sruap_chaosinhibitor_respawn",
+          "visibilityEvents": [
+            {
+              "_type": "SubmeshVisibilityEventData",
+              "mName": "Submesh",
+              "mStartFrame": 295,
+              "mShowSubmeshList": [
+                "SRUAP_ChaosInhibitor_MAT"
+              ],
+              "mHideSubmeshList": [
+                "Destroyed"
+              ]
+            }
+          ]
+        },
+        "Idle_Normal2": {
+          "clip": "sruap_chaosinhibitor_idle_normal2",
+          "visibilityEvents": []
+        },
+        "Idle_Normal3": {
+          "clip": "sruap_chaosinhibitor_idle_normal3",
+          "visibilityEvents": []
+        }
+      },
+      "sourceFiles": [
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_death.anm",
+          "sha256": "5a6b1ba73fb15484d470a2db28a042b2ac6f36a41e35b349e73f364704d93adc"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_idle_death.anm",
+          "sha256": "b7bbea809b97df6b6c7607353b29bc123216a10047d3b7c6f55ed8dafda4b5e7"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_idle_hold.anm",
+          "sha256": "bf5733f26735ff2a99349e22a03ae11255dcb8b183d2ce3fe9a53dd94517628d"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_idle_normal.anm",
+          "sha256": "4993baa9c0c90187084c4bfea3481004d988a1d380a002a3a52d1e6ae760de22"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_idle_normal2.anm",
+          "sha256": "8318607a552ab55214ddfed57da77d222f13e516ae63634f36c5e86019b67f4c"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_idle_normal3.anm",
+          "sha256": "f040f54f804b84cb6c5f0619ec4e60ca16ee9e2f11bea9bec63a9cbccbef66be"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_respawn.anm",
+          "sha256": "834dde29a98e5559109c7b02b4ca82602cfeaae6dba6fb1ee313c91c522a329e"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/animations/sruap_chaosinhibitor_spawn.anm",
+          "sha256": "ca50a10350a4be3a16d29a6215eb8f78a265b8de47556aa90dc6e9fed4dec83c"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/sruap_chaosinhibitor_destroyed_tx_cm.tex",
+          "sha256": "3a528757be80ddbd13e54354db95175cc6fbe500d7e9a192f861f4885bb3ee2b"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/sruap_chaosinhibitor_tx_cm.tex",
+          "sha256": "b62fb22034ee6a31784fa889b07c02f7efc042c866963f29338f5780fb69c7be"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/sruap_chaosinhibitor.skl",
+          "sha256": "9522ac5ef9b5ac5f9817f93e8ccaff66c6f90c7aed57f2be77c04cac4516ade3"
+        },
+        {
+          "path": "assets/characters/inhibitor/skins/skin02/sruap_chaosinhibitor.skn",
+          "sha256": "cdcb1a7d0f743cf25ab7b9169999ea9584ba042e2db6dae4ff7fc809787108cb"
+        },
+        {
+          "path": "data/characters/inhibitor/animations/skin2.bin",
+          "sha256": "c213eb5f4f225e1d526b72e1883f40b5e90a9cedcafe5244766f59b79002fbd7"
+        },
+        {
+          "path": "data/characters/inhibitor/skins/skin3.bin",
+          "sha256": "8dc90a1a4edb0e4b6f7a55a63e0034a3ad5707c754f4178227e21df6b241638d"
+        }
+      ]
+    }
+  ]
+}
